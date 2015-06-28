@@ -7,12 +7,36 @@
 	<canvas id="canvas" width="500" height="500"></canvas>
 	<script type="text/javascript">
 
+		var RandBag = function(length) {
+			this.data = Array(length);
+			this.length = length;
+			for(var i = 0; i < length; ++i)
+				this.data[i] = i;
+		}
+
+		RandBag.prototype = {
+			removeRandom: function() {
+				var i = this.getRandIndex();
+				var it = this.data[i];
+				this.data[i] = this.data[this.length-1];
+				this.data[this.length-1] = it;
+				this.length--;
+				return it;
+			},
+			getRandom: function() {
+				return this.data[this.getRandIndex()];
+			},
+			getRandIndex: function() {
+				return Math.random()*this.length | 0;
+			}
+		}
+
 		var c = document.getElementById("canvas");
 		var ctx = c.getContext("2d");
 		var w = c.width;
 		var h = c.height;
-		var cells_x = 10;
-		var cells_y = 10;
+		var cells_x = 80;
+		var cells_y = 80;
 		var cell_dx = w/cells_x;
 		var cell_dy = h/cells_y;
 		var cells_length = cells_x*cells_y;
@@ -22,6 +46,7 @@
 		var weights = Array(cells_length + 2);
 		var TOP = cells_length;
 		var BOTTOM = cells_length + 1;
+		var bag;
 
 		function clear() {
 			for(var i = 0; i < cells_length + 2; ++i) {
@@ -36,14 +61,17 @@
 				union(i, TOP);
 				union((cells_y-1)*cells_x + i, BOTTOM);
 			}
+			bag = new RandBag(cells_length);
 		}
 
 		function getRoot(node) {
 			var i = node;
 			var p = parents[i];
-			while( i != p) {
+			while( i != p ) {				
+				var a = i;
 				i = p;
 				p = parents[i];
+				parents[a] = p;
 			}
 			return p;
 		}
@@ -88,12 +116,7 @@
 		function enterFrame() {
 			if(connected(TOP, BOTTOM)) return;
 
-			var i;
-
-			do {
-				i = Math.random()*cells_length | 0;
-			} while(cells[i])
-
+			var i = bag.removeRandom();
 			cells[i] = true;
 
 			var x = i%cells_y;
@@ -109,7 +132,7 @@
 
 		clear();
 
-		setInterval(enterFrame, 400);
+		setInterval(enterFrame, 20);
 
 
 	</script>
