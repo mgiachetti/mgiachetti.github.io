@@ -4,7 +4,7 @@
 </head>
 <body>
 	<h1>Javascript Percolation Example</h1>
-	<canvas id="canvas" width="500" height="500"></canvas>
+	<canvas id="canvas" width="500" height="540"></canvas>	
 	<script type="text/javascript">
 
 		var RandBag = function(length) {
@@ -38,7 +38,7 @@
 		var cells_x = 80;
 		var cells_y = 80;
 		var cell_dx = w/cells_x;
-		var cell_dy = h/cells_y;
+		var cell_dy = (h-40)/cells_y;
 		var cells_length = cells_x*cells_y;
 
 		var cells = Array(cells_length + 2);
@@ -47,6 +47,7 @@
 		var TOP = cells_length;
 		var BOTTOM = cells_length + 1;
 		var bag;
+		var open_count = 0;
 
 		function clear() {
 			for(var i = 0; i < cells_length + 2; ++i) {
@@ -64,16 +65,13 @@
 				union((cells_y-1)*cells_x + i, BOTTOM);
 			}
 			bag = new RandBag(cells_length);
+			open_count = 0;
 		}
 
-		function getRoot(i) {
-			var p = parents[i];
-			var a;
-			while( i != p ) {
-				a = i;
-				i = p;
+		function getRoot(p) {
+			while( p != parents[p] ) {
+				parents[p] = parents[parents[p]]
 				p = parents[p];
-				parents[a] = p;
 			}
 			return p;
 		}
@@ -113,6 +111,11 @@
 				}
 			}
 
+			ctx.fillStyle = "#ffffff";
+			ctx.font = "20px arial";
+			ctx.strokeStyle = "#ffffff";
+			ctx.strokeText("Opened " + open_count + "  Percent " + (open_count/cells_length).toFixed(5), 100, 530);
+
 		}
 
 		function enterFrame() {
@@ -120,6 +123,7 @@
 
 			var i = bag.removeRandom();
 			cells[i] = true;
+			++open_count;
 
 			var x = i%cells_y;
 			var y = i/cells_y | 0;
