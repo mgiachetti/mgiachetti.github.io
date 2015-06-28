@@ -54,8 +54,10 @@
 				parents[i] = i;
 				weights[i] = 1;
 			}
-			weights[TOP] = 2*cells_length;
-			weights[BOTTOM] = cells_length;
+			
+			//hack to force roots
+			//weights[TOP] = 2*cells_length;
+			//weights[BOTTOM] = cells_length;
 
 			for(var i = 0; i < cells_x; ++i) {
 				union(i, TOP);
@@ -64,13 +66,13 @@
 			bag = new RandBag(cells_length);
 		}
 
-		function getRoot(node) {
-			var i = node;
+		function getRoot(i) {
 			var p = parents[i];
-			while( i != p ) {				
-				var a = i;
+			var a;
+			while( i != p ) {
+				a = i;
 				i = p;
-				p = parents[i];
+				p = parents[p];
 				parents[a] = p;
 			}
 			return p;
