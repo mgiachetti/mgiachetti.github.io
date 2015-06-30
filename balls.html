@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<h1>Bouncing Balls</h1>
+		<canvas id="canvas" width="500" height="500"><canvas>
+			<script type="text/javascript">
+
+				var	c = document.getElementById("canvas");
+				var ctx = c.getContext("2d");
+				var w = c.width;
+				var h = c.height;
+
+				var Ball = function(rad) {
+					this.rad = rad || 0.01;
+					this.x = (Math.random() - 2*this.rad) + this.rad;
+					this.y = (Math.random() - 2*this.rad) + this.rad;
+					this.vx = Math.random()/1000.0;
+					this.vy = Math.random()/1000.0;
+				}
+				Ball.prototype = {
+					move: function(dt) {
+						this.x += this.vx*dt;
+						this.y += this.vy*dt;
+						if(this.x >= 1 - this.rad) {
+							this.x = 2 - 2*this.rad - this.x;
+							this.vx = -this.vx
+						}
+						if(this.x <= this.rad) {
+							this.x = 2*this.rad - this.x;
+							this.vx = -this.vx
+						}
+						if(this.y >= 1 - this.rad) {
+							this.y = 2 - 2*this.rad - this.y;
+							this.vy = -this.vy
+						}
+						if(this.y <= this.rad) {
+							this.y = 2*this.rad - this.y;
+							this.vy = -this.vy
+						}
+					},
+					draw: function(ctx, sx, sy) {
+						ctx.beginPath();
+						ctx.fillStyle="#000000";
+						ctx.arc(this.x*sx, this.y*sy, this.rad*sx, 0, 2*Math.PI);
+						ctx.fill();
+						//ctx.stroke();
+					}
+				}
+
+				
+				var balls;
+
+				function init() {
+					balls = Array(100);
+					for(var i = 0; i < balls.length; i++) {
+						balls[i] = new Ball();
+					}
+				}
+
+				function draw() {
+					ctx.fillStyle = "#00ff00";
+					ctx.fillRect(0,0,w,h);
+
+					for(var i = 0; i < balls.length; ++i) {
+						balls[i].draw(ctx, w, h);
+					}
+				}
+
+				function enterFrame() {
+					for(var i = 0; i < balls.length; ++i) {
+						balls[i].move(20);
+					}
+
+					draw();
+				}
+
+				init();
+
+				setInterval(enterFrame, 20);
+			</script>
+	</body>
+</html>
