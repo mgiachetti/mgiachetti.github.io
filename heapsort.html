@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	</head>
+	<body>
+		<h1>Heap Sort</h1>
+		<canvas id="canvas" width="500" height="500"><canvas>
+			<script type="text/javascript">
+
+				var MaxPQ = function(data) {
+					this.data = data;
+					this.length = this.data.length;
+
+					for(var i = this.length/2 | 0;  i >= 0 ; --i) {
+						this.sink(i);
+					}
+
+					//var l = this.length;
+					//for(var i = 1; i < l ; ++i) {
+					//	this.length = i + 1;
+					//	this.swim(i);
+					//}
+				}
+
+				MaxPQ.prototype = {
+					removeMax: function() {
+						this.swap(0, this.length-1);
+						--this.length;
+						this.sink(0);
+					},
+					max: function() {
+						return this.data[0];
+					},
+					swap: function(i,j) {
+						var a = data[i];
+						data[i] = data[j];
+						data[j] = a;
+					},
+					swim: function(i) {
+						var d = this.data[i];
+						while(i != 0) {
+							var p = (i-1)/2 | 0; //parent
+
+							var dp = this.data[p];
+							if(d > dp) {
+								this.swap(i, p);
+								i = p;
+							} else break;
+						}
+					},
+					sink: function(i) {
+						var d = this.data[i];
+						while(true) {
+							
+							var k = i*2 + 1; //left child
+							
+							if(k >= this.length) break;
+
+							var dl = this.data[k];
+							var dr = k+1 < this.length ? this.data[k+1] : d;
+							if(dl > d || dr > d) {
+								if(dl > dr) {
+									this.swap(i, k);
+									i=k;
+								} else {
+									this.swap(i, k+1);
+									i=k+1;
+								}
+							} else break;
+						}
+					}
+				}
+
+				var	c = document.getElementById("canvas");
+				var ctx = c.getContext("2d");
+				var w = c.width;
+				var h = c.height;
+
+				var data;
+				var pq;
+
+				function init() {
+					data = Array(100);
+					for(var i = 0; i < data.length; i++) {
+						data[i] = Math.random()*(h-20) + 10 | 0;
+					}
+					pq = new MaxPQ(data);
+				}
+
+				function draw() {
+					ctx.fillStyle = "#ffffff";
+					ctx.fillRect(0,0,w,h);
+
+					var oy = h-10;
+					var ox = 2;
+					var dx = (w-ox*(data.length-1))/data.length;
+
+					ctx.fillStyle = "#000000";
+					for(var i = 0; i < data.length; ++i) {
+						ctx.fillRect((ox+dx)*i,oy, dx, -data[i]);
+					}
+				}
+
+				var first = true;
+				function enterFrame() {
+					if(!pq.length) return;
+					if(!first)	pq.removeMax();
+					draw();
+					first = false;
+				}
+
+				init();
+
+				setInterval(enterFrame, 20);
+			</script>
+	</body>
+</html>
