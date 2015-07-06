@@ -1,35 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<script type="text/javascript" src="js/utils.js"></script> 
 </head>
 <body>
 	<h1>Javascript Percolation Example</h1>
 	<canvas id="canvas" width="500" height="540"></canvas>	
 	<script type="text/javascript">
 
-		var RandBag = function(length) {
-			this.data = Array(length);
-			this.length = length;
-			for(var i = 0; i < length; ++i)
-				this.data[i] = i;
-		}
-
-		RandBag.prototype = {
-			removeRandom: function() {
-				var i = this.getRandIndex();
-				var it = this.data[i];
-				this.data[i] = this.data[this.length-1];
-				this.data[this.length-1] = it;
-				this.length--;
-				return it;
-			},
-			getRandom: function() {
-				return this.data[this.getRandIndex()];
-			},
-			getRandIndex: function() {
-				return Math.random()*this.length | 0;
-			}
-		}
+		
 
 		var c = document.getElementById("canvas");
 		var ctx = c.getContext("2d");

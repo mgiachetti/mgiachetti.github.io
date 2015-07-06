@@ -1,44 +1,35 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<script type="text/javascript" src="js/utils.js"></script>
 	</head>
 	<body>
 		<h1>Bouncing Balls</h1>
 		<canvas id="canvas" width="500" height="500"><canvas>
 			<script type="text/javascript">
 
-				var	c = document.getElementById("canvas");
-				var ctx = c.getContext("2d");
-				var w = c.width;
-				var h = c.height;
+			var ww= 1;
 
-				var Ball = function(rad) {
+				var Ball = function(rad, mass) {
 					this.rad = rad || 0.01;
+					this.mass = mass || 1*Math.PI*this.rad*this.rad;//if it is not defined proportional to the volume
 					this.x = (Math.random() - 2*this.rad) + this.rad;
 					this.y = (Math.random() - 2*this.rad) + this.rad;
 					this.vx = Math.random()/1000.0;
 					this.vy = Math.random()/1000.0;
+					this.count = 0;
+
+					//this.x = ww < 0 ? 0.2 : 0.8;
+					//this.y = 0.5;
+					//this.vx = ww < 0 ? 0.01 : -0.01;
+					//this.vy = 0;
+					ww *= -1;
+
 				}
 				Ball.prototype = {
 					move: function(dt) {
 						this.x += this.vx*dt;
 						this.y += this.vy*dt;
-						if(this.x >= 1 - this.rad) {
-							this.x = 2 - 2*this.rad - this.x;
-							this.vx = -this.vx
-						}
-						if(this.x <= this.rad) {
-							this.x = 2*this.rad - this.x;
-							this.vx = -this.vx
-						}
-						if(this.y >= 1 - this.rad) {
-							this.y = 2 - 2*this.rad - this.y;
-							this.vy = -this.vy
-						}
-						if(this.y <= this.rad) {
-							this.y = 2*this.rad - this.y;
-							this.vy = -this.vy
-						}
 					},
 					draw: function(ctx, sx, sy) {
 						ctx.beginPath();
@@ -46,17 +37,121 @@
 						ctx.arc(this.x*sx, this.y*sy, this.rad*sx, 0, 2*Math.PI);
 						ctx.fill();
 						//ctx.stroke();
+					},
+					timeToCollision: function(that) {
+						//particle-particle collision
+						if(this == that) return false;
+						var dx = that.x - this.x, dy = that.y - this.y;
+						var dvx = that.vx - this.vx, dvy = that.vy - this.vy;
+						var drdv = dx*dvx + dy*dvy;
+						if(drdv > 0) return false;
+						var r = this.rad + that.rad;
+						var dvdv = dvx*dvx + dvy*dvy;
+						var drdr = dx*dx + dy*dy;
+						var d = drdv*drdv - dvdv*(drdr - r*r);
+						if(d < 0) return false;
+						return - ( drdv + Math.sqrt(d))/dvdv ;
+					},
+					timeToCollisionVWall: function() {
+						//particle-vertical wall collision
+						if(this.vx > 0)
+							return (1-this.x-this.rad)/this.vx ;
+						else if(this.vx < 0)
+							return (this.rad - this.x)/this.vx ;
+						else return false;
+					},
+					timeToCollisionHWall: function() {
+						//particle-Horizontal wall collision
+						if(this.vy > 0)
+							return (1-this.y-this.rad)/this.vy ;
+						else if(this.vy < 0)
+							return -(this.y - this.rad)/this.vy ;
+						else return false;
+					},
+					bounceOff: function(that) {
+						var dx = that.x - this.x, dy = that.y - this.y;
+						//if(dx*dx > 5*this.rad*this.rad) alert("eeror");
+						var dvx = that.vx - this.vx, dvy = that.vy - this.vy;
+						var drdv = dx*dvx + dy*dvy;
+						var dist = this.rad + that.rad;
+						var j = 2 * this.mass * that.mass * drdv / ((this.mass+that.mass)*dist);
+						var jx = j*dx/dist;
+						var jy = j*dy/dist;
+						this.vx += jx/this.mass;
+						this.vy += jy/this.mass;
+						that.vx -= jx/that.mass;
+						that.vy -= jy/that.mass;
+						this.count++;
+						that.count++;
+					},
+					bounceOffHWall: function() {
+						this.vy = -this.vy;
+					},
+					bounceOffVWall: function() {
+						this.vx = -this.vx;
 					}
 				}
 
-				
+				var	c = document.getElementById("canvas");
+				var ctx = c.getContext("2d");
+				var w = c.width;
+				var h = c.height;
+
 				var balls;
+				var evts;
+				var pq;
+				var time = 0;
 
 				function init() {
-					balls = Array(100);
+					evts = [];					
+					balls = Array(40);
 					for(var i = 0; i < balls.length; i++) {
 						balls[i] = new Ball();
 					}
+
+					for(var i = 0; i < balls.length; ++i) {
+						calculateEvents(i, i + 1);
+					}
+
+					
+					time = new Date().getTime();
+					for(var i = 0; i < evts.length; ++i) {
+						evts[i].t+=time;
+					}
+
+					pq = new PriorityQueue(evts, function(a,b){return a.t > b.t;});
+				}
+
+				function removeEvents(i) {
+					var l = evts.length;
+					for(var j = 0; j < l; ++j) {
+						if(evts[j].b1 == i || evts[j].b2 == i) {
+							if(j < l - 1)
+								evts[j] = evts.pop();
+							else
+								evts.pop();
+							--j;
+							--l;
+						}
+					}
+				}
+
+				function calculateEvents(i, from) {
+					var b1 = balls[i];
+					if(from === undefined) from = 0;
+
+					for(var j = from;  j < balls.length; ++j) {
+						if(j==i) continue;
+						var b2 = balls[j];
+						var t = b1.timeToCollision(b2);
+						if(t !== false)	evts.push({b1: i, b2: j, t: t + time, type: 0});
+					}
+
+					var t = b1.timeToCollisionHWall();
+					if(t !== false)	evts.push({b1: i, t: t + time, type: 1});
+
+					t = b1.timeToCollisionVWall();
+					if(t !== false)	evts.push({b1: i, t: t + time, type: 2});
 				}
 
 				function draw() {
@@ -68,10 +163,39 @@
 					}
 				}
 
-				function enterFrame() {
+				function move(elapsed) {
 					for(var i = 0; i < balls.length; ++i) {
-						balls[i].move(20);
+						balls[i].move(elapsed);
 					}
+				}
+
+				function enterFrame() {
+					var t = new Date().getTime();
+
+					while(evts.length > 0 && evts[0].t <= t) {
+						var e = evts[0];
+						if(evts.length > 1) evts[0] = evts.pop(); else evts.pop();
+
+						move(e.t-time);
+						time = e.t;
+
+						switch(e.type) {
+							case 0: balls[e.b1].bounceOff(balls[e.b2]); break;
+							case 1: balls[e.b1].bounceOffHWall(); break;
+							case 2: balls[e.b1].bounceOffVWall(); break;
+						}
+
+						removeEvents(e.b1);
+						if(e.b2) removeEvents(e.b2);
+
+						calculateEvents(e.b1);
+						if(e.b2) calculateEvents(e.b2);
+
+						pq.rebuild();
+					}
+
+					move(t-time);
+					time = t;
 
 					draw();
 				}

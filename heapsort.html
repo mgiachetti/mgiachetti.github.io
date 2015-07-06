@@ -1,75 +1,12 @@
 <!DOCTYPE html>
 <html>
 	<head>
+		<script type="text/javascript" src="js/utils.js"></script>
 	</head>
 	<body>
 		<h1>Heap Sort</h1>
 		<canvas id="canvas" width="500" height="500"><canvas>
 			<script type="text/javascript">
-
-				var MaxPQ = function(data) {
-					this.data = data;
-					this.length = this.data.length;
-
-					for(var i = this.length/2 | 0;  i >= 0 ; --i) {
-						this.sink(i);
-					}
-
-					//var l = this.length;
-					//for(var i = 1; i < l ; ++i) {
-					//	this.length = i + 1;
-					//	this.swim(i);
-					//}
-				}
-
-				MaxPQ.prototype = {
-					removeMax: function() {
-						this.swap(0, this.length-1);
-						--this.length;
-						this.sink(0);
-					},
-					max: function() {
-						return this.data[0];
-					},
-					swap: function(i,j) {
-						var a = data[i];
-						data[i] = data[j];
-						data[j] = a;
-					},
-					swim: function(i) {
-						var d = this.data[i];
-						while(i != 0) {
-							var p = (i-1)/2 | 0; //parent
-
-							var dp = this.data[p];
-							if(d > dp) {
-								this.swap(i, p);
-								i = p;
-							} else break;
-						}
-					},
-					sink: function(i) {
-						var d = this.data[i];
-						while(true) {
-							
-							var k = i*2 + 1; //left child
-							
-							if(k >= this.length) break;
-
-							var dl = this.data[k];
-							var dr = k+1 < this.length ? this.data[k+1] : d;
-							if(dl > d || dr > d) {
-								if(dl > dr) {
-									this.swap(i, k);
-									i=k;
-								} else {
-									this.swap(i, k+1);
-									i=k+1;
-								}
-							} else break;
-						}
-					}
-				}
 
 				var	c = document.getElementById("canvas");
 				var ctx = c.getContext("2d");
@@ -84,7 +21,7 @@
 					for(var i = 0; i < data.length; i++) {
 						data[i] = Math.random()*(h-20) + 10 | 0;
 					}
-					pq = new MaxPQ(data);
+					pq = new PriorityQueue(data, function(a,b){return a > b;});
 				}
 
 				function draw() {
@@ -104,7 +41,7 @@
 				var first = true;
 				function enterFrame() {
 					if(!pq.length) return;
-					if(!first)	pq.removeMax();
+					if(!first)	pq.removeTop();
 					draw();
 					first = false;
 				}
