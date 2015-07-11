@@ -127,4 +127,50 @@ function BSTGet(h, val) {
 	return h;
 }
 
+function RBTIsRed(node) {
+	return node ? node.red : false;
+}
+
+function RBTRotateLeft(h) {
+	if(!RBTIsRed(h.right)) alert("RBTRotateLeft: Error no es rojo");
+	var x = h.right;
+	x.red = h.red;
+	h.red = true;
+	h.right = x.left;
+	x.left = h;
+	return x;
+}
+
+function RBTRotateRight(h) {
+	if(!RBTIsRed(h.left) || !RBTIsRed(h.left.left)) alert("RBTRotateRight: Error no son rojos");
+
+	var x = h.left;
+	x.red = h.red;
+	h.red = true;
+	h.left = x.right;
+	x.right = h;
+
+	return x;
+}
+
+function RBTSwapColor(h) {
+	if(!RBTIsRed(h.left) || !RBTIsRed(h.right)) alert("RBTSwapColor: Error no son rojo");
+	h.red = true;
+	h.left.red = false;
+	h.right.red = false;
+}
+
+function RBTAdd(h, val) {
+	if(!h) return {red: true, left: null, right: null, val: val};
+
+	if(val < h.val) h.left = RBTAdd(h.left, val);
+	else h.right = RBTAdd(h.right, val);
+
+	if(RBTIsRed(h.right) && !RBTIsRed(h.left)) h = RBTRotateLeft(h);
+	if(RBTIsRed(h.left) && RBTIsRed(h.left.left)) h = RBTRotateRight(h);
+	if(RBTIsRed(h.left) && RBTIsRed(h.right)) RBTSwapColor(h);
+
+	return h;
+}
+
 

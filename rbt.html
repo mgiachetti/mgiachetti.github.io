@@ -4,7 +4,7 @@
 		<script type="text/javascript" src="js/utils.js"></script>
 	</head>
 	<body>
-		<h1>Binary Search Tree (BST)</h1>
+		<h1>Red Black Tree</h1>
 		<canvas id="canvas" width="1000" height="550"><canvas>
 			<script type="text/javascript">
 
@@ -14,7 +14,7 @@
 				var h = c.height;
 
 				var root;
-				var MAX_NODES = 1000;
+				var MAX_NODES = 10000;
 				var nodes_count = 0;
 
 				function init() {
@@ -36,6 +36,7 @@
 					ctx.fill();
 
 					if(px != null) {
+						ctx.strokeStyle = node.red ? "#ff0000" : "#000000";
 						ctx.beginPath()
 						ctx.moveTo(ox + l*dx, oy);
 						ctx.lineTo(ox + px*dx, oy - dy);
@@ -62,14 +63,15 @@
 					ctx.strokeStyle = "#000000";
 					ctx.strokeText("Height: " + size.h, 10, 10);
 					ctx.strokeText("Nodes: " + nodes_count, 10, 20);					
-					ctx.strokeText("Complete: " + (nodes_count > 0 ? (nodes_count*100/(Math.pow(2,size.h)-1)).toFixed(3) : "0") + "%", 10, 30);
+					ctx.strokeText("Complete: " + (nodes_count > 0 ? (nodes_count*100/(Math.pow(2,size.h)-1)).toFixed(2) : "0") + "%", 10, 30);
+
 				}
 
 				function enterFrame() {
 					if(nodes_count >= MAX_NODES) return;
 					++nodes_count;
 
-					root = BSTAdd(root, Math.random()*1e10 | 0);
+					root = RBTAdd(root, Math.random()*1e10 | 0);
 
 					draw();
 				}
