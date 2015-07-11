@@ -87,4 +87,44 @@ PriorityQueue.prototype = {
 }
 
 
+function BTSize(node) {
+	if(!node) return {w:0, h: 0};
+	var l = BTSize(node.left);
+	var r = BTSize(node.right);
+	node.w = l.w + r.w + 1;
+	node.h = (l.h > r.h ? l.h : r.h) + 1;
+	return node;
+}
+
+function BTWidth(node) {
+	if(!node) return 0;
+	var l = BTWidth(node.left);
+	var r = BTWidth(node.right);
+	return l + r + 1;
+}
+
+function BTHeight(node) {
+	if(!node) return 0;
+	var l = BTWidth(node.left);
+	var r = BTWidth(node.right);
+	return (l > r ? l : r) + 1;
+}
+
+function BSTAdd(h, val) {
+	if(!h) return { val: val, left: null, right: null };
+	if(val < h.val) {
+		h.left = BSTAdd(h.left, val);
+	} else {
+		h.right = BSTAdd(h.right, val);
+	}
+	return h;
+}
+
+function BSTGet(h, val) {
+	if(h == null) return false;
+	if(val < h.val) return BSTGet(h.left, val);
+	else if(val > h.val) return BSTGet(r.right, val);
+	return h;
+}
+
 
