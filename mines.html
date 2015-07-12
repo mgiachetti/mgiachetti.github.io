@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script type="text/javascript" src="js/utils.js"></script> 
+</head>
+<body>	
+	<h1>Mines Weeper</h1>
+	<canvas id="canvas" width="500" height="540"></canvas>
+	<div>
+		Other Examples:
+		<a href="index.html">Percolation</a>
+		<a href="heapsort.html">Heap sort</a>
+		<a href="bst.html">Binary search tree</a>
+		<a href="rbt.html">Red black tree</a>
+		<a href="mines.html">Mines Weeper</a>
+		<!--a href="balls.html">Balls</a-->
+	</div>
+	<script type="text/javascript">
+
+		var c = document.getElementById("canvas");
+		var ctx = c.getContext("2d");
+		var w = c.width;
+		var h = c.height;
+		var cells_x = 8;
+		var cells_y = 8;
+		var cells_oy = 40;
+		var cell_dx = w/cells_x;
+		var cell_dy = (h-cells_oy)/cells_y;
+		var cells_length = cells_x*cells_y;
+
+		var cells = Array(cells_length);
+		var cell_hovered = -1;
+		var bombs_count = 10;
+		var text = "";
+
+		function onMouseDown(e) {
+
+		}
+
+		function onMouseUp(e) {
+			var i = cellFromEvent(e);
+			if(i === false || cells[i].open) return;
+
+			if(cells[i].bomb) {
+				alert("You lose");
+				init();
+				return;
+			}
+			openEmpty(i)
+			cells[i].open = true;
+
+			winGame();
+		}
+
+		function winGame() {
+			//TODO: Improve
+			var closed_count = 0;
+			for(var j = 0; j < cells_length; ++j) {
+				if(!cells[j].open) ++closed_count;
+			}
+			if(closed_count <= bombs_count) {
+				alert("You win");
+				init();
+				return;
+			}
+		}
+
+		function openEmpty(i) {
+			if(cells[i].open || cells[i].touch > 0) return;
+
+			cells[i].open = true;
+
+			onNeighbours(i,function(t){
+				if(cells[t].touch == 0) {
+					openEmpty(t);
+				} else {
+					cells[t].open = true;
+				}
+			});
+		}
+
+		function onMouseMove(e) {
+			cell_hovered = cellFromEvent(e);
+		}
+
+		function onNeighbours(i, f) {
+			var x0 = i%cells_x | 0;
+			var y0 = i/cells_x | 0;
+			for(var y = y0 - 1; y <= y0 + 1; ++y) {
+				for(var x = x0 - 1; x <= x0 + 1; ++x) {
+					if(x >= 0 && x < cells_x && y >= 0 && y < cells_y) {
+						f(y*cells_x+ x);
+					}
+				}
+			}
+		}
+
+		function cellFromEvent(e) {
+			var target = e.target || e.srcElement,
+	        rect = target.getBoundingClientRect(),
+	        offsetX = e.clientX - rect.left | 0,
+	        offsetY = e.clientY - rect.top | 0;
+			var x = offsetX/cell_dx | 0;
+			var y = (offsetY-cells_oy)/cell_dy | 0;
+			var index = y*cells_x + x;
+			return (index >= 0 && index < cells_length) ? index : false;
+		}
+
+		function init() {			
+
+			for(var i = 0; i < cells_length; ++i) {
+				cells[i] = {touch: 0, open: false, bomb: false};
+			}
+
+			for(var b = 0; b < bombs_count; ++b) {
+				var i;
+				do {
+					i = Math.random()*cells_length | 0;
+				} while(cells[i].bomb);
+				
+				cells[i].bomb = true;
+
+				onNeighbours(i,function(t) {
+					++cells[t].touch;
+				})
+			}
+		}
+
+		var num_colors = ["#0000ff","#00ff00","#ff0000","#0000aa","#00aa00","#aa0000","#000077","#007700","#770000"]
+		function draw() {
+			//clear gray
+			ctx.fillStyle= "#aaa";
+			ctx.fillRect(0,0,w,h);
+
+			ctx.font = "20px arial";
+			ctx.textAlign = "center";
+			ctx.textBaseline = "middle";
+
+			//cell size
+			for(var i = 0; i < cells_x; ++i) {
+				for(var j = 0; j < cells_y; ++j) {
+					var n = cells_x*j + i;
+					ctx.fillStyle = cells[n].open ? "#dddddd" : (n==cell_hovered ? "#aaaaaa" : "#999999");
+					ctx.fillRect(i*cell_dx, j*cell_dy + cells_oy, cell_dx - 1, cell_dy - 1);
+					if(cells[n].open && cells[n].touch > 0) {
+						ctx.strokeStyle = num_colors[cells[n].touch - 1];
+						ctx.strokeText(cells[n].touch, (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
+					}
+				}
+			}
+
+			ctx.fillStyle = "#000000";
+			ctx.strokeStyle = "#000000";
+			ctx.strokeText(text, 100, 10);
+
+		}
+
+		c.addEventListener("mousedown", onMouseDown, false);
+		c.addEventListener("mouseup", onMouseUp, false);
+		c.addEventListener("mousemove", onMouseMove, false);
+
+		init();
+
+		function enterFrame() {
+			draw();
+		}
+		setInterval(enterFrame, 40);
+
+	</script>
+</body>
+</html>
