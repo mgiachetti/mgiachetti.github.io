@@ -4,7 +4,7 @@
 	<script type="text/javascript" src="js/utils.js"></script> 
 </head>
 <body>	
-	<h1>Mines Weeper</h1>
+	<h1>Minesweeper</h1>
 	<canvas id="canvas" width="500" height="540"></canvas>
 	<div>
 		Other Examples:
@@ -12,7 +12,7 @@
 		<a href="heapsort.html">Heap sort</a>
 		<a href="bst.html">Binary search tree</a>
 		<a href="rbt.html">Red black tree</a>
-		<a href="mines.html">Mines Weeper</a>
+		<a href="mines.html">Minesweeper</a>
 		<!--a href="balls.html">Balls</a-->
 	</div>
 	<script type="text/javascript">
@@ -29,9 +29,11 @@
 		var cells_length = cells_x*cells_y;
 
 		var cells = Array(cells_length);
+		var probs = Array(cells_length);
 		var cell_hovered = -1;
 		var bombs_count = 10;
 		var text = "";
+		var open_count = 0;
 		var flags_count = 0;
 		var start_time = null;
 
@@ -64,15 +66,19 @@
 			openEmpty(i)
 			cells[i].open = true;
 
+			if(cells[i].touch)
+				++open_count;
+
 			winGame();
+			calculate_probs();
 		}
 
 		function winGame() {
 			//TODO: Improve
-			var closed_count = 0;
-			for(var j = 0; j < cells_length; ++j) {
-				if(!cells[j].open) ++closed_count;
-			}
+			var closed_count = cells_length - open_count;
+			//for(var j = 0; j < cells_length; ++j) {
+			//	if(!cells[j].open) ++closed_count;
+			//}
 			if(closed_count <= bombs_count) {
 				draw();
 				alert("You win");
@@ -97,11 +103,14 @@
 			if(cells[i].open || cells[i].touch > 0) return;
 
 			cells[i].open = true;
+			++open_count;
 
 			onNeighbours(i,function(t){
 				if(cells[t].touch == 0) {
 					openEmpty(t);
 				} else {
+					if(!cells[t].open)
+						++open_count;
 					cells[t].open = true;
 				}
 			});
@@ -136,9 +145,11 @@
 
 		function init() {
 			flags_count	= 0;
+			open_count = 0;	
 
 			for(var i = 0; i < cells_length; ++i) {
 				cells[i] = {touch: 0, open: false, bomb: false, blocked: 0};
+				probs[i] = bombs_count/cells_length;
 			}
 
 			for(var b = 0; b < bombs_count; ++b) {
@@ -178,6 +189,12 @@
 						ctx.fillText(cells[n].touch, (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
 					}
 
+					if(!cells[n].open) {
+						ctx.strokeStyle = "#000000";
+						ctx.fillStyle = ctx.strokeStyle;
+						ctx.fillText(((probs[n]*100) | 0) + "%", (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
+					}
+
 					var blocked = cells[n].blocked;
 					if(blocked) {
 						ctx.strokeStyle = blocked == 1 ? "#000000" : "#0000ff";
@@ -210,6 +227,12 @@
 			draw();
 		}
 		setInterval(enterFrame, 40);
+
+		function calculate_probs() {
+			for(var i = 0; i < cells_length; ++i) {
+				probs[i] = bombs_count/(cells_length-open_count);
+			}
+		}
 
 	</script>
 </body>
