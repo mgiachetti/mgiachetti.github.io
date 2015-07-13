@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script type="text/javascript" src="js/utils.js"></script> 
+</head>
+<body>	
+	<h1>Javascript Percolation Example</h1>
+	<canvas id="canvas" width="500" height="540"></canvas>
+	<div>
+		Other Examples:
+		<a href="index.html">Percolation</a>
+		<a href="heapsort.html">Heap sort</a>
+		<a href="bst.html">Binary search tree</a>
+		<a href="rbt.html">Red black tree</a>
+		<a href="mines.html">Minesweeper</a>
+		<!--a href="balls.html">Balls</a-->
+	</div>
+	<script type="text/javascript">
+
+		
+
+		var c = document.getElementById("canvas");
+		var ctx = c.getContext("2d");
+		var w = c.width;
+		var h = c.height;
+		var cells_x = 100;
+		var cells_y = 100;
+		var cell_dx = w/cells_x;
+		var cell_dy = (h-40)/cells_y;
+		var cells_length = cells_x*cells_y;
+
+		var cells = Array(cells_length + 2);
+		var parents = Array(cells_length + 2);
+		var weights = Array(cells_length + 2);
+		var TOP = cells_length;
+		var BOTTOM = cells_length + 1;
+		var bag;
+		var open_count = 0;
+
+		function clear() {
+			for(var i = 0; i < cells_length + 2; ++i) {
+				cells[i] = false;
+				parents[i] = i;
+				weights[i] = 1;
+			}
+			
+			//hack to force roots
+			//weights[TOP] = 2*cells_length;
+			//weights[BOTTOM] = cells_length;
+
+			for(var i = 0; i < cells_x; ++i) {
+				union(i, TOP);
+				union((cells_y-1)*cells_x + i, BOTTOM);
+			}
+			bag = new RandBag(cells_length);
+			open_count = 0;
+		}
+
+		function getRoot(p) {
+			while( p != parents[p] ) {
+				parents[p] = parents[parents[p]]
+				p = parents[p];
+			}
+			return p;
+		}
+
+		function union(a, b) {
+			a = getRoot(a);
+			b = getRoot(b);
+
+			if(a == b) return;
+
+			if(weights[b] < weights[a]) {
+				parents[b] = a;
+				weights[a] += weights[b];
+			} else {
+				parents[a] = b;
+				weights[b] += weights[a];
+			}
+		}
+
+		function connected(a, b) {
+			return getRoot(a) == getRoot(b);
+		}
+
+		function draw() {
+			//clear black
+			ctx.fillStyle= "#000000";
+			ctx.fillRect(0,0,w,h);
+
+			//cell size
+			for(var i = 0; i < cells_x; ++i) {
+				for(var j = 0; j < cells_y; ++j) {
+					var n = cells_x*j + i;
+					if(cells[n]) {
+						ctx.fillStyle = connected(n, TOP) ? "#0000ff" : "#ffffff";
+						ctx.fillRect(i*cell_dx, j*cell_dy, cell_dx, cell_dy);
+					}
+				}
+			}
+
+			ctx.fillStyle = "#ffffff";
+			ctx.font = "20px arial";
+			ctx.strokeStyle = "#ffffff";
+			ctx.strokeText("Opened " + open_count + "  Percent " + (open_count/cells_length).toFixed(5), 100, 530);
+
+		}
+
+		function enterFrame() {
+			if(connected(TOP, BOTTOM)) return;
+
+			var i = bag.removeRandom();
+			cells[i] = true;
+			++open_count;
+
+			var x = i%cells_y;
+			var y = i/cells_y | 0;
+
+			if( x > 0 			&& cells[i - 1]) 		union(i - 1, i);
+			if( x < cells_x - 1 && cells[i + 1]) 		union(i, i + 1);
+			if( y > 0 			&& cells[i - cells_x]) 	union(i - cells_x, i);
+			if( y < cells_y - 1 && cells[i + cells_x]) 	union(i, i + cells_x);
+
+			draw();
+		}
+
+		clear();
+
+		setInterval(enterFrame, 10);
+
+
+	</script>
+</body>
+</html>
