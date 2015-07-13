@@ -189,7 +189,7 @@
 						ctx.fillText(cells[n].touch, (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
 					}
 
-					if(!cells[n].open) {
+					if(!cells[n].open && false) {
 						ctx.strokeStyle = "#000000";
 						ctx.fillStyle = ctx.strokeStyle;
 						ctx.fillText(((probs[n]*100) | 0) + "%", (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
@@ -229,6 +229,7 @@
 		setInterval(enterFrame, 40);
 
 		function calculate_probs() {
+			return;
 			for(var i = 0; i < cells_length; ++i) {
 				probs[i] = bombs_count/(cells_length-open_count);
 			}
