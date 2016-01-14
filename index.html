@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<script type="text/javascript" src="js/utils.js"></script> 
+	<script type="text/javascript" src="js/utils.js"></script>
 </head>
-<body>	
+<body>
 	<h1>Minesweeper</h1>
 	<canvas id="canvas" width="500" height="540"></canvas>
 	<div>
@@ -63,11 +63,8 @@
 				init();
 				return;
 			}
-			openEmpty(i)
-			cells[i].open = true;
 
-			if(cells[i].touch)
-				++open_count;
+			openEmpty(i)
 
 			winGame();
 			calculate_probs();
@@ -100,20 +97,16 @@
 		}
 
 		function openEmpty(i) {
-			if(cells[i].open || cells[i].touch > 0) return;
+			if(cells[i].open) return;
 
 			cells[i].open = true;
 			++open_count;
 
-			onNeighbours(i,function(t){
-				if(cells[t].touch == 0) {
+			if(cells[i].touch == 0) {
+				onNeighbours(i,function(t){
 					openEmpty(t);
-				} else {
-					if(!cells[t].open)
-						++open_count;
-					cells[t].open = true;
-				}
-			});
+				});
+			}
 		}
 
 		function onMouseMove(e) {
@@ -145,7 +138,7 @@
 
 		function init() {
 			flags_count	= 0;
-			open_count = 0;	
+			open_count = 0;
 
 			for(var i = 0; i < cells_length; ++i) {
 				cells[i] = {touch: 0, open: false, bomb: false, blocked: 0};
@@ -157,7 +150,7 @@
 				do {
 					i = Math.random()*cells_length | 0;
 				} while(cells[i].bomb);
-				
+
 				cells[i].bomb = true;
 
 				onNeighbours(i,function(t) {
@@ -219,14 +212,27 @@
 		c.addEventListener("mouseup", onMouseUp, false);
 		c.addEventListener("mousemove", onMouseMove, false);
 		c.addEventListener("contextmenu", onRightClick, false);
-		
+
 
 		init();
 
-		function enterFrame() {
+		function enterFrame(i) {
 			draw();
 		}
 		setInterval(enterFrame, 40);
+
+		function no_bomb(i) {
+			if(cells[i].open)return false;
+			var c = cells[i];
+			//TODO: improve there is no need to calculate this on every frame
+			var bombs = 0;
+			var opens = 0;
+			onNeighbours(i, function(t) {
+				var n = cells[t];
+				n.open && ++opens && n.blocked && ++bombs;
+			})
+			return false
+		}
 
 		function calculate_probs() {
 			return;

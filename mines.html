@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<script type="text/javascript" src="js/utils.js"></script> 
+	<script type="text/javascript" src="js/utils.js"></script>
 </head>
-<body>	
+<body>
 	<h1>Minesweeper</h1>
 	<canvas id="canvas" width="500" height="540"></canvas>
 	<div>
@@ -145,7 +145,7 @@
 
 		function init() {
 			flags_count	= 0;
-			open_count = 0;	
+			open_count = 0;
 
 			for(var i = 0; i < cells_length; ++i) {
 				cells[i] = {touch: 0, open: false, bomb: false, blocked: 0};
@@ -157,7 +157,7 @@
 				do {
 					i = Math.random()*cells_length | 0;
 				} while(cells[i].bomb);
-				
+
 				cells[i].bomb = true;
 
 				onNeighbours(i,function(t) {
@@ -219,7 +219,7 @@
 		c.addEventListener("mouseup", onMouseUp, false);
 		c.addEventListener("mousemove", onMouseMove, false);
 		c.addEventListener("contextmenu", onRightClick, false);
-		
+
 
 		init();
 
