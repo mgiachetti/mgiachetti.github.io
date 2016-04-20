@@ -9,22 +9,30 @@
 		<script type="text/javascript">
 			var p = new Plot('canvas');
 
-			var num_points = 50
+			var t = 0;
 
-	    var x = numpy.zeros(num_points)
-	    var sin_x = numpy.zeros(num_points)
-	    var cos_x = numpy.zeros(num_points)
+			function render() {
+				p.clear();
 
-	    for(var i = 0; i < num_points; i++) {
-        x[i] = 2*i*Math.PI/(num_points-1);
-        sin_x[i] = Math.sin(x[i]);
-        cos_x[i] =  Math.cos(x[i]);
+				var num_points = 50
+		    var x = numpy.zeros(num_points)
+		    var sin_x = numpy.zeros(num_points)
+		    var cos_x = numpy.zeros(num_points)
+
+		    for(var i = 0; i < num_points; i++) {
+	        x[i] = 2*i*Math.PI/(num_points-1) - Math.PI;
+	        sin_x[i] = Math.sin(x[i]+t);
+	        cos_x[i] =  Math.cos(x[i]+t);
+				}
+
+				p.plot(x, sin_x);
+				p.plot(x, cos_x);
+
+				p.render();
+				t+=0.2;
 			}
 
-			p.plot(x, sin_x);
-			p.plot(x, cos_x);
-
-			p.render();
+			setInterval(render, 1000/20);
 
 		</script>
 	</body>
