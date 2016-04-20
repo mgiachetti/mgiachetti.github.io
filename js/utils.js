@@ -25,65 +25,76 @@ RandBag.prototype = {
 
 // Priority Queue
 var PriorityQueue = function(data, compareFunc) {
-	this.data = data;
-	this.length = this.data.length;
-	this.compare = compareFunc || function(a,b){return a < b}
-	this.rebuild();
+  this.data = data || [];
+  this.length = this.data.length;
+  this.compare = compareFunc || function(a,b){return a < b}
+  this.rebuild();
 }
 
 PriorityQueue.prototype = {
-	rebuild: function() {
-		this.length = this.data.length;
-		for(var i = this.length/2 | 0;  i >= 0 ; --i) {
-			this.sink(i);
-		}
-	},
-	removeTop: function() {
-		this.swap(0, this.length-1);
-		--this.length;
-		this.sink(0);
-	},
-	top: function() {
-		return this.data[0];
-	},
-	swap: function(i,j) {
-		var a = this.data[i];
-		this.data[i] = this.data[j];
-		this.data[j] = a;
-	},
-	swim: function(i) {
-		var d = this.data[i];
-		while(i != 0) {
-			var p = (i-1)/2 | 0; //parent
+	isEmpty: function(){ return this.length == 0; },
+  queue: function(item) {
+    this.data[this.length]= item;
+    this.length++;
+    this.swim(this.length-1);
+  },
+  dequeue: function() {
+    var i = this.top();
+    this.removeTop();
+    return i;
+  },
+  rebuild: function() {
+    this.length = this.data.length;
+    for(var i = this.length/2 | 0;  i >= 0 ; --i) {
+      this.sink(i);
+    }
+  },
+  removeTop: function() {
+    this.swap(0, this.length-1);
+    --this.length;
+    this.sink(0);
+  },
+  top: function() {
+    return this.data[0];
+  },
+  swap: function(i,j) {
+    var a = this.data[i];
+    this.data[i] = this.data[j];
+    this.data[j] = a;
+  },
+  swim: function(i) {
+    var d = this.data[i];
+    while(i != 0) {
+      var p = (i-1)/2 | 0; //parent
 
-			var dp = this.data[p];
-			if(this.compare(dp,d)) {
-				this.swap(i, p);
-				i = p;
-			} else break;
-		}
-	},
-	sink: function(i) {
-		var d = this.data[i];
-		while(true) {
-			
-			var k = i*2 + 1; //left child
-			
-			if(k >= this.length) break;
+      var dp = this.data[p];
+      if(this.compare(dp,d)) {
+        this.swap(i, p);
+        i = p;
+      } else break;
+    }
+  },
+  sink: function(i) {
+    var d = this.data[i];
+    while(true) {
+      
+      var k = i*2 + 1; //left child
+      
+      if(k >= this.length) break;
 
-			var dl = this.data[k];
-			var dr = k+1 < this.length ? this.data[k+1] : d;
-			if(this.compare(d, dl) || this.compare(d, dr)) {
-				if(this.compare(dr, dl)) {
-					this.swap(i, k);
-					i=k;
-				} else {
-					this.swap(i, k+1);
-					i=k+1;
-				}
-			} else break;
-		}
-	}
+      var dl = this.data[k];
+      var dr = k+1 < this.length ? this.data[k+1] : d;
+      if(this.compare(d, dl) || this.compare(d, dr)) {
+        if(this.compare(dr, dl)) {
+          this.swap(i, k);
+          i=k;
+        } else {
+          if(k  + 1 < this.length) this.swap(i, k+1);
+          i=k+1;
+        }
+      } else break;
+    }
+  }
 }
 
 
