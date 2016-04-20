@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script type="text/javascript" src="js/plot.js"></script>
+	</head>
+	<body>
+		<h1>Plot test</h1>
+		<canvas id="canvas" width="500" height="500"></canvas>
+		<script type="text/javascript">
+			var p = new Plot('canvas');
+
+			var num_points = 50
+
+	    var x = numpy.zeros(num_points)
+	    var sin_x = numpy.zeros(num_points)
+	    var cos_x = numpy.zeros(num_points)
+
+	    for(var i = 0; i < num_points; i++) {
+        x[i] = 2*i*Math.PI/(num_points-1);
+        sin_x[i] = Math.sin(x[i]);
+        cos_x[i] =  Math.cos(x[i]);
+			}
+
+			p.plot(x, sin_x);
+			p.plot(x, cos_x);
+
+			p.render();
+
+		</script>
+	</body>
+</html>
