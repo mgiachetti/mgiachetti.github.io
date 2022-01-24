@@ -1,91 +1,77 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<script type="text/javascript" src="js/utils.js"></script>
-	</head>
-	<body>
-		<h1>Binary Search Tree (BST)</h1>
-		<canvas id="canvas" width="1000" height="550"></canvas>
-		<div>
-			Other Examples:
-			<a href="percolation.html">Percolation</a>
-			<a href="heapsort.html">Heap sort</a>
-			<a href="bst.html">Binary search tree</a>
-			<a href="rbt.html">Red black tree</a>
-			<a href="mines.html">Minesweeper</a>
-			<!--a href="balls.html">Balls</a-->
-		</div>
-			<script type="text/javascript">
+---
+layout: default
+---
+<h1>Binary Search Tree (BST)</h1>
+<canvas id="canvas" width="1000" height="550"></canvas>
+</div>
+<script type="text/javascript">
+  var	c = document.getElementById("canvas");
+  var ctx = c.getContext("2d");
+  var w = c.width;
+  var h = c.height;
 
-				var	c = document.getElementById("canvas");
-				var ctx = c.getContext("2d");
-				var w = c.width;
-				var h = c.height;
+  var root;
+  var MAX_NODES = 1000;
+  var nodes_count = 0;
 
-				var root;
-				var MAX_NODES = 1000;
-				var nodes_count = 0;
+  function init() {
+    root = null;
+    nodes_count = 0;
+  }
 
-				function init() {
-					root = null;
-					nodes_count = 0;
-				}
+  function drawTree(node, ox, oy, dx, dy, px) {
+    if(!node) return;
 
-				function drawTree(node, ox, oy, dx, dy, px) {
-					if(!node) return;
+    var l = node.left ? node.left.w : 0;
+    var r = node.right ? node.right.w : 0;
+  
 
-					var l = node.left ? node.left.w : 0;
-					var r = node.right ? node.right.w : 0;
-				
+    //Current node dot
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(ox + l*dx, oy, 4, 0, 2*Math.PI)
+    ctx.fill();
 
-					//Current node dot
-					ctx.fillStyle = "#000000";
-					ctx.beginPath();
-					ctx.arc(ox + l*dx, oy, 4, 0, 2*Math.PI)
-					ctx.fill();
+    if(px != null) {
+      ctx.beginPath()
+      ctx.moveTo(ox + l*dx, oy);
+      ctx.lineTo(ox + px*dx, oy - dy);
+      ctx.stroke();
+    }
 
-					if(px != null) {
-						ctx.beginPath()
-						ctx.moveTo(ox + l*dx, oy);
-						ctx.lineTo(ox + px*dx, oy - dy);
-						ctx.stroke();
-					}
+    if(node.left) drawTree(node.left, ox, oy + dy , dx, dy, l);
+    if(node.right) drawTree(node.right, ox + (l+1)*dx, oy + dy , dx, dy, -1);
+  }
 
-					if(node.left) drawTree(node.left, ox, oy + dy , dx, dy, l);
-					if(node.right) drawTree(node.right, ox + (l+1)*dx, oy + dy , dx, dy, -1);
-				}
+  function draw() {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,w,h);
 
-				function draw() {
-					ctx.fillStyle = "#ffffff";
-					ctx.fillRect(0,0,w,h);
+    var size = BTSize(root);
 
-					var size = BTSize(root);
+    var ox = 10;
+    var oy = 50;
+    var dx = (w-20)/(size.w+1);
+    var dy = (h-60)/(size.h+1);
 
-					var ox = 10;
-					var oy = 50;
-					var dx = (w-20)/(size.w+1);
-					var dy = (h-60)/(size.h+1);
+    drawTree(root, ox, oy, dx, dy, null);
 
-					drawTree(root, ox, oy, dx, dy, null);
+    ctx.strokeStyle = "#000000";
+    ctx.strokeText("Height: " + size.h, 10, 10);
+    ctx.strokeText("Nodes: " + nodes_count, 10, 20);					
+    ctx.strokeText("Complete: " + (nodes_count > 0 ? (nodes_count*100/(Math.pow(2,size.h)-1)).toFixed(3) : "0") + "%", 10, 30);
+  }
 
-					ctx.strokeStyle = "#000000";
-					ctx.strokeText("Height: " + size.h, 10, 10);
-					ctx.strokeText("Nodes: " + nodes_count, 10, 20);					
-					ctx.strokeText("Complete: " + (nodes_count > 0 ? (nodes_count*100/(Math.pow(2,size.h)-1)).toFixed(3) : "0") + "%", 10, 30);
-				}
+  function enterFrame() {
+    if(nodes_count >= MAX_NODES) return;
+    ++nodes_count;
 
-				function enterFrame() {
-					if(nodes_count >= MAX_NODES) return;
-					++nodes_count;
+    root = BSTAdd(root, Math.random()*1e10 | 0);
 
-					root = BSTAdd(root, Math.random()*1e10 | 0);
+    draw();
+  }
 
-					draw();
-				}
+  init();
 
-				init();
-
-				setInterval(enterFrame, 100);
-			</script>
-	</body>
-</html>
+  setInterval(enterFrame, 100);
+</script>

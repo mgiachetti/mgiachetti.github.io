@@ -1,240 +1,236 @@
-<!DOCTYPE html>
-<html>
-<head>
-	<script type="text/javascript" src="js/utils.js"></script> 
-</head>
-<body>	
-	<h1>Minesweeper</h1>
-	<canvas id="canvas" width="500" height="540"></canvas>
-	<div>
-		Other Examples:
-		<a href="percolation.html">Percolation</a>
-		<a href="heapsort.html">Heap sort</a>
-		<a href="bst.html">Binary search tree</a>
-		<a href="rbt.html">Red black tree</a>
-		<a href="mines.html">Minesweeper</a>
-		<!--a href="balls.html">Balls</a-->
-	</div>
-	<script type="text/javascript">
+---
+layout: default
+---
+<h1>Minesweeper</h1>
+<canvas id="canvas" width="500" height="540"></canvas>
+<script type="text/javascript">
+  const c = document.getElementById("canvas");
+  const dpr = window.devicePixelRatio;
+  const rect = c.getBoundingClientRect();
+  const cw = Math.ceil(rect.width);
+  const ch = Math.ceil(rect.height);
+  c.style.width = `${cw}px`;
+  c.style.height = `${ch}px`;
+  c.width = cw * dpr;
+  c.height = ch * dpr;
+  var ctx = c.getContext("2d");
+  var w = c.width / dpr;
+  var h = c.height / dpr;
+  var cells_x = 8;
+  var cells_y = 8;
+  var cells_oy = 40;
+  var cell_dx = w/cells_x;
+  var cell_dy = (h-cells_oy)/cells_y;
+  var cells_length = cells_x*cells_y;
 
-		var c = document.getElementById("canvas");
-		var ctx = c.getContext("2d");
-		var w = c.width;
-		var h = c.height;
-		var cells_x = 8;
-		var cells_y = 8;
-		var cells_oy = 40;
-		var cell_dx = w/cells_x;
-		var cell_dy = (h-cells_oy)/cells_y;
-		var cells_length = cells_x*cells_y;
+  var cells = Array(cells_length);
+  var probs = Array(cells_length);
+  var cell_hovered = -1;
+  var bombs_count = 10;
+  var text = "";
+  var open_count = 0;
+  var flags_count = 0;
+  var start_time = null;
 
-		var cells = Array(cells_length);
-		var probs = Array(cells_length);
-		var cell_hovered = -1;
-		var bombs_count = 10;
-		var text = "";
-		var open_count = 0;
-		var flags_count = 0;
-		var start_time = null;
+  function onRightClick(e) {
+    e.preventDefault();
 
-		function onRightClick(e) {
-			e.preventDefault();
+    var i = cellFromEvent(e);
+    if(i === false || cells[i].open) return;
+    cells[i].blocked = (cells[i].blocked + 1) % 3;
 
-			var i = cellFromEvent(e);
-			if(i === false || cells[i].open) return;
-			cells[i].blocked = (cells[i].blocked + 1) % 3;
+    if(cells[i].blocked == 1)
+      ++flags_count;
+    else if(cells[i].blocked == 2)
+      --flags_count;
+  }
 
-			if(cells[i].blocked == 1)
-				++flags_count;
-			else if(cells[i].blocked == 2)
-				--flags_count;
-		}
+  function onMouseDown(e) {
 
-		function onMouseDown(e) {
+  }
 
-		}
+  function onMouseUp(e) {
+    var i = cellFromEvent(e);
+    if(i === false || cells[i].open || cells[i].blocked || e.button) return;
 
-		function onMouseUp(e) {
-			var i = cellFromEvent(e);
-			if(i === false || cells[i].open || cells[i].blocked || e.button) return;
+    if(cells[i].bomb) {
+      alert("You lose");
+      init();
+      return;
+    }
+    openEmpty(i)
+    cells[i].open = true;
 
-			if(cells[i].bomb) {
-				alert("You lose");
-				init();
-				return;
-			}
-			openEmpty(i)
-			cells[i].open = true;
+    if(cells[i].touch)
+      ++open_count;
 
-			if(cells[i].touch)
-				++open_count;
+    winGame();
+    calculate_probs();
+  }
 
-			winGame();
-			calculate_probs();
-		}
+  function winGame() {
+    //TODO: Improve
+    var closed_count = cells_length - open_count;
+    //for(var j = 0; j < cells_length; ++j) {
+    //	if(!cells[j].open) ++closed_count;
+    //}
+    if(closed_count <= bombs_count) {
+      draw();
+      alert("You win");
+      init();
+      return;
+    }
+  }
 
-		function winGame() {
-			//TODO: Improve
-			var closed_count = cells_length - open_count;
-			//for(var j = 0; j < cells_length; ++j) {
-			//	if(!cells[j].open) ++closed_count;
-			//}
-			if(closed_count <= bombs_count) {
-				draw();
-				alert("You win");
-				init();
-				return;
-			}
-		}
+  function getTime() {
+    var d = new Date() - start_time;
+    var h = (d/(60*60*1000) | 0)%24;
+    var m = (d/(60*1000)    | 0)%60;
+    var s = (d/1000         | 0)%60;
+    return pad2Zero(h)+":"+pad2Zero(m)+":"+pad2Zero(s);
+  }
 
-		function getTime() {
-			var d = new Date() - start_time;
-			var h = (d/(60*60*1000) | 0)%24;
-			var m = (d/(60*1000)    | 0)%60;
-			var s = (d/1000         | 0)%60;
-			return pad2Zero(h)+":"+pad2Zero(m)+":"+pad2Zero(s);
-		}
+  function pad2Zero(num) {
+    return num < 10? "0"+num : num;
+  }
 
-		function pad2Zero(num) {
-			return num < 10? "0"+num : num;
-		}
+  function openEmpty(i) {
+    if(cells[i].open || cells[i].touch > 0) return;
 
-		function openEmpty(i) {
-			if(cells[i].open || cells[i].touch > 0) return;
+    cells[i].open = true;
+    ++open_count;
 
-			cells[i].open = true;
-			++open_count;
+    onNeighbours(i,function(t){
+      if(cells[t].touch == 0) {
+        openEmpty(t);
+      } else {
+        if(!cells[t].open)
+          ++open_count;
+        cells[t].open = true;
+      }
+    });
+  }
 
-			onNeighbours(i,function(t){
-				if(cells[t].touch == 0) {
-					openEmpty(t);
-				} else {
-					if(!cells[t].open)
-						++open_count;
-					cells[t].open = true;
-				}
-			});
-		}
+  function onMouseMove(e) {
+    cell_hovered = cellFromEvent(e);
+  }
 
-		function onMouseMove(e) {
-			cell_hovered = cellFromEvent(e);
-		}
+  function onNeighbours(i, f) {
+    var x0 = i%cells_x | 0;
+    var y0 = i/cells_x | 0;
+    for(var y = y0 - 1; y <= y0 + 1; ++y) {
+      for(var x = x0 - 1; x <= x0 + 1; ++x) {
+        if(x >= 0 && x < cells_x && y >= 0 && y < cells_y) {
+          f(y*cells_x+ x);
+        }
+      }
+    }
+  }
 
-		function onNeighbours(i, f) {
-			var x0 = i%cells_x | 0;
-			var y0 = i/cells_x | 0;
-			for(var y = y0 - 1; y <= y0 + 1; ++y) {
-				for(var x = x0 - 1; x <= x0 + 1; ++x) {
-					if(x >= 0 && x < cells_x && y >= 0 && y < cells_y) {
-						f(y*cells_x+ x);
-					}
-				}
-			}
-		}
+  function cellFromEvent(e) {
+    var target = e.target || e.srcElement,
+        rect = target.getBoundingClientRect(),
+        offsetX = e.clientX - rect.left | 0,
+        offsetY = e.clientY - rect.top | 0;
+    var x = offsetX/cell_dx | 0;
+    var y = (offsetY-cells_oy)/cell_dy | 0;
+    var index = y*cells_x + x;
+    return (index >= 0 && index < cells_length) ? index : false;
+  }
 
-		function cellFromEvent(e) {
-			var target = e.target || e.srcElement,
-	        rect = target.getBoundingClientRect(),
-	        offsetX = e.clientX - rect.left | 0,
-	        offsetY = e.clientY - rect.top | 0;
-			var x = offsetX/cell_dx | 0;
-			var y = (offsetY-cells_oy)/cell_dy | 0;
-			var index = y*cells_x + x;
-			return (index >= 0 && index < cells_length) ? index : false;
-		}
+  function init() {
+    flags_count	= 0;
+    open_count = 0;	
 
-		function init() {
-			flags_count	= 0;
-			open_count = 0;	
+    for(var i = 0; i < cells_length; ++i) {
+      cells[i] = {touch: 0, open: false, bomb: false, blocked: 0};
+      probs[i] = bombs_count/cells_length;
+    }
 
-			for(var i = 0; i < cells_length; ++i) {
-				cells[i] = {touch: 0, open: false, bomb: false, blocked: 0};
-				probs[i] = bombs_count/cells_length;
-			}
+    for(var b = 0; b < bombs_count; ++b) {
+      var i;
+      do {
+        i = Math.random()*cells_length | 0;
+      } while(cells[i].bomb);
+      
+      cells[i].bomb = true;
 
-			for(var b = 0; b < bombs_count; ++b) {
-				var i;
-				do {
-					i = Math.random()*cells_length | 0;
-				} while(cells[i].bomb);
-				
-				cells[i].bomb = true;
+      onNeighbours(i,function(t) {
+        ++cells[t].touch;
+      })
+    }
+    start_time = new Date();
+  }
 
-				onNeighbours(i,function(t) {
-					++cells[t].touch;
-				})
-			}
-			start_time = new Date();
-		}
+  var num_colors = ["#0000ff","#00ff00","#ff0000","#0000aa","#00aa00","#aa0000","#000077","#007700","#770000"]
+  function draw() {
+    ctx.resetTransform();
+    ctx.scale(dpr,dpr);
 
-		var num_colors = ["#0000ff","#00ff00","#ff0000","#0000aa","#00aa00","#aa0000","#000077","#007700","#770000"]
-		function draw() {
-			//clear gray
-			ctx.fillStyle= "#aaa";
-			ctx.fillRect(0,0,w,h);
+    //clear gray
+    ctx.fillStyle= "#aaa";
+    ctx.fillRect(0,0,w,h);
 
-			ctx.font = "20px arial";
-			ctx.textAlign = "center";
-			ctx.textBaseline = "middle";
+    ctx.font = "20px arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-			//cell size
-			for(var i = 0; i < cells_x; ++i) {
-				for(var j = 0; j < cells_y; ++j) {
-					var n = cells_x*j + i;
-					ctx.fillStyle = cells[n].open ? "#dddddd" : (n==cell_hovered ? "#aaaaaa" : "#999999");
-					ctx.fillRect(i*cell_dx, j*cell_dy + cells_oy, cell_dx - 1, cell_dy - 1);
-					if(cells[n].open && cells[n].touch > 0) {
-						ctx.strokeStyle = num_colors[cells[n].touch - 1];
-						ctx.fillStyle = ctx.strokeStyle;
-						ctx.fillText(cells[n].touch, (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
-					}
+    //cell size
+    for(var i = 0; i < cells_x; ++i) {
+      for(var j = 0; j < cells_y; ++j) {
+        var n = cells_x*j + i;
+        ctx.fillStyle = cells[n].open ? "#dddddd" : (n==cell_hovered ? "#aaaaaa" : "#999999");
+        ctx.fillRect(i*cell_dx, j*cell_dy + cells_oy, cell_dx - 1, cell_dy - 1);
+        if(cells[n].open && cells[n].touch > 0) {
+          ctx.strokeStyle = num_colors[cells[n].touch - 1];
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.fillText(cells[n].touch, (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
+        }
 
-					if(!cells[n].open && false) {
-						ctx.strokeStyle = "#000000";
-						ctx.fillStyle = ctx.strokeStyle;
-						ctx.fillText(((probs[n]*100) | 0) + "%", (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
-					}
+        if(!cells[n].open && false) {
+          ctx.strokeStyle = "#000000";
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.fillText(((probs[n]*100) | 0) + "%", (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
+        }
 
-					var blocked = cells[n].blocked;
-					if(blocked) {
-						ctx.strokeStyle = blocked == 1 ? "#000000" : "#0000ff";
-						ctx.fillStyle = ctx.strokeStyle;
-						ctx.fillText(blocked == 1 ? "B" : "?", (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
-					}
-				}
-			}
+        var blocked = cells[n].blocked;
+        if(blocked) {
+          ctx.strokeStyle = blocked == 1 ? "#000000" : "#0000ff";
+          ctx.fillStyle = ctx.strokeStyle;
+          ctx.fillText(blocked == 1 ? "B" : "?", (i+0.5)*cell_dx, (j+0.5)*cell_dy + cells_oy);
+        }
+      }
+    }
 
-			ctx.fillStyle = "#000000";
-			ctx.strokeStyle = "#000000";
-			ctx.font = "20px times new roman";
-			ctx.textAlign = "left";
-			ctx.fillText("Flags: " + flags_count + "/" + bombs_count, 10, 20);
-			ctx.fillText("Time: " + getTime(), 370, 20);
-			ctx.textAlign = "center";
-			ctx.font = "20px times new roman bold";
-			ctx.fillText("MINES", 250, 20);
-		}
+    ctx.fillStyle = "#000000";
+    ctx.strokeStyle = "#000000";
+    ctx.font = "20px times new roman";
+    ctx.textAlign = "left";
+    ctx.fillText("Flags: " + flags_count + "/" + bombs_count, 10, 20);
+    ctx.fillText("Time: " + getTime(), 370, 20);
+    ctx.textAlign = "center";
+    ctx.font = "20px times new roman bold";
+    ctx.fillText("MINES", 250, 20);
+  }
 
-		c.addEventListener("mousedown", onMouseDown, false);
-		c.addEventListener("mouseup", onMouseUp, false);
-		c.addEventListener("mousemove", onMouseMove, false);
-		c.addEventListener("contextmenu", onRightClick, false);
-		
+  c.addEventListener("mousedown", onMouseDown, false);
+  c.addEventListener("mouseup", onMouseUp, false);
+  c.addEventListener("mousemove", onMouseMove, false);
+  c.addEventListener("contextmenu", onRightClick, false);
+  
 
-		init();
+  init();
 
-		function enterFrame() {
-			draw();
-		}
-		setInterval(enterFrame, 40);
+  function enterFrame() {
+    draw();
+  }
+  setInterval(enterFrame, 40);
 
-		function calculate_probs() {
-			return;
-			for(var i = 0; i < cells_length; ++i) {
-				probs[i] = bombs_count/(cells_length-open_count);
-			}
-		}
+  function calculate_probs() {
+    return;
+    for(var i = 0; i < cells_length; ++i) {
+      probs[i] = bombs_count/(cells_length-open_count);
+    }
+  }
 
-	</script>
-</body>
-</html>
+</script>

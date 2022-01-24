@@ -1,39 +1,34 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<script type="text/javascript" src="js/plot.js"></script>
-	</head>
-	<body>
-		<h1>Plot test</h1>
-		<canvas id="canvas" width="500" height="500"></canvas>
-		<script type="text/javascript">
-			var p = new Plot('canvas');
+---
+layout: default
+---
+<h1>Plot test</h1>
+<canvas id="canvas" width="500" height="500"></canvas>
+<script src="/js/plot.js"></script>
+<script type="text/javascript">
+  var p = new Plot('canvas');
+  var t = 0;
 
-			var t = 0;
+  function render() {
+    p.clear();
 
-			function render() {
-				p.clear();
+    var num_points = 50
+    var x = numpy.zeros(num_points)
+    var sin_x = numpy.zeros(num_points)
+    var cos_x = numpy.zeros(num_points)
 
-				var num_points = 50
-		    var x = numpy.zeros(num_points)
-		    var sin_x = numpy.zeros(num_points)
-		    var cos_x = numpy.zeros(num_points)
+    for(var i = 0; i < num_points; i++) {
+      x[i] = 2*i*Math.PI/(num_points-1) - Math.PI;
+      sin_x[i] = Math.sin(x[i]+t);
+      cos_x[i] =  Math.cos(x[i]+t);
+    }
 
-		    for(var i = 0; i < num_points; i++) {
-	        x[i] = 2*i*Math.PI/(num_points-1) - Math.PI;
-	        sin_x[i] = Math.sin(x[i]+t);
-	        cos_x[i] =  Math.cos(x[i]+t);
-				}
+    p.plot(x, sin_x);
+    p.plot(x, cos_x);
 
-				p.plot(x, sin_x);
-				p.plot(x, cos_x);
+    p.render();
+    t+=0.2;
+  }
 
-				p.render();
-				t+=0.2;
-			}
+  setInterval(render, 1000/20);
 
-			setInterval(render, 1000/20);
-
-		</script>
-	</body>
-</html>
+</script>

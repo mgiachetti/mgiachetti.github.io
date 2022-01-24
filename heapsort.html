@@ -1,63 +1,48 @@
-<!DOCTYPE html>
-<html>
-	<head>
-		<script type="text/javascript" src="js/utils.js"></script>
-	</head>
-	<body>
-		<h1>Heap Sort</h1>
-		<canvas id="canvas" width="500" height="500"></canvas>
-		<div>
-			Other Examples:
-			<a href="percolation.html">Percolation</a>
-			<a href="heapsort.html">Heap sort</a>
-			<a href="bst.html">Binary search tree</a>
-			<a href="rbt.html">Red black tree</a>
-			<a href="mines.html">Minesweeper</a>
-			<!--a href="balls.html">Balls</a-->
-		</div>
-			<script type="text/javascript">
+---
+layout: default
+---
+<h1>Heap Sort</h1>
+<canvas id="canvas" width="500" height="500"></canvas>
+<script type="text/javascript">
+  var	c = document.getElementById("canvas");
+  var ctx = c.getContext("2d");
+  var w = c.width;
+  var h = c.height;
 
-				var	c = document.getElementById("canvas");
-				var ctx = c.getContext("2d");
-				var w = c.width;
-				var h = c.height;
+  var data;
+  var pq;
 
-				var data;
-				var pq;
+  function init() {
+    data = Array(100);
+    for(var i = 0; i < data.length; i++) {
+      data[i] = Math.random()*(h-20) + 10 | 0;
+    }
+    pq = new PriorityQueue(data, function(a,b){return a > b;});
+  }
 
-				function init() {
-					data = Array(100);
-					for(var i = 0; i < data.length; i++) {
-						data[i] = Math.random()*(h-20) + 10 | 0;
-					}
-					pq = new PriorityQueue(data, function(a,b){return a > b;});
-				}
+  function draw() {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0,0,w,h);
 
-				function draw() {
-					ctx.fillStyle = "#ffffff";
-					ctx.fillRect(0,0,w,h);
+    var oy = h-10;
+    var ox = 2;
+    var dx = (w-ox*(data.length-1))/data.length;
 
-					var oy = h-10;
-					var ox = 2;
-					var dx = (w-ox*(data.length-1))/data.length;
+    ctx.fillStyle = "#000000";
+    for(var i = 0; i < data.length; ++i) {
+      ctx.fillRect((ox+dx)*i,oy, dx, -data[i]);
+    }
+  }
 
-					ctx.fillStyle = "#000000";
-					for(var i = 0; i < data.length; ++i) {
-						ctx.fillRect((ox+dx)*i,oy, dx, -data[i]);
-					}
-				}
+  var first = true;
+  function enterFrame() {
+    if(!pq.length) return;
+    if(!first)	pq.removeTop();
+    draw();
+    first = false;
+  }
 
-				var first = true;
-				function enterFrame() {
-					if(!pq.length) return;
-					if(!first)	pq.removeTop();
-					draw();
-					first = false;
-				}
+  init();
 
-				init();
-
-				setInterval(enterFrame, 20);
-			</script>
-	</body>
-</html>
+  setInterval(enterFrame, 20);
+</script>
