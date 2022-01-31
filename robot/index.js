@@ -62,6 +62,7 @@ let g_cellsY;
 /** @type {number} */
 let g_cellsX;
 let g_running = false;
+let g_stopRunning = false;
 
 function moveDown() {
   g_commands.push(Command.down);
@@ -302,14 +303,16 @@ function delay(ms) {
 }
 
 async function stop() {
-  g_running = false;
-  draw(g_ctx, g_level);
+  if (g_running) {
+    g_stopRunning = true;
+  }
 }
 
 async function start() {
   g_running = true;
 
   for (let step = 1; step <= g_commands.length; ++step) {
+    if (g_stopRunning) break;
     const level = applyCommandsToLevel(g_level, g_commands.slice(0, step));
     draw(g_ctx, level);
     await delay(20);
@@ -329,7 +332,9 @@ async function start() {
     await delay(300);
   }
 
+  g_stopRunning = false;
   g_running = false;
+  draw(g_ctx, g_level);
 }
 
 /**
