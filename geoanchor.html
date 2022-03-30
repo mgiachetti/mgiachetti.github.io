@@ -1,0 +1,71 @@
+---
+layout: default
+---
+<h1>Geoanchor</h1>
+<table>
+  <th>
+    <td>lat</td>
+    <td>lng</td>
+  </th>
+  <tr>
+    <td>TOP LEFT</td>
+    <td><input type="number" id="p0.lat" placeholder="-34.567082715235976"></td>
+    <td><input type="number" id="p0.lng" placeholder="-58.52809225837719"></td>
+  </tr>
+  <tr>
+    <td>TOP RIGHT</td>
+    <td><input type="number" id="p1.lat" placeholder="-34.567082715235976"></td>
+    <td><input type="number" id="p1.lng" placeholder="-58.52809225837719"></td>
+  </tr>
+  <tr>
+    <td>BOTTOM LEFT</td>
+    <td><input type="number" id="p2.lat" placeholder="-34.567082715235976"></td>
+    <td><input type="number" id="p2.lng" placeholder="-58.52809225837719"></td>
+  </tr>
+</table>
+<div><button id="generateButton">Generate</button></div>
+<code id="result" style="white-space: pre;"></code>
+<script type="text/javascript">
+  const toDeg = (value) => (value * 180) / Math.PI;
+  const toRad = (value) => (value * Math.PI) / 180;
+  const getGreatCircleBearing = ( origin, dest) => {
+    const bearing =
+        (toDeg(
+            Math.atan2(
+                Math.sin(toRad(dest.lng) - toRad(origin.lng)) *
+                    Math.cos(toRad(dest.lat)),
+                Math.cos(toRad(origin.lat)) * Math.sin(toRad(dest.lat)) -
+                    Math.sin(toRad(origin.lat)) *
+                        Math.cos(toRad(dest.lat)) *
+                        Math.cos(toRad(dest.lng) - toRad(origin.lng))
+            )
+        ) +
+            360) %
+        360;
+
+    return bearing;
+  };
+  const getPoint = (name) => {
+    return {
+      lat: +document.getElementById(`${name}.lat`).value,
+      lng: +document.getElementById(`${name}.lng`).value,
+    };
+  };
+
+  document.getElementById('generateButton').addEventListener('click', () => {
+    const p0 = getPoint('p0'); // top left
+    const p1 = getPoint('p1'); // top right
+    const p2 = getPoint('p2'); // bottom left
+
+    const res = {
+      geoAnchor: {
+        lat: p0.lat,
+        lng: p0.lng,
+        xHeading: getGreatCircleBearing(p0, p1),
+        yHeading: getGreatCircleBearing(p0, p2),
+      },
+    };
+
+    document.getElementById('result').innerHTML = JSON.stringify(res, undefined, 2);
+  })
+</script>

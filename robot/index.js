@@ -344,6 +344,7 @@ function onKeydown(e) {
   e.preventDefault();
   if (e.key === ' ') {
     g_running ? stop() : start();
+    return;
   }
   if (g_running) return;
   if (e.key === 'ArrowLeft') {
