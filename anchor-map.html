@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html, charset=UTF-8" />
+    <title>Simple Map</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+    <style>
+      #map {
+        height: 100%;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDIX6w8OX51ddBm4yle2sGxnfwuPxoZbsA&callback=initMap&v=weekly"
+      defer
+    ></script>
+    <script>
+      let map;
+      let userMarker;
+      let userIcon;
+      const markerStrData = new URLSearchParams(location.search).get('data');
+
+      function initMap() {
+        if (!markerStrData) {
+          alert('no data provided');
+          return;
+        }
+        userIcon = {
+          url: 'http://www.robotwoods.com/dev/misc/bluecircle.png',
+          scaledSize: new google.maps.Size(20, 20)
+        };
+        const markersData = atob(markerStrData)
+          .split('\n')
+          .map((l) => {
+            const [lat, lng, title] = l.trim().split(',');
+            return {
+              lat: +lat,
+              lng: +lng,
+              title,
+            }
+          });
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: markersData[0].lat, lng: markersData[0].lng },
+          zoom: 20,
+        });
+        markersData.forEach(({lat, lng, title}) => new google.maps.Marker({
+          position: {lat, lng},
+          map,
+          title,
+          label: {
+            text: title,
+            color: '#338833',
+            fontSize: '22px',
+          },
+        }));
+        // updateLocation({
+        //   coords: {
+        //     latitude: markersData[0].lat,
+        //     longitude: markersData[0].lng,
+        //   }
+        // })
+      }
+
+      
+      function updateLocation(pos) {
+        console.log('updateLocation', pos)
+        if (!map) return;
+        const position = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
+        if (!userMarker) {
+          console.log(`Add User`, JSON.stringify(pos), JSON.stringify(position));
+          userMarker = new google.maps.Marker({
+            position,
+            map,
+            icon: userIcon,
+          });
+        } else {
+          console.log(`Update User`, JSON.stringify(pos), JSON.stringify(position));
+          userMaker.setPosition(position);
+        }
+      }
+      
+      const options = {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      };
+      
+      window.initMap = initMap;
+      navigator.geolocation.watchPosition(updateLocation, undefined, options);
+    </script>
+  </body>
+</html>
