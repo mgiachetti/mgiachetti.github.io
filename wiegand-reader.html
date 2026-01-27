@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drixit Wiegand Reader</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 { margin: 0 0 20px 0; color: #333; }
+    .section {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .section-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #555;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    button.primary {
+      background: #2563eb;
+      color: white;
+    }
+    button.primary:hover { background: #1d4ed8; }
+    button.primary:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    button.secondary:hover { background: #d1d5db; }
+    button.secondary:disabled {
+      background: #f3f4f6;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+    .status {
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status.disconnected { background: #fee2e2; color: #dc2626; }
+    .status.connected { background: #dcfce7; color: #16a34a; }
+    .status.connecting { background: #fef3c7; color: #d97706; }
+    input[type="text"], input[type="number"] {
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    }
+    input[type="text"] { flex: 1; min-width: 200px; }
+    input[type="number"] { width: 70px; }
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .mono {
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 13px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .data-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .data-label {
+      font-weight: 500;
+      min-width: 60px;
+      color: #64748b;
+    }
+    .data-value { color: #1e293b; }
+    .config-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .config-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .config-group span {
+      font-size: 13px;
+      color: #64748b;
+    }
+    .parity-config {
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+    }
+    .parity-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .parity-row:last-child { margin-bottom: 0; }
+    .result-card {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      padding: 16px;
+    }
+    .result-card.error {
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+    .result-card.warning {
+      background: #fffbeb;
+      border-color: #fcd34d;
+    }
+    .card-id {
+      font-size: 28px;
+      font-weight: 700;
+      color: #166534;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    }
+    .result-card.error .card-id { color: #dc2626; }
+    .parity-status {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .parity-status.valid { background: #dcfce7; color: #166534; }
+    .parity-status.invalid { background: #fee2e2; color: #dc2626; }
+    .binary-view {
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      font-size: 14px;
+      letter-spacing: 1px;
+      margin-top: 12px;
+    }
+    .bit { display: inline-block; padding: 2px 4px; }
+    .bit.parity { background: #fef3c7; }
+    .bit.data { background: #dbeafe; }
+    .history-item {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 13px;
+      display: flex;
+      gap: 12px;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-time { color: #64748b; font-family: 'SF Mono', Monaco, 'Courier New', monospace; }
+    .history-card { font-weight: 600; color: #1e293b; }
+    .history-format { color: #64748b; }
+    .history-container {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .empty-state {
+      color: #9ca3af;
+      font-style: italic;
+      text-align: center;
+      padding: 20px;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <h1>Drixit Wiegand Reader</h1>
+
+  <!-- Connection Section -->
+  <div class="section">
+    <div class="row">
+      <button id="connectBtn" class="primary">Connect</button>
+      <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
+      <span id="status" class="status disconnected">Disconnected</span>
+    </div>
+  </div>
+
+  <!-- Manual Test Input -->
+  <div class="section">
+    <div class="section-title">Manual Test Input</div>
+    <div class="row">
+      <input type="text" id="hexInput" placeholder="Enter hex bytes (e.g., 4342c301051a247f0000)">
+      <button id="parseBtn" class="primary">Parse</button>
+    </div>
+  </div>
+
+  <!-- Raw Data Display -->
+  <div class="section" id="rawDataSection">
+    <div class="section-title">Raw Data</div>
+    <div class="mono" id="rawData">
+      <div class="data-row"><span class="data-label">Hex:</span><span class="data-value" id="rawHex">--</span></div>
+      <div class="data-row"><span class="data-label">Bits:</span><span class="data-value" id="rawBits">--</span></div>
+      <div class="data-row"><span class="data-label">Binary:</span><span class="data-value" id="rawBinary">--</span></div>
+    </div>
+  </div>
+
+  <!-- Configuration -->
+  <div class="section">
+    <div class="section-title">Configuration</div>
+    <div class="config-row">
+      <label><input type="checkbox" id="enable26" checked> Standard 26-bit</label>
+      <label><input type="checkbox" id="enable34" checked> Standard 34-bit</label>
+    </div>
+    <div class="parity-config">
+      <div class="section-title" style="margin-top: 0;">Custom Format</div>
+      <div class="config-row">
+        <div class="config-group">
+          <span>Total Bits:</span>
+          <input type="number" id="customBits" value="0" min="0">
+        </div>
+        <div class="config-group">
+          <span>Number Offset:</span>
+          <input type="number" id="numOffset" value="2" min="1">
+        </div>
+        <div class="config-group">
+          <span>Number Bits:</span>
+          <input type="number" id="numBits" value="24" min="1">
+        </div>
+      </div>
+      <div class="parity-row">
+        <strong style="min-width: 70px;">Parity 1:</strong>
+        <div class="config-group">
+          <span>Position:</span>
+          <input type="number" id="p1Pos" value="1" min="0">
+        </div>
+        <label><input type="checkbox" id="p1Even"> Even</label>
+        <div class="config-group">
+          <span>Block Offset:</span>
+          <input type="number" id="p1BlockOffset" value="2" min="1">
+        </div>
+        <div class="config-group">
+          <span>Block Bits:</span>
+          <input type="number" id="p1BlockBits" value="12" min="0">
+        </div>
+      </div>
+      <div class="parity-row">
+        <strong style="min-width: 70px;">Parity 2:</strong>
+        <div class="config-group">
+          <span>Position:</span>
+          <input type="number" id="p2Pos" value="26" min="0">
+        </div>
+        <label><input type="checkbox" id="p2Even" checked> Even</label>
+        <div class="config-group">
+          <span>Block Offset:</span>
+          <input type="number" id="p2BlockOffset" value="14" min="1">
+        </div>
+        <div class="config-group">
+          <span>Block Bits:</span>
+          <input type="number" id="p2BlockBits" value="12" min="0">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parsed Result -->
+  <div class="section" id="resultSection">
+    <div class="section-title">Parsed Result</div>
+    <div id="resultCard" class="result-card hidden">
+      <div class="card-id" id="cardId">--</div>
+      <div style="margin-top: 8px;">
+        <span class="parity-status" id="parity1Status">Parity 1: --</span>
+        <span class="parity-status" id="parity2Status" style="margin-left: 8px;">Parity 2: --</span>
+      </div>
+      <div class="binary-view" id="binaryView"></div>
+      <div style="margin-top: 8px; font-size: 12px; color: #64748b;" id="formatUsed"></div>
+    </div>
+    <div id="noResult" class="empty-state">No card data parsed yet</div>
+  </div>
+
+  <!-- History -->
+  <div class="section">
+    <div class="section-title">History</div>
+    <div class="history-container" id="history">
+      <div class="empty-state">No cards scanned yet</div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== Wiegand Parsing Logic ====================
+
+    const STANDARD_26_FORMAT = {
+      bitsCount: 26,
+      number: { offset: 2, bitsCount: 24 },
+      parityBits: [
+        { position: 1, isEven: false, block: { offset: 2, bitsCount: 12 } },
+        { position: 26, isEven: true, block: { offset: 14, bitsCount: 12 } }
+      ]
+    };
+
+    const STANDARD_34_FORMAT = {
+      bitsCount: 34,
+      number: { offset: 2, bitsCount: 32 },
+      parityBits: [
+        { position: 1, isEven: false, block: { offset: 2, bitsCount: 16 } },
+        { position: 34, isEven: true, block: { offset: 18, bitsCount: 16 } }
+      ]
+    };
+
+    function getChk(packetBytes) {
+      let chk = 0;
+      for (let i = 3; i < packetBytes.length; i++) {
+        chk = (chk + packetBytes[i]) % 256;
+      }
+      return chk;
+    }
+
+    function parsePacket(data) {
+      const PACKET_HEADER_SIZE = 5;
+      if (data.length < PACKET_HEADER_SIZE) return undefined;
+      if (data[0] !== 0x43 || data[1] !== 0x42) return undefined;
+
+      const chk = data[2];
+      const type = data[3];
+      const payloadLength = data[4];
+      const payload = data.slice(PACKET_HEADER_SIZE);
+
+      if (payload.length !== payloadLength) return undefined;
+      if (getChk(data) !== chk) return undefined;
+
+      return { type, payload };
+    }
+
+    function parseCardRead(data) {
+      const packet = parsePacket(data);
+      if (!packet || packet.type !== 1 || packet.payload.length < 1) return undefined;
+
+      const { payload } = packet;
+      const bitsCount = payload[0];
+      const dataLength = Math.ceil(bitsCount / 8);
+
+      if (payload.length - 1 < dataLength) return undefined;
+
+      return {
+        bitsCount,
+        data: payload.slice(1, 1 + dataLength)
+      };
+    }
+
+    function countBits(num) {
+      let bits = 0;
+      for (; num > 0; num = Math.floor(num / 2)) {
+        if (num % 2) bits++;
+      }
+      return bits;
+    }
+
+    function getParity(num) {
+      return countBits(num) % 2;
+    }
+
+    function readNumber({ offset, bitsCount }, data) {
+      let res = 0;
+      for (let i = 0, bitVal = 1; i < bitsCount; i++, bitVal *= 2) {
+        const dataBitIndex = (offset - 1) + bitsCount - i - 1;
+        if (data[Math.floor(dataBitIndex / 8)] & (1 << (7 - (dataBitIndex % 8)))) {
+          res += bitVal;
+        }
+      }
+      return res;
+    }
+
+    function readParity({ position, isEven }, data) {
+      const bit = readNumber({ bitsCount: 1, offset: position }, data);
+      return isEven ? 1 - bit : bit;
+    }
+
+    function isValidParity(parityBit, data) {
+      if (parityBit.position === 0 || parityBit.block.bitsCount === 0) return true;
+      const number = readNumber(parityBit.block, data);
+      const parity = readParity(parityBit, data);
+      return getParity(number) === parity;
+    }
+
+    function parseWithFormat(bitFormat, msg) {
+      if (msg.bitsCount !== bitFormat.bitsCount) return undefined;
+
+      const parityResults = bitFormat.parityBits.map(pb => ({
+        config: pb,
+        valid: isValidParity(pb, msg.data)
+      }));
+
+      const allValid = parityResults.every(p => p.valid);
+      const fullNumber = readNumber(bitFormat.number, msg.data);
+
+      return {
+        cardId: fullNumber,
+        parityResults,
+        allValid,
+        format: bitFormat
+      };
+    }
+
+    function convertToBitString({ bitsCount, data }) {
+      return Array.from(data)
+        .map(b => b.toString(2).padStart(8, '0'))
+        .join('')
+        .slice(0, bitsCount);
+    }
+
+    function getCustomFormat() {
+      return {
+        bitsCount: parseInt(document.getElementById('customBits').value) || 0,
+        number: {
+          offset: parseInt(document.getElementById('numOffset').value) || 1,
+          bitsCount: parseInt(document.getElementById('numBits').value) || 0
+        },
+        parityBits: [
+          {
+            position: parseInt(document.getElementById('p1Pos').value) || 0,
+            isEven: document.getElementById('p1Even').checked,
+            block: {
+              offset: parseInt(document.getElementById('p1BlockOffset').value) || 1,
+              bitsCount: parseInt(document.getElementById('p1BlockBits').value) || 0
+            }
+          },
+          {
+            position: parseInt(document.getElementById('p2Pos').value) || 0,
+            isEven: document.getElementById('p2Even').checked,
+            block: {
+              offset: parseInt(document.getElementById('p2BlockOffset').value) || 1,
+              bitsCount: parseInt(document.getElementById('p2BlockBits').value) || 0
+            }
+          }
+        ]
+      };
+    }
+
+    function parseCardData(msg) {
+      const enable26 = document.getElementById('enable26').checked;
+      const enable34 = document.getElementById('enable34').checked;
+      const customFormat = getCustomFormat();
+
+      if (msg.bitsCount === customFormat.bitsCount && customFormat.bitsCount > 0) {
+        const result = parseWithFormat(customFormat, msg);
+        if (result) {
+          result.formatName = 'Custom';
+          return result;
+        }
+      }
+      if (msg.bitsCount === 26 && enable26) {
+        const result = parseWithFormat(STANDARD_26_FORMAT, msg);
+        if (result) {
+          result.formatName = '26-bit';
+          return result;
+        }
+      }
+      if (msg.bitsCount === 34 && enable34) {
+        const result = parseWithFormat(STANDARD_34_FORMAT, msg);
+        if (result) {
+          result.formatName = '34-bit';
+          return result;
+        }
+      }
+      return undefined;
+    }
+
+    // ==================== UI Updates ====================
+
+    function hexToBytes(hex) {
+      hex = hex.replace(/\s+/g, '').replace(/^0x/i, '');
+      if (hex.length % 2 !== 0) hex = '0' + hex;
+      const bytes = new Uint8Array(hex.length / 2);
+      for (let i = 0; i < bytes.length; i++) {
+        bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+      }
+      return bytes;
+    }
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join(' ');
+    }
+
+    function updateRawData(data, cardRead) {
+      document.getElementById('rawHex').textContent = bytesToHex(data);
+      if (cardRead) {
+        document.getElementById('rawBits').textContent = cardRead.bitsCount;
+        document.getElementById('rawBinary').textContent = convertToBitString(cardRead);
+      } else {
+        document.getElementById('rawBits').textContent = '--';
+        document.getElementById('rawBinary').textContent = '--';
+      }
+    }
+
+    function updateResult(result, cardRead) {
+      const resultCard = document.getElementById('resultCard');
+      const noResult = document.getElementById('noResult');
+
+      if (!result) {
+        resultCard.classList.add('hidden');
+        noResult.classList.remove('hidden');
+        noResult.textContent = cardRead
+          ? `No matching format for ${cardRead.bitsCount}-bit card`
+          : 'Invalid packet format';
+        return;
+      }
+
+      noResult.classList.add('hidden');
+      resultCard.classList.remove('hidden');
+      resultCard.classList.toggle('error', !result.allValid);
+
+      document.getElementById('cardId').textContent = result.cardId;
+      document.getElementById('formatUsed').textContent = `Format: ${result.formatName}`;
+
+      // Parity status
+      const p1 = result.parityResults[0];
+      const p2 = result.parityResults[1];
+      const p1Status = document.getElementById('parity1Status');
+      const p2Status = document.getElementById('parity2Status');
+
+      if (p1) {
+        p1Status.textContent = `Parity 1: ${p1.valid ? 'VALID' : 'INVALID'}`;
+        p1Status.className = `parity-status ${p1.valid ? 'valid' : 'invalid'}`;
+      }
+      if (p2) {
+        p2Status.textContent = `Parity 2: ${p2.valid ? 'VALID' : 'INVALID'}`;
+        p2Status.className = `parity-status ${p2.valid ? 'valid' : 'invalid'}`;
+      }
+
+      // Binary view with highlighting
+      const bitString = convertToBitString(cardRead);
+      const format = result.format;
+      let html = '';
+      for (let i = 0; i < bitString.length; i++) {
+        const pos = i + 1;
+        let className = 'bit';
+        if (format.parityBits.some(pb => pb.position === pos)) {
+          className += ' parity';
+        } else if (pos >= format.number.offset && pos < format.number.offset + format.number.bitsCount) {
+          className += ' data';
+        }
+        html += `<span class="${className}">${bitString[i]}</span>`;
+      }
+      document.getElementById('binaryView').innerHTML = html;
+    }
+
+    function addToHistory(result) {
+      const history = document.getElementById('history');
+      if (history.querySelector('.empty-state')) {
+        history.innerHTML = '';
+      }
+
+      const time = new Date().toLocaleTimeString();
+      const item = document.createElement('div');
+      item.className = 'history-item';
+      item.innerHTML = `
+        <span class="history-time">${time}</span>
+        <span class="history-card">${result.cardId}</span>
+        <span class="history-format">(${result.formatName})</span>
+        <span class="parity-status ${result.allValid ? 'valid' : 'invalid'}">${result.allValid ? 'Valid' : 'Invalid'}</span>
+      `;
+      history.insertBefore(item, history.firstChild);
+
+      // Keep only last 50 items
+      while (history.children.length > 50) {
+        history.removeChild(history.lastChild);
+      }
+    }
+
+    function processData(data) {
+      const cardRead = parseCardRead(data);
+      updateRawData(data, cardRead);
+
+      if (!cardRead) {
+        updateResult(null, null);
+        return;
+      }
+
+      const result = parseCardData(cardRead);
+      updateResult(result, cardRead);
+
+      if (result) {
+        addToHistory(result);
+      }
+    }
+
+    // ==================== Web Serial API ====================
+
+    const VENDOR_ID = 0x0483;
+    const PRODUCT_ID = 0x5740;
+    const BAUD_RATE = 115200;
+    const INTER_BYTE_TIMEOUT = 20;
+
+    let port = null;
+    let reader = null;
+    let keepReading = false;
+
+    function updateConnectionStatus(status) {
+      const statusEl = document.getElementById('status');
+      const connectBtn = document.getElementById('connectBtn');
+      const disconnectBtn = document.getElementById('disconnectBtn');
+
+      statusEl.className = 'status ' + status;
+      statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+
+      connectBtn.disabled = status === 'connected' || status === 'connecting';
+      disconnectBtn.disabled = status !== 'connected';
+    }
+
+    async function connect() {
+      if (!('serial' in navigator)) {
+        alert('Web Serial API not supported. Please use Chrome or Edge.');
+        return;
+      }
+
+      try {
+        updateConnectionStatus('connecting');
+
+        port = await navigator.serial.requestPort({
+          filters: [{ usbVendorId: VENDOR_ID, usbProductId: PRODUCT_ID }]
+        });
+
+        await port.open({ baudRate: BAUD_RATE });
+        updateConnectionStatus('connected');
+
+        keepReading = true;
+        readLoop();
+      } catch (err) {
+        console.error('Connection error:', err);
+        updateConnectionStatus('disconnected');
+        if (err.name !== 'NotFoundError') {
+          alert('Failed to connect: ' + err.message);
+        }
+      }
+    }
+
+    async function disconnect() {
+      keepReading = false;
+      if (reader) {
+        await reader.cancel();
+        reader = null;
+      }
+      if (port) {
+        await port.close();
+        port = null;
+      }
+      updateConnectionStatus('disconnected');
+    }
+
+    async function readLoop() {
+      let buffer = new Uint8Array(0);
+      let lastReceiveTime = 0;
+
+      while (port && port.readable && keepReading) {
+        reader = port.readable.getReader();
+        try {
+          while (keepReading) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            const now = Date.now();
+
+            // If timeout exceeded, process existing buffer as complete packet
+            if (buffer.length > 0 && (now - lastReceiveTime) > INTER_BYTE_TIMEOUT) {
+              processData(buffer);
+              buffer = new Uint8Array(0);
+            }
+
+            // Append new data
+            const newBuffer = new Uint8Array(buffer.length + value.length);
+            newBuffer.set(buffer);
+            newBuffer.set(value, buffer.length);
+            buffer = newBuffer;
+            lastReceiveTime = now;
+
+            // Check if we have a complete packet
+            if (buffer.length >= 5) {
+              const payloadLength = buffer[4];
+              const expectedLength = 5 + payloadLength;
+              if (buffer.length >= expectedLength) {
+                processData(buffer.slice(0, expectedLength));
+                buffer = buffer.slice(expectedLength);
+              }
+            }
+          }
+        } catch (err) {
+          if (err.name !== 'NetworkError' && keepReading) {
+            console.error('Read error:', err);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      }
+    }
+
+    // ==================== Event Handlers ====================
+
+    document.getElementById('connectBtn').addEventListener('click', connect);
+    document.getElementById('disconnectBtn').addEventListener('click', disconnect);
+
+    document.getElementById('parseBtn').addEventListener('click', () => {
+      const hex = document.getElementById('hexInput').value.trim();
+      if (!hex) {
+        alert('Please enter hex data');
+        return;
+      }
+      try {
+        const data = hexToBytes(hex);
+        processData(data);
+      } catch (err) {
+        alert('Invalid hex format: ' + err.message);
+      }
+    });
+
+    document.getElementById('hexInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('parseBtn').click();
+      }
+    });
+
+    // Handle page unload
+    window.addEventListener('beforeunload', () => {
+      if (port) disconnect();
+    });
+  </script>
+</body>
+</html>
