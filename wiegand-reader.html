@@ -204,6 +204,25 @@
       padding: 20px;
     }
     .hidden { display: none !important; }
+    .finder-results {
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 12px;
+    }
+    .finder-result {
+      padding: 8px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+      margin-bottom: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    .finder-result:hover { background: #eff6ff; border-color: #93c5fd; }
+    .finder-hint { font-size: 12px; color: #64748b; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -235,6 +254,16 @@
       <div class="data-row"><span class="data-label">Bits:</span><span class="data-value" id="rawBits">--</span></div>
       <div class="data-row"><span class="data-label">Binary:</span><span class="data-value" id="rawBinary">--</span></div>
     </div>
+  </div>
+
+  <!-- Number Finder -->
+  <div class="section" id="finderSection">
+    <div class="section-title">Number Finder</div>
+    <div class="row">
+      <input type="text" id="searchDecimal" placeholder="Known card number (decimal)">
+      <button id="findBtn" class="primary">Find in Binary</button>
+    </div>
+    <div id="finderResults"></div>
   </div>
 
   <!-- Configuration -->
@@ -601,6 +630,7 @@
 
     function processData(data) {
       const cardRead = parseCardRead(data);
+      lastCardRead = cardRead;
       updateRawData(data, cardRead);
 
       if (!cardRead) {
@@ -626,6 +656,7 @@
     let port = null;
     let reader = null;
     let keepReading = false;
+    let lastCardRead = null;
 
     function updateConnectionStatus(status) {
       const statusEl = document.getElementById('status');
@@ -747,6 +778,78 @@
     document.getElementById('hexInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         document.getElementById('parseBtn').click();
+      }
+    });
+
+    // ==================== Number Finder ====================
+
+    function findNumberInBinary(decimal, binaryString) {
+      const results = [];
+      if (decimal <= 0 || !binaryString) return results;
+
+      const minBits = Math.floor(Math.log2(decimal)) + 1;
+      const totalBits = binaryString.length;
+
+      for (let bitWidth = minBits; bitWidth <= totalBits; bitWidth++) {
+        const target = decimal.toString(2).padStart(bitWidth, '0');
+        let pos = binaryString.indexOf(target);
+        while (pos !== -1) {
+          results.push({ offset: pos + 1, bitLength: bitWidth });
+          pos = binaryString.indexOf(target, pos + 1);
+        }
+      }
+      return results;
+    }
+
+    document.getElementById('findBtn').addEventListener('click', () => {
+      const resultsDiv = document.getElementById('finderResults');
+      const decimal = parseInt(document.getElementById('searchDecimal').value);
+
+      if (!decimal || decimal <= 0) {
+        resultsDiv.innerHTML = '<div class="finder-hint">Enter a valid card number</div>';
+        return;
+      }
+      if (!lastCardRead) {
+        resultsDiv.innerHTML = '<div class="finder-hint">No card data loaded. Read a card or enter hex data first.</div>';
+        return;
+      }
+
+      const binaryString = convertToBitString(lastCardRead);
+      const results = findNumberInBinary(decimal, binaryString);
+
+      if (results.length === 0) {
+        resultsDiv.innerHTML = `<div class="finder-hint">Number ${decimal} (bin: ${decimal.toString(2)}) not found in ${binaryString}</div>`;
+        return;
+      }
+
+      let html = `<div class="finder-hint">${results.length} match${results.length > 1 ? 'es' : ''} found — click to apply</div><div class="finder-results">`;
+      results.forEach((r, i) => {
+        const target = decimal.toString(2).padStart(r.bitLength, '0');
+        html += `<div class="finder-result" data-offset="${r.offset}" data-bits="${r.bitLength}">`;
+        html += `<span>Offset: <strong>${r.offset}</strong></span>`;
+        html += `<span>Bits: <strong>${r.bitLength}</strong></span>`;
+        html += `<span style="color:#64748b">${target}</span>`;
+        html += `</div>`;
+      });
+      html += '</div>';
+      resultsDiv.innerHTML = html;
+
+      resultsDiv.querySelectorAll('.finder-result').forEach(el => {
+        el.addEventListener('click', () => {
+          document.getElementById('numOffset').value = el.dataset.offset;
+          document.getElementById('numBits').value = el.dataset.bits;
+          if (parseInt(document.getElementById('customBits').value) === 0) {
+            document.getElementById('customBits').value = lastCardRead.bitsCount;
+          }
+          el.style.background = '#dcfce7';
+          setTimeout(() => el.style.background = '', 600);
+        });
+      });
+    });
+
+    document.getElementById('searchDecimal').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('findBtn').click();
       }
     });
 
