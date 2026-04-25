@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#70d6d1" />
+    <title>Pancake Stack Run</title>
+  </head>
+  <body>
+    <main id="app">
+      <canvas id="game-canvas" aria-label="Pancake Stack Run 3D game canvas"></canvas>
+
+      <section id="hud" class="hud is-hidden" aria-live="polite">
+        <div class="hud-row">
+          <div class="pill">Lv <span data-level>1</span></div>
+          <div class="progress" aria-hidden="true"><span data-progress></span></div>
+          <div class="pill coins"><span data-coins>0</span></div>
+        </div>
+        <div class="hud-row bottom">
+          <div class="metric"><b data-stack>0</b><span>stack</span></div>
+          <div class="metric"><b data-score>0</b><span>score</span></div>
+          <div class="metric combo"><b data-combo>1x</b><span>combo</span></div>
+          <button class="icon-button" type="button" data-mute aria-label="Toggle sound">Sound</button>
+          <button class="icon-button" type="button" data-pause aria-label="Pause game">Pause</button>
+        </div>
+      </section>
+
+      <div id="float-layer" class="float-layer" aria-hidden="true"></div>
+
+      <section id="title-screen" class="panel title-panel">
+        <div class="brand">
+          <span class="brand-mark"></span>
+          <h1>Pancake Stack Run</h1>
+        </div>
+        <div class="title-actions">
+          <button class="primary" type="button" data-start>Start</button>
+          <button type="button" data-open-shop>Shop</button>
+        </div>
+        <div class="save-line">
+          <span>Lv <b data-home-level>1</b></span>
+          <span><b data-home-coins>0</b> coins</span>
+          <span><b data-home-stars>0</b> stars</span>
+          <span><b data-home-medals>0</b> medals</span>
+        </div>
+      </section>
+
+      <section id="reward-screen" class="panel result-panel is-hidden">
+        <h2 data-result-title>Level Clear</h2>
+        <div class="result-grid">
+          <div><b data-result-score>0</b><span>score</span></div>
+          <div><b data-result-coins>0</b><span>coins</span></div>
+          <div><b data-result-stars>0</b><span>stars</span></div>
+        </div>
+        <div class="reward-line" data-result-extra></div>
+        <div class="title-actions">
+          <button class="primary" type="button" data-next>Next</button>
+          <button type="button" data-retry>Replay</button>
+          <button type="button" data-open-shop>Shop</button>
+        </div>
+      </section>
+
+      <section id="fail-screen" class="panel result-panel is-hidden">
+        <h2>Stack Lost</h2>
+        <div class="result-grid">
+          <div><b data-fail-score>0</b><span>score</span></div>
+          <div><b data-fail-stack>0</b><span>best stack</span></div>
+        </div>
+        <div class="title-actions">
+          <button class="primary" type="button" data-retry>Retry</button>
+          <button type="button" data-home>Home</button>
+        </div>
+      </section>
+
+      <section id="pause-screen" class="panel result-panel is-hidden">
+        <h2>Paused</h2>
+        <div class="title-actions">
+          <button class="primary" type="button" data-resume aria-label="Resume game">Resume</button>
+          <button type="button" data-home aria-label="Return home">Home</button>
+        </div>
+      </section>
+
+      <section id="shop-screen" class="panel shop-panel is-hidden">
+        <h2>Shop</h2>
+        <div class="shop-balance"><b data-shop-coins>0</b> coins</div>
+        <div class="save-line shop-stats">
+          <span><b data-shop-xp>0</b> XP</span>
+          <span><b data-shop-medals>0</b> boss medals</span>
+          <span><b data-shop-cosmetics>0</b> cosmetics</span>
+        </div>
+        <div class="shop-items">
+          <button type="button" data-buy="startStack" aria-label="Buy Start Stack upgrade">
+            <b>Start Stack</b>
+            <span data-upgrade-startStack>Tier 0</span>
+            <small>300 / 800 / 1600</small>
+          </button>
+          <button type="button" data-buy="magnet" aria-label="Buy Magnet upgrade">
+            <b>Magnet</b>
+            <span data-upgrade-magnet>Tier 0</span>
+            <small>300 / 800 / 1600</small>
+          </button>
+          <button type="button" data-buy="stability" aria-label="Buy Stability upgrade">
+            <b>Stability</b>
+            <span data-upgrade-stability>Tier 0</span>
+            <small>300 / 800 / 1600</small>
+          </button>
+          <button type="button" data-buy="coinValue" aria-label="Buy Coin Value upgrade">
+            <b>Coin Value</b>
+            <span data-upgrade-coinValue>Tier 0</span>
+            <small>300 / 800 / 1600</small>
+          </button>
+        </div>
+        <div class="cosmetic-header">
+          <h3>Cosmetics</h3>
+          <span>Equip unlocked rewards</span>
+        </div>
+        <div class="cosmetic-grid" data-cosmetics></div>
+        <div class="title-actions">
+          <button class="primary" type="button" data-close-shop>Done</button>
+          <button type="button" data-reset-save>Reset</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
