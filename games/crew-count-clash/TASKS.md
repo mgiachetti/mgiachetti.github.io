@@ -150,7 +150,7 @@ Status markers:
 - [x] Create final staircase mesh system.
 - [x] Implement count-drain climb sequence.
 - [x] Add reward multiplier bands.
-- [~] Add chest/gem vault milestones.
+- [x] Add chest/gem vault milestones.
 - [x] Add camera tilt/reveal.
 - [x] Convert reached stair to score/coins.
 - [x] Add perfect-run stair boost.
@@ -262,7 +262,7 @@ Status markers:
 - [~] Add impact squash/stretch.
 - [x] Add camera shake for major hits.
 - [x] Add boss defeat confetti.
-- [ ] Add themed track biomes.
+- [x] Add themed track biomes.
 - [ ] Add loading screen.
 - [ ] Add app icon/preview image.
 

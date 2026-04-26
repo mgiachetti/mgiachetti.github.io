@@ -280,6 +280,41 @@ try {
   await stairs.screenshot(join(screenshotDir, "crew-count-clash-smoke-stairs.png"));
   await stairs.close();
 
+  const stairFinale = await openPage();
+  await stairFinale.send("Page.enable");
+  await stairFinale.send("Runtime.enable");
+  await stairFinale.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await stairFinale.send("Page.navigate", { url: `${origin}?autostart=1&level=1&stairs=1&count=1&pixel=1` });
+  await sleep(1800);
+  const stairFinaleMid = await stairFinale.eval(`(() => {
+    const canvas = document.querySelector("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const pixel = new Uint8Array(4);
+    gl.readPixels(Math.floor(canvas.width * 0.5), Math.floor(canvas.height * 0.48), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    return {
+      sample: Array.from(pixel),
+      hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+      rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden")
+    };
+  })()`);
+  assert(stairFinaleMid.hudVisible, "Stair finale should keep HUD visible before rewards.");
+  assert(!stairFinaleMid.rewardVisible, "Stair finale should pause before reward screen.");
+  assert(stairFinaleMid.sample.some((value) => value > 0), `Stair finale canvas should be nonblank, got ${stairFinaleMid.sample.join(",")}.`);
+  await stairFinale.screenshot(join(screenshotDir, "crew-count-clash-smoke-stair-finale.png"));
+  await waitForEval(
+    stairFinale,
+    `!document.querySelector("#reward-screen").classList.contains("is-hidden")`,
+    7000,
+    "Stair finale should eventually continue to reward screen."
+  );
+  const stairFinaleDone = await stairFinale.eval(`(() => ({
+    rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
+    title: document.querySelector("[data-result-title]").textContent
+  }))()`);
+  assert(stairFinaleDone.rewardVisible, "Stair finale should eventually continue to reward screen.");
+  assert(stairFinaleDone.title === "Level Clear", `Expected Level Clear reward, got ${stairFinaleDone.title}.`);
+  await stairFinale.close();
+
   console.log("Smoke check passed.");
 } finally {
   cleanup();
@@ -342,6 +377,17 @@ async function waitForHttp(url, timeoutMs, message) {
     }
   }
   throw new Error(message());
+}
+
+async function waitForEval(page, expression, timeoutMs, message) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (await page.eval(`Boolean(${expression})`)) {
+      return;
+    }
+    await sleep(150);
+  }
+  throw new Error(message);
 }
 
 function sleep(ms) {

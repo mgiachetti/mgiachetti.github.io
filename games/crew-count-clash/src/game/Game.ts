@@ -35,6 +35,19 @@ type RouletteReward = {
   weight: number;
 };
 
+type LevelTheme = {
+  sky: number;
+  fog: number;
+  ground: number;
+  track: number;
+  trackDark: number;
+  moving: number;
+  castle: number;
+  sideA: number;
+  sideB: number;
+  accent: number;
+};
+
 export class Game {
   private readonly canvas: HTMLCanvasElement;
   private readonly renderer: THREE.WebGLRenderer;
@@ -56,6 +69,7 @@ export class Game {
   private level: LevelData = getLevel(1);
   private world = new THREE.Group();
   private crowd = new THREE.Group();
+  private decorGroup = new THREE.Group();
   private bodyInstances: THREE.InstancedMesh;
   private visorInstances: THREE.InstancedMesh;
   private packInstances: THREE.InstancedMesh;
@@ -75,6 +89,9 @@ export class Game {
   private bossCrown: THREE.Object3D | null = null;
   private bossGate: THREE.Object3D | null = null;
   private stairScoreMarker: THREE.Object3D | null = null;
+  private stairVault: THREE.Group | null = null;
+  private stairFinaleStarted = false;
+  private stairFinaleTimer = 0;
   private rouletteGroup = new THREE.Group();
   private rouletteWheel: THREE.Group | null = null;
   private roulettePrizeSprite: THREE.Sprite | null = null;
@@ -123,11 +140,62 @@ export class Game {
     { kind: "skin", label: "Jackpot Skin", shortLabel: "SKIN", amount: 1, color: 0xef476f, tone: "boss", weight: 0.18 },
     { kind: "gems", label: "Gems +12", shortLabel: "+12G", amount: 12, color: 0x5eead4, tone: "good", weight: 0.22 }
   ];
+  private readonly levelThemes: LevelTheme[] = [
+    {
+      sky: 0xaee8ff,
+      fog: 0xaee8ff,
+      ground: 0x7dd6f6,
+      track: 0x67d7e5,
+      trackDark: 0x2b9bb6,
+      moving: 0xa7f25b,
+      castle: 0x9aa7b2,
+      sideA: 0xffd166,
+      sideB: 0x58f29a,
+      accent: 0x146ef5
+    },
+    {
+      sky: 0xc9dbff,
+      fog: 0xc9dbff,
+      ground: 0x8bb4d9,
+      track: 0x8ee3d0,
+      trackDark: 0x355c7d,
+      moving: 0xffd166,
+      castle: 0x6b7280,
+      sideA: 0xef476f,
+      sideB: 0xff9f1c,
+      accent: 0x7c3aed
+    },
+    {
+      sky: 0xffe4f1,
+      fog: 0xffe4f1,
+      ground: 0x9bd0f5,
+      track: 0xf9c74f,
+      trackDark: 0xf8961e,
+      moving: 0x00f5d4,
+      castle: 0xc084fc,
+      sideA: 0x00f5d4,
+      sideB: 0xef476f,
+      accent: 0xffca3a
+    },
+    {
+      sky: 0xd8d3ff,
+      fog: 0xd8d3ff,
+      ground: 0x8fd3ff,
+      track: 0x64dfdf,
+      trackDark: 0x4f5d75,
+      moving: 0xffca3a,
+      castle: 0x6d6875,
+      sideA: 0xff477e,
+      sideB: 0x7bdff2,
+      accent: 0xffc857
+    }
+  ];
 
   private readonly materials = {
     body: new THREE.MeshStandardMaterial({ color: 0x36c9f6, roughness: 0.58, metalness: 0.05 }),
     visor: new THREE.MeshStandardMaterial({ color: 0xbdefff, roughness: 0.18, metalness: 0.2 }),
     pack: new THREE.MeshStandardMaterial({ color: 0x2087ad, roughness: 0.58, metalness: 0.05 }),
+    ground: new THREE.MeshStandardMaterial({ color: 0x7dd6f6, roughness: 0.82 }),
     enemy: new THREE.MeshStandardMaterial({ color: 0xf05252, roughness: 0.62, metalness: 0.04 }),
     enemyVisor: new THREE.MeshStandardMaterial({ color: 0x231942, roughness: 0.3, metalness: 0.1 }),
     track: new THREE.MeshStandardMaterial({ color: 0x67d7e5, roughness: 0.7, metalness: 0.03 }),
@@ -371,7 +439,7 @@ export class Game {
     sun.shadow.camera.bottom = -34;
     this.scene.add(sun);
 
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(280, 300), new THREE.MeshStandardMaterial({ color: 0x7dd6f6, roughness: 0.82 }));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(280, 300), this.materials.ground);
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(0, -0.35, 78);
     floor.receiveShadow = true;
@@ -397,6 +465,7 @@ export class Game {
     this.mode = "run";
     this.level = getLevel(levelNumber);
     this.stats = this.createStats();
+    this.applyLevelTheme();
     this.clearWorld();
     this.distance = 0;
     this.centerX = 0;
@@ -426,6 +495,8 @@ export class Game {
     this.rouletteResolved = false;
     this.rouletteSelectedReward = null;
     this.stairTimer = 0;
+    this.stairFinaleStarted = false;
+    this.stairFinaleTimer = 0;
     this.stats.maxCount = this.count;
     this.buildLevel();
     this.hud.showRun();
@@ -434,6 +505,7 @@ export class Game {
 
   private clearWorld(): void {
     this.world.clear();
+    this.decorGroup.clear();
     this.tracks = [];
     this.entities = [];
     this.floating.forEach((item) => this.scene.remove(item.mesh));
@@ -449,6 +521,9 @@ export class Game {
     this.bossCrown = null;
     this.bossGate = null;
     this.stairScoreMarker = null;
+    this.stairVault = null;
+    this.stairFinaleStarted = false;
+    this.stairFinaleTimer = 0;
     this.rouletteWheel = null;
     this.roulettePrizeSprite = null;
     this.rouletteGroup.clear();
@@ -460,6 +535,7 @@ export class Game {
       this.tracks.push({ data: segment, mesh });
       this.world.add(mesh);
     });
+    this.createTrackDecorations();
 
     this.level.entities.forEach((entity) => {
       const mesh = this.createEntityMesh(entity);
@@ -474,6 +550,83 @@ export class Game {
     } else {
       this.createStairs(this.level.length + 8);
     }
+  }
+
+  private getLevelTheme(): LevelTheme {
+    if (this.level.kind === "boss") {
+      return this.levelThemes[3];
+    }
+    if (this.level.kind === "bonus") {
+      return this.levelThemes[2];
+    }
+    if (this.level.kind === "challenge") {
+      return this.levelThemes[1];
+    }
+    return this.level.id % 2 === 0 ? this.levelThemes[1] : this.levelThemes[0];
+  }
+
+  private applyLevelTheme(): void {
+    const theme = this.getLevelTheme();
+    this.scene.background = new THREE.Color(theme.sky);
+    this.scene.fog = new THREE.Fog(theme.fog, 50, 215);
+    this.materials.ground.color.setHex(theme.ground);
+    this.materials.track.color.setHex(theme.track);
+    this.materials.trackDark.color.setHex(theme.trackDark);
+    this.materials.movingTrack.color.setHex(theme.moving);
+    this.materials.castle.color.setHex(theme.castle);
+  }
+
+  private createTrackDecorations(): void {
+    const theme = this.getLevelTheme();
+    this.decorGroup.clear();
+    const postMaterial = new THREE.MeshStandardMaterial({ color: theme.accent, roughness: 0.48, metalness: 0.08 });
+    const flagA = new THREE.MeshStandardMaterial({ color: theme.sideA, roughness: 0.5, metalness: 0.04 });
+    const flagB = new THREE.MeshStandardMaterial({ color: theme.sideB, roughness: 0.5, metalness: 0.04 });
+    const gemMaterial = new THREE.MeshStandardMaterial({ color: theme.sideB, roughness: 0.24, metalness: 0.18 });
+    const label = this.makeTextSprite(this.level.kind === "bonus" ? "BONUS" : this.level.kind === "boss" ? "BOSS RUN" : `LEVEL ${this.level.id}`, "#ffffff", "#102033");
+    label.position.set(0, 1.45, 4);
+    label.scale.set(1.75, 0.42, 1);
+    this.decorGroup.add(label);
+
+    for (let z = 10, index = 0; z < this.level.length - 8; z += 24, index += 1) {
+      const track = this.getTrackAt(z);
+      if (!track) {
+        continue;
+      }
+      const center = this.getTrackCenter(track.data, 0);
+      const sideX = track.data.width / 2 + 0.9;
+      [-1, 1].forEach((side) => {
+        const x = center + side * sideX;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 1.45, 10), postMaterial);
+        post.position.set(x, 0.38, z);
+        post.castShadow = true;
+        this.decorGroup.add(post);
+        const flag = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.38, 0.06), (index + side > 0 ? flagA : flagB));
+        flag.position.set(x + side * 0.24, 1.08, z);
+        flag.rotation.y = side > 0 ? -0.18 : 0.18;
+        flag.userData.floatBaseY = flag.position.y;
+        flag.userData.floatPhase = index * 0.8 + side;
+        this.decorGroup.add(flag);
+      });
+
+      if (index % 2 === 0) {
+        [-1, 1].forEach((side) => {
+          const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.22, 1), gemMaterial);
+          orb.position.set(center + side * (sideX + 0.6), 1.42, z + 6);
+          orb.castShadow = true;
+          orb.userData.spin = side * 1.8;
+          orb.userData.floatBaseY = orb.position.y;
+          orb.userData.floatPhase = z * 0.07;
+          this.decorGroup.add(orb);
+        });
+      }
+    }
+
+    const finishLabel = this.makeTextSprite(this.level.kind === "boss" ? "KING" : this.level.kind === "bonus" ? "SPIN" : "STAIRS", "#13223a", "#ffffff");
+    finishLabel.position.set(0, 1.55, this.level.length - 2);
+    finishLabel.scale.set(1.5, 0.38, 1);
+    this.decorGroup.add(finishLabel);
+    this.world.add(this.decorGroup);
   }
 
   private createTrackMesh(segment: TrackSegment): THREE.Mesh {
@@ -741,6 +894,28 @@ export class Game {
     tower.position.set(0, 1.3, 23);
     tower.castShadow = true;
     this.stairsGroup.add(tower);
+    this.stairVault = new THREE.Group();
+    const vaultBase = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.88, 1.2), this.materials.bossGold);
+    vaultBase.position.y = 0.12;
+    vaultBase.castShadow = true;
+    this.stairVault.add(vaultBase);
+    const vaultLid = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.34, 1.28), this.materials.hazard);
+    vaultLid.position.set(0, 0.68, -0.04);
+    vaultLid.castShadow = true;
+    this.stairVault.add(vaultLid);
+    this.stairVault.userData.lid = vaultLid;
+    for (let index = 0; index < 7; index += 1) {
+      const gem = new THREE.Mesh(new THREE.IcosahedronGeometry(0.16, 1), index % 2 ? this.materials.gem : this.materials.coin);
+      gem.position.set((index - 3) * 0.25, 0.98 + Math.sin(index) * 0.08, 0.12 + Math.cos(index) * 0.18);
+      gem.castShadow = true;
+      this.stairVault.add(gem);
+    }
+    const vaultLabel = this.makeTextSprite("VAULT", "#ffffff", "#102033");
+    vaultLabel.position.set(0, 1.28, -0.08);
+    vaultLabel.scale.set(1.05, 0.3, 1);
+    this.stairVault.add(vaultLabel);
+    this.stairVault.position.set(0, 3.0, 22.85);
+    this.stairsGroup.add(this.stairVault);
     const stairColors = [0x58f29a, 0x7bdff2, 0xffd166, 0xff9f1c, 0xef476f, 0x9b5de5];
     for (let index = 0; index < 24; index += 1) {
       const multiplier = 1 + Math.floor(index / 4);
@@ -973,6 +1148,7 @@ export class Game {
     this.lastTime = time;
 
     this.updatePlatforms(time);
+    this.updateDecorations(time, dt);
     this.animateEntities(time, dt);
     this.updateFloating(dt);
 
@@ -1378,6 +1554,8 @@ export class Game {
     this.speed = 0;
     this.distance = this.level.length + 6;
     this.stairTimer = 0;
+    this.stairFinaleStarted = false;
+    this.stairFinaleTimer = 0;
     this.hud.popText("Final stairs", "boss");
     if (this.stats.noHit && this.stats.losses === 0 && this.count > 0) {
       const boost = Math.min(6, Math.max(3, Math.floor(this.count * 0.06)));
@@ -1391,6 +1569,10 @@ export class Game {
   }
 
   private updateStairs(dt: number): void {
+    if (this.stairFinaleStarted) {
+      this.updateStairFinale(dt);
+      return;
+    }
     this.stairTimer += dt;
     const markerStep = clamp(this.stats.finalStair, 0, 23);
     if (this.stairScoreMarker) {
@@ -1417,7 +1599,37 @@ export class Game {
       this.audio.coin();
       return;
     }
-    this.finishLevel(false);
+    this.startStairFinale();
+  }
+
+  private startStairFinale(): void {
+    if (this.stairFinaleStarted) {
+      return;
+    }
+    this.stairFinaleStarted = true;
+    this.stairFinaleTimer = 0;
+    this.stats.finalStair = clamp(this.stats.finalStair, 0, 24);
+    const multiplier = Math.min(6, Math.max(1, 1 + Math.floor((this.stats.finalStair - 1) / 4)));
+    this.stats.score += 260 * multiplier;
+    this.stats.coins += 16 * multiplier;
+    this.cameraShake = 0.55;
+    this.hud.popText(`Vault x${multiplier}`, "coin");
+    this.spawnStairConfetti();
+    this.audio.reward();
+  }
+
+  private updateStairFinale(dt: number): void {
+    this.stairFinaleTimer += dt;
+    this.cameraShake = Math.max(0, this.cameraShake - dt * 1.7);
+    if (this.stairScoreMarker) {
+      this.stairScoreMarker.position.y = damp(this.stairScoreMarker.position.y, 4.5, 6, dt);
+      this.stairScoreMarker.position.z = damp(this.stairScoreMarker.position.z, 18.2, 6, dt);
+      this.stairScoreMarker.rotation.y += dt * 6;
+    }
+    this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
+    if (this.stairFinaleTimer >= 2.15) {
+      this.finishLevel(false);
+    }
   }
 
   private startBoss(): void {
@@ -1785,6 +1997,26 @@ export class Game {
     });
   }
 
+  private updateDecorations(time: number, dt: number): void {
+    this.decorGroup.children.forEach((item) => {
+      if (typeof item.userData.floatBaseY === "number") {
+        item.position.y = item.userData.floatBaseY + Math.sin(time * 2.5 + (item.userData.floatPhase ?? 0)) * 0.08;
+      }
+      if (typeof item.userData.spin === "number") {
+        item.rotation.y += item.userData.spin * dt;
+      }
+    });
+    if (this.stairVault) {
+      const lid = this.stairVault.userData.lid as THREE.Object3D | undefined;
+      const pulse = this.stairFinaleStarted ? 1 + Math.sin(time * 8) * 0.035 : 1;
+      this.stairVault.scale.set(pulse, pulse, pulse);
+      this.stairVault.rotation.y = Math.sin(time * 1.5) * 0.05;
+      if (lid) {
+        lid.rotation.x = this.stairFinaleStarted ? -Math.min(1, this.stairFinaleTimer / 0.8) * 0.95 : 0;
+      }
+    }
+  }
+
   private animateEntities(time: number, dt: number): void {
     this.entities.forEach((entity) => {
       if (entity.consumed) {
@@ -1849,7 +2081,10 @@ export class Game {
   }
 
   private updateCrowdInstances(time: number): void {
-    const visible = Math.min(this.maxVisibleCrew, Math.max(0, Math.floor(this.count)));
+    let visible = Math.min(this.maxVisibleCrew, Math.max(0, Math.floor(this.count)));
+    if (this.mode === "stairs" && this.stairFinaleStarted) {
+      visible = Math.max(visible, Math.min(this.maxVisibleCrew, Math.max(10, Math.floor(this.stats.finalStair * 1.5))));
+    }
     this.bodyInstances.count = visible;
     this.visorInstances.count = visible;
     this.packInstances.count = visible;
@@ -1883,15 +2118,26 @@ export class Game {
       let yaw = Math.sin(time * 4 + index) * 0.05;
 
       if (this.mode === "stairs") {
-        const lane = (index % 6) - 2.5;
-        const stride = (time * 7.5 + index * 0.31) % 1;
-        const progress = clamp((this.stats.finalStair + index * 0.22 + stride * 0.7) / 24, 0, 1);
-        const stepHop = Math.sin(stride * Math.PI) * 0.12;
-        x = lane * 0.28 + Math.sin(time * 9 + index) * 0.035;
-        z = this.level.length + 8 + progress * 18.2;
-        y = 0.5 + progress * 3.78 + stepHop;
-        bob = Math.sin(time * 16 + index * 0.8) * 0.055;
-        yaw = Math.sin(time * 7 + index) * 0.1;
+        if (this.stairFinaleStarted) {
+          const lane = (index % 8) - 3.5;
+          const partyRow = Math.floor(index / 8);
+          const jump = Math.max(0, Math.sin(time * 12 + index * 0.62)) * 0.24;
+          x = lane * 0.31 + Math.sin(time * 4 + index) * 0.07;
+          z = this.level.length + 25.2 - partyRow * 0.28 + Math.sin(index * 1.3) * 0.08;
+          y = 4.32 + jump;
+          bob = jump * 0.4;
+          yaw = Math.sin(time * 10 + index) * 0.34;
+        } else {
+          const lane = (index % 6) - 2.5;
+          const stride = (time * 7.5 + index * 0.31) % 1;
+          const progress = clamp((this.stats.finalStair + index * 0.22 + stride * 0.7) / 24, 0, 1);
+          const stepHop = Math.sin(stride * Math.PI) * 0.12;
+          x = lane * 0.28 + Math.sin(time * 9 + index) * 0.035;
+          z = this.level.length + 8 + progress * 18.2;
+          y = 0.5 + progress * 3.78 + stepHop;
+          bob = Math.sin(time * 16 + index * 0.8) * 0.055;
+          yaw = Math.sin(time * 7 + index) * 0.1;
+        }
       } else if (this.mode === "boss" || this.mode === "bossVictory") {
         const attackWave = Math.max(0, Math.sin(time * 5.8 - row * 0.85));
         const victoryPush = this.mode === "bossVictory" ? clamp(this.bossVictoryTimer / 1.3, 0, 1) : 0;
@@ -1927,25 +2173,30 @@ export class Game {
 
   private updateCamera(dt: number): void {
     const isBossScene = this.mode === "boss" || this.mode === "bossVictory";
+    const isStairFinale = this.mode === "stairs" && this.stairFinaleStarted;
     const targetZ =
       this.mode === "roulette"
         ? this.level.length + 18
         : isBossScene
           ? this.level.length + 15.5
+          : isStairFinale
+            ? this.level.length + 28
           : this.mode === "stairs"
             ? this.level.length + 18.2
             : this.distance + 8;
-    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : this.mode === "stairs" ? 6.15 : 8.5;
+    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : isStairFinale ? 6.9 : this.mode === "stairs" ? 6.15 : 8.5;
     const cameraZ =
       this.mode === "roulette"
         ? this.level.length + 9
         : isBossScene
           ? this.distance - 9.5
+          : isStairFinale
+            ? this.level.length + 15.5
           : this.mode === "stairs"
             ? this.level.length + 5.8
             : this.distance - 10.5;
     const shake = this.cameraShake > 0 ? (Math.random() - 0.5) * this.cameraShake * 0.6 : 0;
-    const lookY = this.mode === "stairs" ? 1.35 : 0.75;
+    const lookY = isStairFinale ? 3.1 : this.mode === "stairs" ? 1.35 : 0.75;
     this.camera.position.x = damp(this.camera.position.x, this.centerX * 0.42 + shake, 5, dt);
     this.camera.position.y = damp(this.camera.position.y, targetY + Math.abs(shake), 4.5, dt);
     this.camera.position.z = damp(this.camera.position.z, cameraZ, 5.2, dt);
@@ -2000,6 +2251,28 @@ export class Game {
         velocity: new THREE.Vector3(side * (0.9 + Math.random() * 2.1), 1.35 + Math.random() * 1.8, (Math.random() - 0.5) * 2.8),
         angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 16),
         life: 1.9 + Math.random() * 0.8
+      });
+    }
+  }
+
+  private spawnStairConfetti(): void {
+    const colors = [0xffd166, 0x58f29a, 0x36c9f6, 0xef476f, 0x9b5de5, 0xffffff];
+    for (let index = 0; index < 56; index += 1) {
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[index % colors.length],
+        roughness: 0.48,
+        transparent: true,
+        opacity: 0.9
+      });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.025, 0.2), material);
+      mesh.position.set((Math.random() - 0.5) * 5.2, 4.8 + Math.random() * 1.1, this.level.length + 28 + (Math.random() - 0.5) * 3.2);
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      this.scene.add(mesh);
+      this.floating.push({
+        mesh,
+        velocity: new THREE.Vector3((Math.random() - 0.5) * 3.1, 1.2 + Math.random() * 1.7, (Math.random() - 0.5) * 2.6),
+        angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 12, (Math.random() - 0.5) * 16),
+        life: 2.1 + Math.random() * 0.55
       });
     }
   }
