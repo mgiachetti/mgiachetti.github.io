@@ -175,7 +175,7 @@ Status markers:
 - [x] Define reward table.
 - [x] Implement earned tickets.
 - [~] Implement coin/gem/skin/upgrades rewards.
-- [ ] Implement jackpot skin reward.
+- [x] Implement jackpot skin reward.
 - [ ] Add no-ad extra spin rules using tickets/gems.
 - [x] Add roulette SFX and reward fanfare.
 
@@ -246,7 +246,7 @@ Status markers:
 - [~] Build reward/chest screen.
 - [x] Build shop screen.
 - [ ] Build level map/progression screen.
-- [ ] Build roulette reward screen.
+- [x] Build roulette reward screen.
 - [x] Add responsive mobile layout.
 - [x] Add accessible button labels.
 - [x] Verify text never overlaps controls.
@@ -273,7 +273,7 @@ Status markers:
 - [x] Verify mobile screenshot: canvas nonblank and HUD readable.
 - [ ] Test all game states.
 - [ ] Test all gate math.
-- [~] Test boss and roulette flows.
+- [x] Test boss and roulette flows.
 - [ ] Test save reset/dev tools.
 - [x] Test production build locally.
 - [ ] Fix performance hotspots.

@@ -148,6 +148,42 @@ try {
   await advanced.screenshot(join(screenshotDir, "crew-count-clash-smoke-level12.png"));
   await advanced.close();
 
+  const roulette = await openPage();
+  await roulette.send("Page.enable");
+  await roulette.send("Runtime.enable");
+  await roulette.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await roulette.send("Page.navigate", { url: `${origin}?autostart=1&level=6&roulette=1&pixel=1` });
+  await sleep(6200);
+  const roulettePrize = await roulette.eval(`(() => {
+    const canvas = document.querySelector("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const pixel = new Uint8Array(4);
+    gl.readPixels(Math.floor(canvas.width * 0.5), Math.floor(canvas.height * 0.43), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    return {
+      sample: Array.from(pixel),
+      prizeVisible: !document.querySelector("#roulette-prize").classList.contains("is-hidden"),
+      prize: document.querySelector("[data-roulette-prize]").textContent,
+      rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
+      hudVisible: !document.querySelector("#hud").classList.contains("is-hidden")
+    };
+  })()`);
+  assert(roulettePrize.hudVisible, "Roulette reveal should keep HUD visible.");
+  assert(roulettePrize.prizeVisible, "Roulette should show the prize before reward screen.");
+  assert(roulettePrize.prize.length > 0, "Roulette prize label should be populated.");
+  assert(!roulettePrize.rewardVisible, "Roulette should not jump straight to reward screen.");
+  assert(roulettePrize.sample.some((value) => value > 0), `Roulette canvas sample should be nonblank, got ${roulettePrize.sample.join(",")}.`);
+  await roulette.screenshot(join(screenshotDir, "crew-count-clash-smoke-roulette.png"));
+  await sleep(3600);
+  const rouletteDone = await roulette.eval(`(() => ({
+    rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
+    title: document.querySelector("[data-result-title]").textContent,
+    extra: document.querySelector("[data-result-extra]").textContent
+  }))()`);
+  assert(rouletteDone.rewardVisible, "Roulette should eventually continue to reward screen.");
+  assert(rouletteDone.title === "Roulette Paid", `Expected Roulette Paid reward, got ${rouletteDone.title}.`);
+  assert(rouletteDone.extra.includes("Wheel") || rouletteDone.extra.includes("Jackpot"), `Expected roulette reward copy, got ${rouletteDone.extra}.`);
+  await roulette.close();
+
   const boss = await openPage();
   await boss.send("Page.enable");
   await boss.send("Runtime.enable");

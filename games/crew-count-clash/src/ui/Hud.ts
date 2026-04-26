@@ -11,6 +11,7 @@ export class Hud {
   private shop = this.required<HTMLElement>("#shop-screen");
   private floatLayer = this.required<HTMLElement>("#float-layer");
   private cosmetics = this.required<HTMLElement>("[data-cosmetics]");
+  private roulettePrize = this.required<HTMLElement>("#roulette-prize");
 
   private level = this.required<HTMLElement>("[data-level]");
   private progress = this.required<HTMLElement>("[data-progress]");
@@ -80,6 +81,7 @@ export class Hud {
   }
 
   showTitle(save: SaveData): void {
+    this.hideRoulettePrize();
     this.showOnly(this.title);
     this.hud.classList.add("is-hidden");
     this.set("[data-home-level]", String(save.currentLevel));
@@ -89,16 +91,19 @@ export class Hud {
   }
 
   showRun(): void {
+    this.hideRoulettePrize();
     this.hidePanels();
     this.hud.classList.remove("is-hidden");
   }
 
   showPause(): void {
+    this.hideRoulettePrize();
     this.showOnly(this.pause);
     this.hud.classList.remove("is-hidden");
   }
 
   showFail(stats: RunStats): void {
+    this.hideRoulettePrize();
     this.hud.classList.add("is-hidden");
     this.showOnly(this.fail);
     this.set("[data-fail-score]", formatNumber(stats.score));
@@ -106,6 +111,7 @@ export class Hud {
   }
 
   showReward(data: RewardData): void {
+    this.hideRoulettePrize();
     this.hud.classList.add("is-hidden");
     this.showOnly(this.reward);
     this.set("[data-result-kind]", data.kind);
@@ -118,6 +124,7 @@ export class Hud {
   }
 
   showShop(save: SaveData): void {
+    this.hideRoulettePrize();
     this.hud.classList.add("is-hidden");
     this.showOnly(this.shop);
     this.updateShop(save);
@@ -136,6 +143,15 @@ export class Hud {
   updateMute(muted: boolean): void {
     this.mute.textContent = muted ? "Muted" : "Sound";
     this.mute.classList.toggle("is-active", muted);
+  }
+
+  showRoulettePrize(label: string): void {
+    this.set("[data-roulette-prize]", label);
+    this.roulettePrize.classList.remove("is-hidden");
+  }
+
+  hideRoulettePrize(): void {
+    this.roulettePrize.classList.add("is-hidden");
   }
 
   updateShop(save: SaveData): void {

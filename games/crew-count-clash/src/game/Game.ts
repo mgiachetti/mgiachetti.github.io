@@ -2,8 +2,8 @@ import * as THREE from "three";
 import { AudioManager } from "../audio/AudioManager";
 import { getLevel } from "../levels/levelCatalog";
 import { Hud } from "../ui/Hud";
-import { clamp, damp, seededRandom, wrap01 } from "../utils/math";
-import { buyOrEquipCosmetic, buyUpgrade, getEquippedCosmetic, grantRunRewards, loadSave, resetSave, saveGame } from "./saveData";
+import { clamp, damp, seededRandom } from "../utils/math";
+import { buyOrEquipCosmetic, buyUpgrade, cosmeticCatalog, getEquippedCosmetic, grantRunRewards, loadSave, resetSave, saveGame } from "./saveData";
 import type { GameMode, LevelData, LevelEntity, RunStats, SaveData, TrackSegment } from "./types";
 
 type RuntimeEntity = {
@@ -23,6 +23,16 @@ type FloatingItem = {
   velocity: THREE.Vector3;
   angularVelocity?: THREE.Vector3;
   life: number;
+};
+
+type RouletteReward = {
+  kind: "coins" | "gems" | "ticket" | "skin";
+  label: string;
+  shortLabel: string;
+  amount: number;
+  color: number;
+  tone: "good" | "coin" | "boss";
+  weight: number;
 };
 
 export class Game {
@@ -64,6 +74,9 @@ export class Game {
   private bossCrown: THREE.Object3D | null = null;
   private bossGate: THREE.Object3D | null = null;
   private rouletteGroup = new THREE.Group();
+  private rouletteWheel: THREE.Group | null = null;
+  private roulettePrizeSprite: THREE.Sprite | null = null;
+  private rouletteSelectedReward: RouletteReward | null = null;
   private bossHp = 0;
   private bossMaxHp = 1;
   private bossAttackTimer = 0;
@@ -75,6 +88,10 @@ export class Game {
   private bossBombs = 0;
   private rouletteTimer = 0;
   private rouletteTick = 0;
+  private rouletteSpinStart = 0;
+  private rouletteSpinEnd = 0;
+  private rouletteRevealTimer = 0;
+  private rouletteResolved = false;
   private stairTimer = 0;
   private count = 1;
   private centerX = 0;
@@ -94,6 +111,16 @@ export class Game {
   private stats: RunStats = this.createStats();
 
   private readonly maxVisibleCrew = 150;
+  private readonly rouletteRewards: RouletteReward[] = [
+    { kind: "coins", label: "Coins +150", shortLabel: "+150", amount: 150, color: 0xffd166, tone: "coin", weight: 1.8 },
+    { kind: "gems", label: "Gems +3", shortLabel: "+3G", amount: 3, color: 0x7bdff2, tone: "good", weight: 1.25 },
+    { kind: "coins", label: "Coins +300", shortLabel: "+300", amount: 300, color: 0xff9f1c, tone: "coin", weight: 1.05 },
+    { kind: "ticket", label: "Ticket +1", shortLabel: "TK", amount: 1, color: 0x9b5de5, tone: "boss", weight: 0.78 },
+    { kind: "coins", label: "Coins +500", shortLabel: "+500", amount: 500, color: 0xffca3a, tone: "coin", weight: 0.55 },
+    { kind: "gems", label: "Gems +8", shortLabel: "+8G", amount: 8, color: 0x00f5d4, tone: "good", weight: 0.45 },
+    { kind: "skin", label: "Jackpot Skin", shortLabel: "SKIN", amount: 1, color: 0xef476f, tone: "boss", weight: 0.18 },
+    { kind: "gems", label: "Gems +12", shortLabel: "+12G", amount: 12, color: 0x5eead4, tone: "good", weight: 0.22 }
+  ];
 
   private readonly materials = {
     body: new THREE.MeshStandardMaterial({ color: 0x36c9f6, roughness: 0.58, metalness: 0.05 }),
@@ -197,6 +224,8 @@ export class Game {
       this.count = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 60;
       this.stats.maxCount = Math.max(this.stats.maxCount, this.count);
       this.startStairs();
+    } else if (params.has("roulette")) {
+      this.startRoulette();
     }
   }
 
@@ -389,6 +418,11 @@ export class Game {
     this.bossVictoryTimer = 0;
     this.rouletteTimer = 0;
     this.rouletteTick = 0;
+    this.rouletteSpinStart = 0;
+    this.rouletteSpinEnd = 0;
+    this.rouletteRevealTimer = 0;
+    this.rouletteResolved = false;
+    this.rouletteSelectedReward = null;
     this.stairTimer = 0;
     this.stats.maxCount = this.count;
     this.buildLevel();
@@ -411,6 +445,8 @@ export class Game {
     this.bossBody = null;
     this.bossCrown = null;
     this.bossGate = null;
+    this.rouletteWheel = null;
+    this.roulettePrizeSprite = null;
     this.rouletteGroup.clear();
   }
 
@@ -804,24 +840,76 @@ export class Game {
 
   private createRouletteWheel(z: number): void {
     this.rouletteGroup.clear();
-    this.rouletteGroup.position.set(0, 1.65, z);
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(2.5, 2.5, 0.24, 64), this.materials.wheel);
-    wheel.rotation.x = Math.PI / 2;
-    wheel.castShadow = true;
-    this.rouletteGroup.add(wheel);
-    for (let index = 0; index < 8; index += 1) {
-      const marker = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.34, 2.2), index % 2 ? this.materials.gem : this.materials.hazard);
-      marker.position.set(Math.sin((index / 8) * Math.PI * 2) * 1.1, Math.cos((index / 8) * Math.PI * 2) * 1.1, -0.18);
-      marker.rotation.z = -(index / 8) * Math.PI * 2;
-      this.rouletteGroup.add(marker);
+    this.rouletteWheel = new THREE.Group();
+    this.roulettePrizeSprite = null;
+    this.rouletteGroup.position.set(0, 1.48, z);
+
+    const backing = new THREE.Mesh(new THREE.CylinderGeometry(2.36, 2.36, 0.18, 72), this.materials.gatePost);
+    backing.rotation.x = Math.PI / 2;
+    backing.position.z = 0.18;
+    backing.castShadow = true;
+    this.rouletteWheel.add(backing);
+
+    const segmentAngle = (Math.PI * 2) / this.rouletteRewards.length;
+    this.rouletteRewards.forEach((reward, index) => {
+      const start = Math.PI / 2 - segmentAngle / 2 + index * segmentAngle;
+      const end = start + segmentAngle;
+      const segmentMaterial = new THREE.MeshStandardMaterial({
+        color: reward.color,
+        roughness: 0.48,
+        metalness: 0.08,
+        side: THREE.DoubleSide
+      });
+      const segment = new THREE.Mesh(this.makeWheelSegment(0.52, 2.14, start, end), segmentMaterial);
+      segment.position.z = -0.08 - index * 0.001;
+      segment.castShadow = true;
+      this.rouletteWheel?.add(segment);
+
+      const mid = start + segmentAngle / 2;
+      const divider = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.6, 0.08), this.materials.gatePost);
+      divider.position.set(Math.cos(start) * 1.32, Math.sin(start) * 1.32, -0.16);
+      divider.rotation.z = start - Math.PI / 2;
+      this.rouletteWheel?.add(divider);
+
+      const text = this.makeTextSprite(reward.shortLabel, "#ffffff", "#102033");
+      text.position.set(Math.cos(mid) * 1.36, Math.sin(mid) * 1.36, -0.28);
+      text.scale.set(reward.kind === "skin" ? 0.86 : 0.68, 0.25, 1);
+      this.rouletteWheel?.add(text);
+    });
+
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(2.2, 0.07, 10, 96), this.materials.bossGold);
+    rim.position.z = -0.3;
+    rim.castShadow = true;
+    this.rouletteWheel.add(rim);
+    for (let index = 0; index < 24; index += 1) {
+      const angle = (index / 24) * Math.PI * 2;
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), index % 2 ? this.materials.gem : this.materials.bossGold);
+      bulb.position.set(Math.cos(angle) * 2.32, Math.sin(angle) * 2.32, -0.38);
+      this.rouletteWheel.add(bulb);
     }
-    const pointer = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.72, 3), this.materials.hazard);
-    pointer.position.set(0, 2.95, -0.1);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.28, 40), this.materials.bossGold);
+    hub.rotation.x = Math.PI / 2;
+    hub.position.z = -0.4;
+    hub.castShadow = true;
+    this.rouletteWheel.add(hub);
+    const hubGem = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), this.materials.gem);
+    hubGem.position.z = -0.6;
+    this.rouletteWheel.add(hubGem);
+    this.rouletteGroup.add(this.rouletteWheel);
+
+    const pointerBase = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.28, 0.18), this.materials.hazardDark);
+    pointerBase.position.set(0, 2.52, -0.72);
+    pointerBase.castShadow = true;
+    this.rouletteGroup.add(pointerBase);
+    const pointer = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.74, 3), this.materials.hazard);
+    pointer.position.set(0, 2.23, -0.82);
     pointer.rotation.z = Math.PI;
+    pointer.castShadow = true;
     this.rouletteGroup.add(pointer);
-    const label = this.makeTextSprite("LUCKY WHEEL", "#111827", "#ffffff");
-    label.position.set(0, -3.05, -0.1);
-    label.scale.set(2.2, 0.5, 1);
+
+    const label = this.makeTextSprite("BONUS WHEEL", "#111827", "#ffffff");
+    label.position.set(0, -2.66, -0.34);
+    label.scale.set(2.1, 0.48, 1);
     this.rouletteGroup.add(label);
     this.world.add(this.rouletteGroup);
   }
@@ -1457,49 +1545,136 @@ export class Game {
     this.mode = "roulette";
     this.speed = 0;
     this.distance = this.level.length + 10;
-    this.rouletteTimer = 3.2;
+    this.rouletteTimer = 0;
     this.rouletteTick = 0;
+    this.rouletteRevealTimer = 0;
+    this.rouletteResolved = false;
+    this.hud.hideRoulettePrize();
+    this.pickRouletteReward();
+    if (this.rouletteWheel) {
+      this.rouletteWheel.rotation.z = this.rouletteSpinStart;
+    }
     this.audio.switchMusic("roulette");
     this.hud.popText("Spin", "coin");
   }
 
   private updateRoulette(dt: number): void {
-    this.rouletteTimer -= dt;
-    this.rouletteTick -= dt;
-    const speed = 9 + this.rouletteTimer * 4;
-    this.rouletteGroup.rotation.z += speed * dt;
-    if (this.rouletteTick <= 0) {
-      this.audio.rouletteTick();
-      this.rouletteTick = 0.13;
+    if (this.rouletteResolved) {
+      this.rouletteRevealTimer -= dt;
+      if (this.rouletteWheel) {
+        const pulse = 1 + Math.sin(this.lastTime * 10) * 0.012;
+        this.rouletteWheel.scale.set(pulse, pulse, 1);
+      }
+      this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
+      if (this.rouletteRevealTimer <= 0) {
+        this.finishLevel(false, false);
+      }
+      return;
     }
-    this.hud.updateRun(this.level.id, clamp(1 - this.rouletteTimer / 3.2, 0, 1), this.save, this.stats, this.count, this.shield);
-    if (this.rouletteTimer <= 0) {
+
+    this.rouletteTimer += dt;
+    this.rouletteTick -= dt;
+    const spinDuration = 4.15;
+    const progress = clamp(this.rouletteTimer / spinDuration, 0, 1);
+    const eased = 1 - (1 - progress) ** 4;
+    if (this.rouletteWheel) {
+      this.rouletteWheel.rotation.z = this.rouletteSpinStart + (this.rouletteSpinEnd - this.rouletteSpinStart) * eased;
+    }
+    if (this.rouletteTick <= 0 && progress < 0.98) {
+      this.audio.rouletteTick();
+      this.rouletteTick = 0.045 + progress * 0.16;
+    }
+    this.hud.updateRun(this.level.id, progress, this.save, this.stats, this.count, this.shield);
+    if (progress >= 1) {
       this.resolveRoulette();
     }
   }
 
-  private resolveRoulette(): void {
+  private pickRouletteReward(): void {
     const luck = this.save.upgrades.rouletteLuck;
-    const roll = wrap01(seededRandom(this.stats.score + this.level.id * 33) + luck * 0.04);
-    if (roll > 0.88) {
-      this.stats.gems += 8;
-      this.stats.rouletteLabel = "Jackpot: gems +8";
-    } else if (roll > 0.68) {
-      this.stats.coins += 300;
-      this.stats.rouletteLabel = "Wheel: coins +300";
-    } else if (roll > 0.48) {
-      this.save.tickets += 1;
-      saveGame(this.save);
-      this.stats.rouletteLabel = "Wheel: ticket +1";
-    } else if (roll > 0.24) {
-      this.stats.gems += 3;
-      this.stats.rouletteLabel = "Wheel: gems +3";
-    } else {
-      this.stats.coins += 150;
-      this.stats.rouletteLabel = "Wheel: coins +150";
+    const weighted = this.rouletteRewards.map((reward) => ({
+      reward,
+      weight:
+        reward.weight +
+        (reward.kind === "skin" ? luck * 0.09 : 0) +
+        (reward.kind === "gems" && reward.amount >= 8 ? luck * 0.055 : 0) +
+        (reward.kind === "coins" && reward.amount >= 500 ? luck * 0.045 : 0)
+    }));
+    const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0);
+    let cursor = seededRandom(this.stats.score + this.level.id * 91 + this.save.tickets * 17) * totalWeight;
+    let selectedIndex = 0;
+    for (let index = 0; index < weighted.length; index += 1) {
+      cursor -= weighted[index].weight;
+      if (cursor <= 0) {
+        selectedIndex = index;
+        break;
+      }
     }
+    this.rouletteSelectedReward = this.rouletteRewards[selectedIndex];
+    this.rouletteSpinStart = 0;
+    const segmentAngle = (Math.PI * 2) / this.rouletteRewards.length;
+    const selectedMid = Math.PI / 2 + selectedIndex * segmentAngle;
+    this.rouletteSpinEnd = Math.PI * 2 * 6 + (Math.PI / 2 - selectedMid);
+  }
+
+  private resolveRoulette(): void {
+    if (this.rouletteResolved) {
+      return;
+    }
+    const reward = this.rouletteSelectedReward ?? this.rouletteRewards[0];
+    const prizeLabel = this.applyRouletteReward(reward);
+    this.rouletteResolved = true;
+    this.rouletteRevealTimer = 3.2;
+    this.hud.showRoulettePrize(prizeLabel);
+    this.hud.popText(prizeLabel, reward.tone);
+    this.showRoulettePrizeSprite(prizeLabel, reward.color);
+    this.spawnBurst(0, this.level.length + 18, reward.color);
+    this.audio.reward();
     this.stats.score += 650;
-    this.finishLevel(false);
+    this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
+  }
+
+  private applyRouletteReward(reward: RouletteReward): string {
+    if (reward.kind === "coins") {
+      this.stats.coins += reward.amount;
+      this.stats.rouletteLabel = `Wheel: coins +${reward.amount}`;
+      return `Coins +${reward.amount}`;
+    }
+    if (reward.kind === "gems") {
+      this.stats.gems += reward.amount;
+      this.stats.rouletteLabel = reward.amount >= 8 ? `Jackpot: gems +${reward.amount}` : `Wheel: gems +${reward.amount}`;
+      return `Gems +${reward.amount}`;
+    }
+    if (reward.kind === "ticket") {
+      this.save.tickets += reward.amount;
+      saveGame(this.save);
+      this.stats.rouletteLabel = `Wheel: ticket +${reward.amount}`;
+      return `Ticket +${reward.amount}`;
+    }
+
+    const skin = cosmeticCatalog.find((item) => item.cost > 0 && !this.save.ownedCosmetics.includes(item.key));
+    if (skin) {
+      this.save.ownedCosmetics.push(skin.key);
+      this.save.equippedCosmetics[skin.slot] = skin.key;
+      saveGame(this.save);
+      this.applyCosmetics();
+      this.stats.rouletteLabel = `Jackpot skin: ${skin.label}`;
+      return skin.label;
+    }
+    this.stats.gems += 10;
+    this.stats.rouletteLabel = "Jackpot converted: gems +10";
+    return "Gems +10";
+  }
+
+  private showRoulettePrizeSprite(label: string, color: number): void {
+    if (this.roulettePrizeSprite) {
+      this.rouletteGroup.remove(this.roulettePrizeSprite);
+    }
+    const background = `#${color.toString(16).padStart(6, "0")}`;
+    this.roulettePrizeSprite = this.makeTextSprite(label.toUpperCase(), background, "#ffffff");
+    this.roulettePrizeSprite.position.set(0, -3.12, -0.38);
+    this.roulettePrizeSprite.scale.set(2.2, 0.52, 1);
+    this.rouletteGroup.add(this.roulettePrizeSprite);
   }
 
   private finishLevel(_bossDefeated: boolean, playRewardSound = true): void {
@@ -1750,6 +1925,17 @@ export class Game {
         life: 1.9 + Math.random() * 0.8
       });
     }
+  }
+
+  private makeWheelSegment(innerRadius: number, outerRadius: number, startAngle: number, endAngle: number): THREE.ShapeGeometry {
+    const shape = new THREE.Shape();
+    shape.moveTo(Math.cos(startAngle) * innerRadius, Math.sin(startAngle) * innerRadius);
+    shape.lineTo(Math.cos(startAngle) * outerRadius, Math.sin(startAngle) * outerRadius);
+    shape.absarc(0, 0, outerRadius, startAngle, endAngle, false);
+    shape.lineTo(Math.cos(endAngle) * innerRadius, Math.sin(endAngle) * innerRadius);
+    shape.absarc(0, 0, innerRadius, endAngle, startAngle, true);
+    shape.closePath();
+    return new THREE.ShapeGeometry(shape, 24);
   }
 
   private makeTextSprite(text: string, background: string, foreground: string): THREE.Sprite {
