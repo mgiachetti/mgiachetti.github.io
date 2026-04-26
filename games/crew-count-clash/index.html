@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Crew Count Clash is a 3D crowd runner with math gates, crew swarms, traps, bosses, roulette rewards, final stairs, and upgrades."
+    />
+    <title>Crew Count Clash</title>
+  </head>
+  <body>
+    <canvas id="game-canvas" aria-label="Crew Count Clash 3D canvas"></canvas>
+
+    <div id="hud" class="hud is-hidden">
+      <div class="hud-row top">
+        <div class="pill">
+          <span>Level</span>
+          <b data-level>1</b>
+        </div>
+        <div class="pill wide">
+          <span>Crew</span>
+          <b data-count>1</b>
+        </div>
+        <div class="pill">
+          <span>Coins</span>
+          <b data-coins>0</b>
+        </div>
+        <button class="icon-button" type="button" data-pause aria-label="Pause">II</button>
+      </div>
+      <div class="progress-shell" aria-hidden="true">
+        <div class="progress-fill" data-progress></div>
+      </div>
+      <div class="hud-row bottom">
+        <div class="meter">
+          <span>Score</span>
+          <b data-score>0</b>
+        </div>
+        <div class="meter">
+          <span>Shield</span>
+          <b data-shield>0</b>
+        </div>
+        <div class="meter">
+          <span>Combo</span>
+          <b data-combo>1x</b>
+        </div>
+      </div>
+      <div id="float-layer" aria-hidden="true"></div>
+    </div>
+
+    <section id="title-screen" class="panel home">
+      <div class="brand-block">
+        <p class="kicker">3D Crowd Runner</p>
+        <h1>Crew Count Clash</h1>
+        <p class="subtitle">Pick the right gates, save the crew, beat the boss, and climb higher.</p>
+      </div>
+      <div class="home-stats">
+        <div><span>Level</span><b data-home-level>1</b></div>
+        <div><span>Coins</span><b data-home-coins>0</b></div>
+        <div><span>Gems</span><b data-home-gems>0</b></div>
+        <div><span>Medals</span><b data-home-medals>0</b></div>
+      </div>
+      <div class="actions">
+        <button class="primary" type="button" data-start>Start Run</button>
+        <button type="button" data-open-shop>Shop</button>
+        <button type="button" data-mute>Sound</button>
+      </div>
+    </section>
+
+    <section id="reward-screen" class="panel compact is-hidden">
+      <p class="kicker" data-result-kind>Run Complete</p>
+      <h2 data-result-title>Level Clear</h2>
+      <div class="result-grid">
+        <div><span>Score</span><b data-result-score>0</b></div>
+        <div><span>Coins</span><b data-result-coins>0</b></div>
+        <div><span>Gems</span><b data-result-gems>0</b></div>
+        <div><span>Stars</span><b data-result-stars>0</b></div>
+      </div>
+      <p class="reward-line" data-result-extra></p>
+      <div class="actions">
+        <button class="primary" type="button" data-next>Next</button>
+        <button type="button" data-open-shop>Shop</button>
+        <button type="button" data-retry>Replay</button>
+      </div>
+    </section>
+
+    <section id="fail-screen" class="panel compact is-hidden">
+      <p class="kicker">Crew Lost</p>
+      <h2>Try Again</h2>
+      <div class="result-grid">
+        <div><span>Score</span><b data-fail-score>0</b></div>
+        <div><span>Best Crew</span><b data-fail-count>0</b></div>
+      </div>
+      <div class="actions">
+        <button class="primary" type="button" data-retry>Retry</button>
+        <button type="button" data-home>Home</button>
+      </div>
+    </section>
+
+    <section id="pause-screen" class="panel compact is-hidden">
+      <p class="kicker">Paused</p>
+      <h2>Run Held</h2>
+      <div class="actions">
+        <button class="primary" type="button" data-resume>Resume</button>
+        <button type="button" data-retry>Restart</button>
+        <button type="button" data-home>Home</button>
+      </div>
+    </section>
+
+    <section id="shop-screen" class="panel shop is-hidden">
+      <div class="shop-header">
+        <div>
+          <p class="kicker">Crew Bay</p>
+          <h2>Shop</h2>
+        </div>
+        <button class="icon-button" type="button" data-close-shop aria-label="Close shop">X</button>
+      </div>
+      <div class="shop-wallet">
+        <div><span>Coins</span><b data-shop-coins>0</b></div>
+        <div><span>Gems</span><b data-shop-gems>0</b></div>
+        <div><span>Tickets</span><b data-shop-tickets>0</b></div>
+        <div><span>Stars</span><b data-shop-stars>0</b></div>
+      </div>
+      <div class="shop-section">
+        <h3>Upgrades</h3>
+        <div class="upgrade-grid">
+          <button type="button" data-buy="startCrew">Start Crew <b data-upgrade-startCrew>Tier 0</b></button>
+          <button type="button" data-buy="gateBonus">Gate Bonus <b data-upgrade-gateBonus>Tier 0</b></button>
+          <button type="button" data-buy="formation">Formation <b data-upgrade-formation>Tier 0</b></button>
+          <button type="button" data-buy="shield">Shield <b data-upgrade-shield>Tier 0</b></button>
+          <button type="button" data-buy="coinValue">Coin Value <b data-upgrade-coinValue>Tier 0</b></button>
+          <button type="button" data-buy="bossDamage">Boss Damage <b data-upgrade-bossDamage>Tier 0</b></button>
+          <button type="button" data-buy="magnet">Magnet <b data-upgrade-magnet>Tier 0</b></button>
+          <button type="button" data-buy="rouletteLuck">Roulette Luck <b data-upgrade-rouletteLuck>Tier 0</b></button>
+        </div>
+      </div>
+      <div class="shop-section">
+        <h3>Cosmetics</h3>
+        <div class="cosmetics" data-cosmetics></div>
+      </div>
+      <div class="actions">
+        <button type="button" data-reset-save>Reset Save</button>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

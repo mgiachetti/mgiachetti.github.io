@@ -1,0 +1,417 @@
+:root {
+  color: #14213d;
+  background: #8ddcf0;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#game-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.55), transparent 22rem),
+    linear-gradient(180deg, #aee8ff 0%, #79d5f2 42%, #54bdd8 100%);
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.78rem 1rem;
+  color: #13223a;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(13, 36, 61, 0.16);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.62;
+}
+
+button.primary {
+  color: #ffffff;
+  background: #146ef5;
+}
+
+button.is-active {
+  color: #ffffff;
+  background: #334155;
+}
+
+#game-canvas {
+  display: block;
+  touch-action: none;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.hud-row {
+  position: absolute;
+  left: clamp(12px, 3vw, 28px);
+  right: clamp(12px, 3vw, 28px);
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.hud-row.top {
+  top: clamp(12px, 2vw, 22px);
+}
+
+.hud-row.bottom {
+  bottom: clamp(14px, 3vw, 26px);
+  justify-content: center;
+}
+
+.pill,
+.meter {
+  min-width: 82px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 10px 24px rgba(13, 36, 61, 0.14);
+  backdrop-filter: blur(12px);
+}
+
+.pill.wide {
+  min-width: 112px;
+}
+
+.pill span,
+.meter span,
+.home-stats span,
+.shop-wallet span,
+.result-grid span {
+  display: block;
+  color: #58657a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.pill b,
+.meter b,
+.home-stats b,
+.shop-wallet b,
+.result-grid b {
+  display: block;
+  color: #102033;
+  font-size: 1.12rem;
+  line-height: 1.2;
+}
+
+.icon-button {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.progress-shell {
+  position: absolute;
+  top: clamp(78px, 10vh, 92px);
+  left: 50%;
+  width: min(560px, 72vw);
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  transform: translateX(-50%);
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #146ef5, #21c55d, #ffca3a);
+}
+
+#float-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.float-pop {
+  position: absolute;
+  padding: 0.38rem 0.6rem;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #16a34a;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+  animation: float-pop 860ms ease-out forwards;
+}
+
+.float-pop.bad {
+  background: #ef476f;
+}
+
+.float-pop.coin {
+  color: #2b2000;
+  background: #ffd166;
+}
+
+.float-pop.boss {
+  background: #7c3aed;
+}
+
+@keyframes float-pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+  18% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-44px) scale(1.06);
+  }
+}
+
+.panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: min(520px, calc(100vw - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 22px 60px rgba(13, 36, 61, 0.24);
+  transform: translate(-50%, -50%);
+  backdrop-filter: blur(16px);
+}
+
+.panel.home {
+  top: auto;
+  bottom: clamp(18px, 4vw, 40px);
+  transform: translateX(-50%);
+}
+
+.panel.compact {
+  width: min(460px, calc(100vw - 28px));
+}
+
+.panel.shop {
+  width: min(780px, calc(100vw - 28px));
+}
+
+.brand-block,
+.shop-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.shop-header {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.kicker {
+  margin: 0;
+  color: #146ef5;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+h3,
+.subtitle,
+.reward-line {
+  margin: 0;
+}
+
+h1 {
+  max-width: 9ch;
+  font-size: clamp(2.4rem, 9vw, 4.4rem);
+  line-height: 0.95;
+}
+
+h2 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  line-height: 1;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+.subtitle,
+.reward-line {
+  max-width: 34rem;
+  color: #526078;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.home-stats,
+.shop-wallet,
+.result-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.home-stats div,
+.shop-wallet div,
+.result-grid div {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: rgba(20, 110, 245, 0.08);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.actions button {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.shop-section {
+  margin-top: 1rem;
+}
+
+.upgrade-grid,
+.cosmetics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.65rem;
+}
+
+.upgrade-grid button {
+  min-height: 74px;
+  padding: 0.72rem;
+  text-align: left;
+}
+
+.upgrade-grid b {
+  display: block;
+  margin-top: 0.3rem;
+  color: #146ef5;
+  font-size: 0.82rem;
+}
+
+.cosmetic {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.58rem;
+  text-align: left;
+}
+
+.cosmetic b,
+.cosmetic small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cosmetic small {
+  grid-column: 2;
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.cosmetic.equipped {
+  outline: 2px solid #21c55d;
+}
+
+.swatch {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--swatch), var(--swatch2));
+  box-shadow: inset 0 -8px 12px rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 640px) {
+  .hud-row {
+    left: 10px;
+    right: 10px;
+    gap: 0.42rem;
+  }
+
+  .pill,
+  .meter {
+    min-width: 0;
+    flex: 1 1 0;
+    padding: 0.46rem 0.52rem;
+  }
+
+  .pill b,
+  .meter b {
+    font-size: 0.96rem;
+  }
+
+  .progress-shell {
+    top: 76px;
+    width: calc(100vw - 42px);
+  }
+
+  .home-stats,
+  .shop-wallet,
+  .result-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .upgrade-grid,
+  .cosmetics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel.home {
+    bottom: 12px;
+  }
+
+  h1 {
+    max-width: 10ch;
+  }
+}
