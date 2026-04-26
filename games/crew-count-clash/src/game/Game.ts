@@ -70,9 +70,11 @@ export class Game {
   private bossWeapon: THREE.Group | null = null;
   private bossRightArm: THREE.Object3D | null = null;
   private bossLeftArm: THREE.Object3D | null = null;
+  private bossRightHand: THREE.Object3D | null = null;
   private bossBody: THREE.Object3D | null = null;
   private bossCrown: THREE.Object3D | null = null;
   private bossGate: THREE.Object3D | null = null;
+  private stairScoreMarker: THREE.Object3D | null = null;
   private rouletteGroup = new THREE.Group();
   private rouletteWheel: THREE.Group | null = null;
   private roulettePrizeSprite: THREE.Sprite | null = null;
@@ -442,9 +444,11 @@ export class Game {
     this.bossWeapon = null;
     this.bossRightArm = null;
     this.bossLeftArm = null;
+    this.bossRightHand = null;
     this.bossBody = null;
     this.bossCrown = null;
     this.bossGate = null;
+    this.stairScoreMarker = null;
     this.rouletteWheel = null;
     this.roulettePrizeSprite = null;
     this.rouletteGroup.clear();
@@ -731,24 +735,57 @@ export class Game {
 
   private createStairs(zStart: number): void {
     this.stairsGroup.clear();
+    this.stairScoreMarker = null;
     this.stairsGroup.position.set(0, 0, zStart);
     const tower = new THREE.Mesh(new THREE.BoxGeometry(5.8, 2.8, 1.3), this.materials.castle);
     tower.position.set(0, 1.3, 23);
     tower.castShadow = true;
     this.stairsGroup.add(tower);
+    const stairColors = [0x58f29a, 0x7bdff2, 0xffd166, 0xff9f1c, 0xef476f, 0x9b5de5];
     for (let index = 0; index < 24; index += 1) {
-      const step = new THREE.Mesh(new THREE.BoxGeometry(4.8 - Math.min(index * 0.08, 1.2), 0.18, 0.72), this.materials.castle);
+      const multiplier = 1 + Math.floor(index / 4);
+      const width = 4.8 - Math.min(index * 0.08, 1.2);
+      const material = new THREE.MeshStandardMaterial({
+        color: stairColors[Math.min(multiplier - 1, stairColors.length - 1)],
+        roughness: 0.56,
+        metalness: 0.05
+      });
+      const step = new THREE.Mesh(new THREE.BoxGeometry(width, 0.18, 0.72), material);
       step.position.set(0, index * 0.16, index * 0.76);
       step.receiveShadow = true;
       step.castShadow = true;
       this.stairsGroup.add(step);
-      if (index % 5 === 4) {
-        const label = this.makeTextSprite(`x${1 + Math.floor(index / 5)}`, "#2b9bb6", "#ffffff");
-        label.position.set(2.65, index * 0.16 + 0.45, index * 0.76);
-        label.scale.set(0.9, 0.34, 1);
+      if (index % 2 === 0 || index >= 18) {
+        const label = this.makeTextSprite(`x${multiplier}`, "#ffffff", "#102033");
+        label.position.set(0, index * 0.16 + 0.31, index * 0.76 - 0.08);
+        label.scale.set(0.94, 0.34, 1);
         this.stairsGroup.add(label);
       }
+      if (index % 4 === 3) {
+        const banner = this.makeTextSprite(`SCORE x${multiplier}`, "#13223a", "#ffffff");
+        banner.position.set(2.78, index * 0.16 + 0.72, index * 0.76);
+        banner.scale.set(1.42, 0.4, 1);
+        this.stairsGroup.add(banner);
+      }
     }
+    [-2.72, 2.72].forEach((x) => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.14, 18.5), this.materials.gatePost);
+      rail.position.set(x, 2.12, 8.7);
+      rail.rotation.x = -0.22;
+      rail.castShadow = true;
+      this.stairsGroup.add(rail);
+    });
+    this.stairScoreMarker = new THREE.Group();
+    const markerBase = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.7, 4), this.materials.bossGold);
+    markerBase.rotation.y = Math.PI / 4;
+    markerBase.castShadow = true;
+    this.stairScoreMarker.add(markerBase);
+    const markerLabel = this.makeTextSprite("SCORE", "#ffca3a", "#102033");
+    markerLabel.position.set(0, 0.62, 0);
+    markerLabel.scale.set(0.88, 0.26, 1);
+    this.stairScoreMarker.add(markerLabel);
+    this.stairScoreMarker.position.set(-2.95, 0.6, 0);
+    this.stairsGroup.add(this.stairScoreMarker);
     this.world.add(this.stairsGroup);
   }
 
@@ -758,6 +795,7 @@ export class Game {
     this.bossWeapon = null;
     this.bossRightArm = null;
     this.bossLeftArm = null;
+    this.bossRightHand = null;
     this.bossBody = null;
     this.bossCrown = null;
     this.bossGate = null;
@@ -796,15 +834,30 @@ export class Game {
     this.bossGroup.add(this.bossLeftArm);
 
     this.bossRightArm = new THREE.Group();
-    this.bossRightArm.position.set(0.92, 1.72, 4.04);
-    const rightArmMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.82, 8, 14), bossMaterial);
-    rightArmMesh.position.y = -0.22;
-    rightArmMesh.castShadow = true;
-    this.bossRightArm.add(rightArmMesh);
+    this.bossRightArm.position.set(0.78, 2.02, 4.08);
+    this.bossRightArm.rotation.z = -0.32;
+    const rightUpperArm = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.68, 8, 14), bossMaterial);
+    rightUpperArm.position.y = -0.34;
+    rightUpperArm.rotation.z = -0.14;
+    rightUpperArm.castShadow = true;
+    this.bossRightArm.add(rightUpperArm);
+    this.bossRightHand = new THREE.Group();
+    this.bossRightHand.position.set(0.24, -0.78, -0.34);
+    this.bossRightHand.rotation.z = -0.42;
+    const rightForearm = new THREE.Mesh(new THREE.CapsuleGeometry(0.16, 0.58, 8, 14), bossMaterial);
+    rightForearm.position.y = -0.24;
+    rightForearm.rotation.z = -0.12;
+    rightForearm.castShadow = true;
+    this.bossRightHand.add(rightForearm);
+    const rightFist = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 10), bossMaterial);
+    rightFist.position.set(0.03, -0.62, -0.08);
+    rightFist.castShadow = true;
+    this.bossRightHand.add(rightFist);
+    this.bossRightArm.add(this.bossRightHand);
     this.bossGroup.add(this.bossRightArm);
 
     this.bossWeapon = new THREE.Group();
-    this.bossWeapon.position.set(1.2, 1.96, 3.2);
+    this.bossWeapon.position.set(0.1, -0.82, -0.78);
     const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.75, 12), this.materials.hazardDark);
     handle.position.y = -0.52;
     handle.castShadow = true;
@@ -818,8 +871,8 @@ export class Game {
     head.position.y = 0.46;
     head.castShadow = true;
     this.bossWeapon.add(head);
-    this.bossWeapon.rotation.z = -0.58;
-    this.bossGroup.add(this.bossWeapon);
+    this.bossWeapon.rotation.z = -0.24;
+    this.bossRightHand.add(this.bossWeapon);
 
     this.bossCrown = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.9, 5), this.materials.bossGold);
     this.bossCrown.position.set(0, 3, 4.5);
@@ -1339,6 +1392,14 @@ export class Game {
 
   private updateStairs(dt: number): void {
     this.stairTimer += dt;
+    const markerStep = clamp(this.stats.finalStair, 0, 23);
+    if (this.stairScoreMarker) {
+      const markerTargetY = 0.62 + markerStep * 0.16;
+      const markerTargetZ = markerStep * 0.76;
+      this.stairScoreMarker.position.y = damp(this.stairScoreMarker.position.y, markerTargetY, 8, dt);
+      this.stairScoreMarker.position.z = damp(this.stairScoreMarker.position.z, markerTargetZ, 8, dt);
+      this.stairScoreMarker.rotation.y += dt * 3.5;
+    }
     this.hud.updateRun(this.level.id, clamp(this.stats.finalStair / 24, 0, 1), this.save, this.stats, this.count, this.shield);
     if (this.stairTimer < 0.11) {
       return;
@@ -1347,9 +1408,12 @@ export class Game {
     if (this.count > 0 && this.stats.finalStair < 24) {
       this.count -= 1;
       this.stats.finalStair += 1;
-      const multiplier = 1 + Math.floor(this.stats.finalStair / 5);
+      const multiplier = Math.min(6, 1 + Math.floor((this.stats.finalStair - 1) / 4));
       this.stats.score += 95 * multiplier;
       this.stats.coins += 4 * multiplier;
+      if (this.stats.finalStair % 4 === 0 || this.stats.finalStair >= 20) {
+        this.hud.popText(`x${multiplier}`, "coin");
+      }
       this.audio.coin();
       return;
     }
@@ -1442,14 +1506,21 @@ export class Game {
       const sweepSwing = bossAttackKind === "sweep" ? Math.sin(warningProgress * Math.PI * 1.25) * 1.25 + impactArc * 1.1 : 0;
       const minionShake = bossAttackKind === "minions" ? Math.sin(this.lastTime * 9) * 0.22 + warningArc * 0.55 + impactArc * 0.35 : 0;
       const slamImpact = bossAttackKind === "stomp" ? impactArc * 1.25 : impactArc * 0.35;
-      this.bossWeapon.rotation.z = -0.58 - stompWindup - slamImpact + sweepSwing + minionShake + bossIdle * 0.55;
+      this.bossWeapon.rotation.z = -0.24 - stompWindup * 0.38 - slamImpact * 0.3 + sweepSwing * 0.32 + minionShake + bossIdle * 0.55;
       this.bossWeapon.rotation.x = bossAttackKind === "sweep" ? warningArc * 0.45 + impactArc * 0.18 : impactArc * 0.22;
-      this.bossWeapon.position.x = 1.2 + this.bossAttackX * 0.08 + (bossAttackKind === "sweep" ? impactArc * Math.sign(this.bossAttackX || 1) * 0.22 : 0);
-      this.bossWeapon.position.y = 1.96 + Math.sin(this.lastTime * 3) * 0.04 + warningArc * 0.14 - impactArc * 0.12;
+      this.bossWeapon.position.x = 0.1 + this.bossAttackX * 0.025 + (bossAttackKind === "sweep" ? impactArc * Math.sign(this.bossAttackX || 1) * 0.1 : 0);
+      this.bossWeapon.position.y = -0.82 + Math.sin(this.lastTime * 3) * 0.025 + warningArc * 0.06 - impactArc * 0.08;
+      this.bossWeapon.position.z = -0.78 - warningArc * 0.08 - impactArc * 0.12;
     }
     if (this.bossRightArm) {
-      this.bossRightArm.rotation.z = -0.22 + bossIdle * 0.6 - (this.bossAttackWarn > 0 ? warningProgress * 0.8 : 0) - impactArc * 0.55;
-      this.bossRightArm.rotation.x = this.bossAttackWarn > 0 ? warningArc * 0.22 : impactArc * 0.14;
+      const sweepShoulder = bossAttackKind === "sweep" ? Math.sin(warningProgress * Math.PI * 1.2) * 0.7 + impactArc * 0.55 : 0;
+      this.bossRightArm.rotation.z = -0.32 + bossIdle * 0.6 - warningArc * 0.58 - impactArc * 0.72 + sweepShoulder;
+      this.bossRightArm.rotation.x = -warningArc * 0.28 + impactArc * 0.24;
+      this.bossRightArm.rotation.y = bossAttackKind === "sweep" ? warningArc * 0.28 - impactArc * 0.18 : -impactArc * 0.12;
+    }
+    if (this.bossRightHand) {
+      this.bossRightHand.rotation.z = -0.42 - warningArc * 0.62 - impactArc * 0.8 + (bossAttackKind === "sweep" ? warningArc * 0.42 : 0);
+      this.bossRightHand.rotation.x = -warningArc * 0.25 + impactArc * 0.2;
     }
     if (this.bossLeftArm) {
       this.bossLeftArm.rotation.z = 0.62 + Math.sin(this.lastTime * 3.2) * 0.08 + this.bossHitPulse * 0.08;
@@ -1509,14 +1580,20 @@ export class Game {
       this.bossBody.scale.setScalar(1 - eased * 0.08);
     }
     if (this.bossWeapon) {
-      this.bossWeapon.position.y = 1.96 - eased * 1.05;
-      this.bossWeapon.position.x = 1.2 + eased * 0.38;
+      this.bossWeapon.position.y = -0.82 - eased * 0.26;
+      this.bossWeapon.position.x = 0.1 + eased * 0.2;
+      this.bossWeapon.position.z = -0.78 + eased * 0.18;
       this.bossWeapon.rotation.x = eased * 1.1;
-      this.bossWeapon.rotation.z = -0.58 - eased * 2.05;
+      this.bossWeapon.rotation.z = -0.24 - eased * 1.6;
     }
     if (this.bossRightArm) {
-      this.bossRightArm.rotation.z = -0.22 - eased * 1.35;
-      this.bossRightArm.rotation.x = eased * 0.3;
+      this.bossRightArm.rotation.z = -0.32 - eased * 1.28;
+      this.bossRightArm.rotation.x = eased * 0.32;
+      this.bossRightArm.rotation.y = -eased * 0.18;
+    }
+    if (this.bossRightHand) {
+      this.bossRightHand.rotation.z = -0.42 - eased * 1.4;
+      this.bossRightHand.rotation.x = eased * 0.38;
     }
     if (this.bossLeftArm) {
       this.bossLeftArm.rotation.z = 0.62 + eased * 1.08;
@@ -1856,16 +1933,16 @@ export class Game {
         : isBossScene
           ? this.level.length + 15.5
           : this.mode === "stairs"
-            ? this.level.length + 18.6
+            ? this.level.length + 18.2
             : this.distance + 8;
-    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : this.mode === "stairs" ? 6.6 : 8.5;
+    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : this.mode === "stairs" ? 6.15 : 8.5;
     const cameraZ =
       this.mode === "roulette"
         ? this.level.length + 9
         : isBossScene
           ? this.distance - 9.5
           : this.mode === "stairs"
-            ? this.level.length + 3.3
+            ? this.level.length + 5.8
             : this.distance - 10.5;
     const shake = this.cameraShake > 0 ? (Math.random() - 0.5) * this.cameraShake * 0.6 : 0;
     const lookY = this.mode === "stairs" ? 1.35 : 0.75;
