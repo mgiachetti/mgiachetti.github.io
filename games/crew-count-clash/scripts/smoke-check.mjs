@@ -180,6 +180,38 @@ try {
   await boss.screenshot(join(screenshotDir, "crew-count-clash-smoke-boss.png"));
   await boss.close();
 
+  const bossVictory = await openPage();
+  await bossVictory.send("Page.enable");
+  await bossVictory.send("Runtime.enable");
+  await bossVictory.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await bossVictory.send("Page.navigate", { url: `${origin}?autostart=1&level=10&boss=1&count=3000&pixel=1` });
+  await sleep(1700);
+  const bossVictoryMid = await bossVictory.eval(`(() => {
+    const canvas = document.querySelector("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const pixel = new Uint8Array(4);
+    gl.readPixels(Math.floor(canvas.width * 0.5), Math.floor(canvas.height * 0.5), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    return {
+      sample: Array.from(pixel),
+      hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+      rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden")
+    };
+  })()`);
+  assert(bossVictoryMid.hudVisible, "Boss victory sequence should keep HUD visible before rewards.");
+  assert(!bossVictoryMid.rewardVisible, "Boss victory should not jump straight to the reward panel.");
+  assert(bossVictoryMid.sample.some((value) => value > 0), `Boss victory canvas should be nonblank, got ${bossVictoryMid.sample.join(",")}.`);
+  await bossVictory.screenshot(join(screenshotDir, "crew-count-clash-smoke-boss-victory.png"));
+  await sleep(5200);
+  const bossVictoryDone = await bossVictory.eval(`(() => ({
+    rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
+    title: document.querySelector("[data-result-title]").textContent,
+    extra: document.querySelector("[data-result-extra]").textContent
+  }))()`);
+  assert(bossVictoryDone.rewardVisible, "Boss victory should finish on the reward panel.");
+  assert(bossVictoryDone.title === "Boss Defeated", `Expected Boss Defeated reward, got ${bossVictoryDone.title}.`);
+  assert(bossVictoryDone.extra.includes("Boss medal"), `Expected boss reward copy, got ${bossVictoryDone.extra}.`);
+  await bossVictory.close();
+
   const stairs = await openPage();
   await stairs.send("Page.enable");
   await stairs.send("Runtime.enable");

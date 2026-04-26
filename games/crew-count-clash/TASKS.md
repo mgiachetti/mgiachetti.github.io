@@ -153,7 +153,7 @@ Status markers:
 - [~] Add chest/gem vault milestones.
 - [x] Add camera tilt/reveal.
 - [x] Convert reached stair to score/coins.
-- [ ] Add perfect-run stair boost.
+- [x] Add perfect-run stair boost.
 
 ## Phase 12 - Boss System
 
@@ -164,7 +164,7 @@ Status markers:
 - [x] Implement sweep attack.
 - [x] Implement minion waves.
 - [ ] Implement weak-point gates.
-- [ ] Implement defeat/castle capture sequence.
+- [x] Implement defeat/castle capture sequence.
 - [x] Add boss medals and gems.
 - [~] Add at least 5 boss archetypes/configs.
 
@@ -261,7 +261,7 @@ Status markers:
 - [x] Add coin/gem bursts.
 - [~] Add impact squash/stretch.
 - [x] Add camera shake for major hits.
-- [ ] Add boss defeat confetti.
+- [x] Add boss defeat confetti.
 - [ ] Add themed track biomes.
 - [ ] Add loading screen.
 - [ ] Add app icon/preview image.
@@ -277,8 +277,8 @@ Status markers:
 - [ ] Test save reset/dev tools.
 - [x] Test production build locally.
 - [ ] Fix performance hotspots.
-- [ ] Deploy to GitHub Pages path.
-- [ ] Document run/build commands.
+- [~] Deploy to GitHub Pages path.
+- [x] Document run/build commands.
 
 ## Iteration Rules
 

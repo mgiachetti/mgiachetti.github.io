@@ -21,6 +21,7 @@ type RuntimeTrack = {
 type FloatingItem = {
   mesh: THREE.Object3D;
   velocity: THREE.Vector3;
+  angularVelocity?: THREE.Vector3;
   life: number;
 };
 
@@ -56,13 +57,21 @@ export class Game {
   private stairsGroup = new THREE.Group();
   private bossGroup = new THREE.Group();
   private bossTelegraph: THREE.Mesh | null = null;
+  private bossWeapon: THREE.Group | null = null;
+  private bossRightArm: THREE.Object3D | null = null;
+  private bossLeftArm: THREE.Object3D | null = null;
+  private bossBody: THREE.Object3D | null = null;
+  private bossCrown: THREE.Object3D | null = null;
+  private bossGate: THREE.Object3D | null = null;
   private rouletteGroup = new THREE.Group();
   private bossHp = 0;
   private bossMaxHp = 1;
   private bossAttackTimer = 0;
   private bossAttackWarn = 0;
+  private bossAttackImpact = 0;
   private bossAttackX = 0;
   private bossHitPulse = 0;
+  private bossVictoryTimer = 0;
   private bossBombs = 0;
   private rouletteTimer = 0;
   private rouletteTick = 0;
@@ -373,7 +382,11 @@ export class Game {
     this.bossBombs = 0;
     this.bossHp = 0;
     this.bossMaxHp = 1;
+    this.bossAttackTimer = 0;
+    this.bossAttackWarn = 0;
+    this.bossAttackImpact = 0;
     this.bossHitPulse = 0;
+    this.bossVictoryTimer = 0;
     this.rouletteTimer = 0;
     this.rouletteTick = 0;
     this.stairTimer = 0;
@@ -392,6 +405,12 @@ export class Game {
     this.stairsGroup.clear();
     this.bossGroup.clear();
     this.bossTelegraph = null;
+    this.bossWeapon = null;
+    this.bossRightArm = null;
+    this.bossLeftArm = null;
+    this.bossBody = null;
+    this.bossCrown = null;
+    this.bossGate = null;
     this.rouletteGroup.clear();
   }
 
@@ -700,6 +719,12 @@ export class Game {
   private createBossArena(): void {
     this.bossGroup.clear();
     this.bossTelegraph = null;
+    this.bossWeapon = null;
+    this.bossRightArm = null;
+    this.bossLeftArm = null;
+    this.bossBody = null;
+    this.bossCrown = null;
+    this.bossGate = null;
     const z = this.level.length + 12;
     this.bossGroup.position.set(0, 0, z);
     this.bossGroup.rotation.set(0, 0, 0);
@@ -720,23 +745,56 @@ export class Game {
     const bossMaterial = this.level.boss?.bodyColor
       ? new THREE.MeshStandardMaterial({ color: this.level.boss.bodyColor, roughness: 0.6, metalness: 0.04 })
       : this.materials.boss;
-    const body = new THREE.Mesh(new THREE.CapsuleGeometry(1.05, 1.45, 12, 28), bossMaterial);
-    body.position.set(0, 1.65, 4.5);
-    body.castShadow = true;
-    this.bossGroup.add(body);
+    this.bossBody = new THREE.Mesh(new THREE.CapsuleGeometry(1.05, 1.45, 12, 28), bossMaterial);
+    this.bossBody.position.set(0, 1.65, 4.5);
+    this.bossBody.castShadow = true;
+    this.bossGroup.add(this.bossBody);
     const visor = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.42, 0.12), this.materials.visor);
     visor.position.set(0, 1.95, 3.42);
     this.bossGroup.add(visor);
-    const crown = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.9, 5), this.materials.bossGold);
-    crown.position.set(0, 3, 4.5);
-    crown.rotation.y = Math.PI / 5;
-    crown.castShadow = true;
-    this.bossGroup.add(crown);
 
-    const gate = new THREE.Mesh(new THREE.BoxGeometry(4.8, 3.4, 0.6), this.materials.castle);
-    gate.position.set(0, 1.45, 8);
-    gate.castShadow = true;
-    this.bossGroup.add(gate);
+    this.bossLeftArm = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.72, 8, 14), bossMaterial);
+    this.bossLeftArm.position.set(-0.98, 1.62, 4.05);
+    this.bossLeftArm.rotation.z = 0.62;
+    this.bossLeftArm.castShadow = true;
+    this.bossGroup.add(this.bossLeftArm);
+
+    this.bossRightArm = new THREE.Group();
+    this.bossRightArm.position.set(0.92, 1.72, 4.04);
+    const rightArmMesh = new THREE.Mesh(new THREE.CapsuleGeometry(0.18, 0.82, 8, 14), bossMaterial);
+    rightArmMesh.position.y = -0.22;
+    rightArmMesh.castShadow = true;
+    this.bossRightArm.add(rightArmMesh);
+    this.bossGroup.add(this.bossRightArm);
+
+    this.bossWeapon = new THREE.Group();
+    this.bossWeapon.position.set(1.2, 1.96, 3.2);
+    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.75, 12), this.materials.hazardDark);
+    handle.position.y = -0.52;
+    handle.castShadow = true;
+    this.bossWeapon.add(handle);
+    const head =
+      this.level.boss?.attackKind === "sweep"
+        ? new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.58, 1.55), this.materials.hazard)
+        : this.level.boss?.attackKind === "minions"
+          ? new THREE.Mesh(new THREE.ConeGeometry(0.52, 0.9, 6), this.materials.hazard)
+          : new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.48, 0.62), this.materials.hazard);
+    head.position.y = 0.46;
+    head.castShadow = true;
+    this.bossWeapon.add(head);
+    this.bossWeapon.rotation.z = -0.58;
+    this.bossGroup.add(this.bossWeapon);
+
+    this.bossCrown = new THREE.Mesh(new THREE.ConeGeometry(0.9, 0.9, 5), this.materials.bossGold);
+    this.bossCrown.position.set(0, 3, 4.5);
+    this.bossCrown.rotation.y = Math.PI / 5;
+    this.bossCrown.castShadow = true;
+    this.bossGroup.add(this.bossCrown);
+
+    this.bossGate = new THREE.Mesh(new THREE.BoxGeometry(4.8, 3.4, 0.6), this.materials.castle);
+    this.bossGate.position.set(0, 1.45, 8);
+    this.bossGate.castShadow = true;
+    this.bossGroup.add(this.bossGate);
     const label = this.makeTextSprite(this.level.boss?.name ?? "BOSS", "#3c1642", "#ffffff");
     label.position.set(0, 3.75, 3.7);
     label.scale.set(2.3, 0.52, 1);
@@ -783,6 +841,8 @@ export class Game {
       this.updateStairs(dt);
     } else if (this.mode === "boss") {
       this.updateBoss(dt);
+    } else if (this.mode === "bossVictory") {
+      this.updateBossVictory(dt);
     } else if (this.mode === "roulette") {
       this.updateRoulette(dt);
     }
@@ -1178,6 +1238,15 @@ export class Game {
     this.distance = this.level.length + 6;
     this.stairTimer = 0;
     this.hud.popText("Final stairs", "boss");
+    if (this.stats.noHit && this.stats.losses === 0 && this.count > 0) {
+      const boost = Math.min(6, Math.max(3, Math.floor(this.count * 0.06)));
+      this.stats.finalStair = Math.min(24, this.stats.finalStair + boost);
+      this.stats.score += boost * 125;
+      this.stats.coins += boost * 6;
+      this.hud.popText(`Perfect +${boost}`, "good");
+      this.spawnBurst(0, this.level.length + 9, 0xffd166);
+      this.audio.reward();
+    }
   }
 
   private updateStairs(dt: number): void {
@@ -1207,7 +1276,9 @@ export class Game {
     this.bossMaxHp = this.bossHp;
     this.bossAttackTimer = this.level.boss?.attackInterval ?? 1.8;
     this.bossAttackWarn = 0;
+    this.bossAttackImpact = 0;
     this.bossHitPulse = 0;
+    this.bossVictoryTimer = 0;
     this.audio.switchMusic("boss");
     this.hud.popText(this.level.boss?.name ?? "Boss", "boss");
   }
@@ -1224,6 +1295,7 @@ export class Game {
     this.bossHitPulse = Math.max(0, this.bossHitPulse - dt * 1.8);
     this.stats.score += damage * 14;
     this.bossAttackTimer -= dt;
+    this.bossAttackImpact = Math.max(0, this.bossAttackImpact - dt);
 
     if (this.bossAttackTimer <= 0 && this.bossAttackWarn <= 0) {
       this.bossAttackWarn = 0.8;
@@ -1264,10 +1336,35 @@ export class Game {
         }
         this.audio.stomp();
         this.cameraShake = 0.9;
+        this.bossAttackImpact = 0.24;
         this.bossAttackTimer = Math.max(0.85, (this.level.boss?.attackInterval ?? 1.8) - (1 - this.bossHp / this.bossMaxHp) * 0.55);
       }
     } else if (this.bossTelegraph) {
       this.bossTelegraph.visible = false;
+    }
+
+    const bossAttackKind = this.level.boss?.attackKind ?? "stomp";
+    const warningProgress = this.bossAttackWarn > 0 ? 1 - clamp(this.bossAttackWarn / 0.8, 0, 1) : 0;
+    const warningArc = Math.sin(warningProgress * Math.PI);
+    const impactArc = this.bossAttackImpact > 0 ? Math.sin((this.bossAttackImpact / 0.24) * Math.PI * 0.5) : 0;
+    const bossIdle = Math.sin(this.lastTime * 2.4) * 0.08;
+
+    if (this.bossWeapon) {
+      const stompWindup = bossAttackKind === "stomp" ? warningArc * 1.45 : warningArc * 0.65;
+      const sweepSwing = bossAttackKind === "sweep" ? Math.sin(warningProgress * Math.PI * 1.25) * 1.25 + impactArc * 1.1 : 0;
+      const minionShake = bossAttackKind === "minions" ? Math.sin(this.lastTime * 9) * 0.22 + warningArc * 0.55 + impactArc * 0.35 : 0;
+      const slamImpact = bossAttackKind === "stomp" ? impactArc * 1.25 : impactArc * 0.35;
+      this.bossWeapon.rotation.z = -0.58 - stompWindup - slamImpact + sweepSwing + minionShake + bossIdle * 0.55;
+      this.bossWeapon.rotation.x = bossAttackKind === "sweep" ? warningArc * 0.45 + impactArc * 0.18 : impactArc * 0.22;
+      this.bossWeapon.position.x = 1.2 + this.bossAttackX * 0.08 + (bossAttackKind === "sweep" ? impactArc * Math.sign(this.bossAttackX || 1) * 0.22 : 0);
+      this.bossWeapon.position.y = 1.96 + Math.sin(this.lastTime * 3) * 0.04 + warningArc * 0.14 - impactArc * 0.12;
+    }
+    if (this.bossRightArm) {
+      this.bossRightArm.rotation.z = -0.22 + bossIdle * 0.6 - (this.bossAttackWarn > 0 ? warningProgress * 0.8 : 0) - impactArc * 0.55;
+      this.bossRightArm.rotation.x = this.bossAttackWarn > 0 ? warningArc * 0.22 : impactArc * 0.14;
+    }
+    if (this.bossLeftArm) {
+      this.bossLeftArm.rotation.z = 0.62 + Math.sin(this.lastTime * 3.2) * 0.08 + this.bossHitPulse * 0.08;
     }
 
     this.bossGroup.rotation.y = Math.sin(this.lastTime * 2.4) * 0.04 + Math.sin(this.lastTime * 48) * this.bossHitPulse * 0.025;
@@ -1275,10 +1372,84 @@ export class Game {
     this.bossGroup.scale.setScalar(1 + this.bossHitPulse * 0.018);
     this.hud.updateRun(this.level.id, 1 - this.bossHp / this.bossMaxHp, this.save, this.stats, this.count, this.shield);
     if (this.bossHp <= 0) {
-      this.stats.bossDefeated = true;
-      this.stats.gems += this.level.boss?.gemReward ?? 4;
-      this.stats.score += 1000;
-      this.finishLevel(true);
+      this.startBossVictory();
+    }
+  }
+
+  private startBossVictory(): void {
+    if (this.mode === "bossVictory" || this.mode === "reward") {
+      return;
+    }
+    this.mode = "bossVictory";
+    this.speed = 0;
+    this.bossHp = 0;
+    this.bossAttackWarn = 0;
+    this.bossAttackTimer = 999;
+    this.bossAttackImpact = 0.28;
+    this.bossHitPulse = 1;
+    this.bossVictoryTimer = 0;
+    this.stats.bossDefeated = true;
+    this.stats.gems += this.level.boss?.gemReward ?? 4;
+    this.stats.score += 1000;
+    if (this.bossTelegraph) {
+      this.bossTelegraph.visible = false;
+    }
+    this.cameraShake = 1.25;
+    this.hud.popText("Castle Taken", "boss");
+    this.audio.stomp();
+    this.audio.reward();
+    this.spawnBossConfetti();
+  }
+
+  private updateBossVictory(dt: number): void {
+    this.bossVictoryTimer += dt;
+    this.bossHitPulse = Math.max(0, this.bossHitPulse - dt * 1.5);
+    this.cameraShake = Math.max(0, this.cameraShake - dt * 1.6);
+    this.targetX = damp(this.targetX, 0, 5, dt);
+    this.centerX = damp(this.centerX, 0, 5, dt);
+    this.distance = damp(this.distance, this.level.length + 9.2, 1.9, dt);
+
+    const progress = clamp(this.bossVictoryTimer / 1.35, 0, 1);
+    const eased = 1 - (1 - progress) ** 3;
+    const crownLift = Math.sin(clamp(this.bossVictoryTimer / 0.78, 0, 1) * Math.PI) * 0.9;
+
+    if (this.bossBody) {
+      this.bossBody.position.y = 1.65 - eased * 0.72 + Math.sin(this.lastTime * 36) * (1 - eased) * 0.025;
+      this.bossBody.position.z = 4.5 + eased * 0.34;
+      this.bossBody.rotation.x = eased * 0.72;
+      this.bossBody.rotation.z = -eased * 0.68;
+      this.bossBody.scale.setScalar(1 - eased * 0.08);
+    }
+    if (this.bossWeapon) {
+      this.bossWeapon.position.y = 1.96 - eased * 1.05;
+      this.bossWeapon.position.x = 1.2 + eased * 0.38;
+      this.bossWeapon.rotation.x = eased * 1.1;
+      this.bossWeapon.rotation.z = -0.58 - eased * 2.05;
+    }
+    if (this.bossRightArm) {
+      this.bossRightArm.rotation.z = -0.22 - eased * 1.35;
+      this.bossRightArm.rotation.x = eased * 0.3;
+    }
+    if (this.bossLeftArm) {
+      this.bossLeftArm.rotation.z = 0.62 + eased * 1.08;
+      this.bossLeftArm.rotation.x = -eased * 0.22;
+    }
+    if (this.bossCrown) {
+      this.bossCrown.position.y = 3 + crownLift - eased * 0.28;
+      this.bossCrown.rotation.y += dt * 8;
+      this.bossCrown.rotation.z = Math.sin(this.lastTime * 9) * (1 - progress) * 0.45;
+    }
+    if (this.bossGate) {
+      this.bossGate.position.y = 1.45 + eased * 2.2;
+      this.bossGate.scale.x = 1 + eased * 0.08;
+    }
+
+    this.bossGroup.rotation.y = Math.sin(this.lastTime * 24) * (1 - progress) * 0.025;
+    this.bossGroup.position.x = Math.sin(this.lastTime * 31) * (1 - progress) * 0.04;
+    this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
+
+    if (this.bossVictoryTimer >= 2.35) {
+      this.finishLevel(true, false);
     }
   }
 
@@ -1331,9 +1502,11 @@ export class Game {
     this.finishLevel(false);
   }
 
-  private finishLevel(_bossDefeated: boolean): void {
+  private finishLevel(_bossDefeated: boolean, playRewardSound = true): void {
     this.mode = "reward";
-    this.audio.reward();
+    if (playRewardSound) {
+      this.audio.reward();
+    }
     const reward = grantRunRewards(this.save, this.level.id, this.stats, this.level.targetScore, this.level.targetStair);
     this.hud.showReward(reward);
   }
@@ -1409,6 +1582,11 @@ export class Game {
       item.life -= dt;
       item.velocity.y -= 2.2 * dt;
       item.mesh.position.addScaledVector(item.velocity, dt);
+      if (item.angularVelocity) {
+        item.mesh.rotation.x += item.angularVelocity.x * dt;
+        item.mesh.rotation.y += item.angularVelocity.y * dt;
+        item.mesh.rotation.z += item.angularVelocity.z * dt;
+      }
       item.mesh.scale.multiplyScalar(0.985);
       if (item.life <= 0) {
         this.scene.remove(item.mesh);
@@ -1453,20 +1631,22 @@ export class Game {
       let yaw = Math.sin(time * 4 + index) * 0.05;
 
       if (this.mode === "stairs") {
-        const lane = (index % 5) - 2;
-        const stride = (time * 8 + index * 0.37) % 1;
-        const progress = clamp((this.stats.finalStair + index * 0.24 + stride * 0.55) / 24, 0, 1);
-        x = lane * 0.34 + Math.sin(time * 8 + index) * 0.035;
-        z = this.level.length + 8 + progress * 17.8;
-        y = 0.5 + progress * 3.75 + Math.sin(time * 15 + index) * 0.055;
-        bob = Math.sin(time * 15 + index * 0.8) * 0.05;
-        yaw = Math.sin(time * 6 + index) * 0.08;
-      } else if (this.mode === "boss") {
+        const lane = (index % 6) - 2.5;
+        const stride = (time * 7.5 + index * 0.31) % 1;
+        const progress = clamp((this.stats.finalStair + index * 0.22 + stride * 0.7) / 24, 0, 1);
+        const stepHop = Math.sin(stride * Math.PI) * 0.12;
+        x = lane * 0.28 + Math.sin(time * 9 + index) * 0.035;
+        z = this.level.length + 8 + progress * 18.2;
+        y = 0.5 + progress * 3.78 + stepHop;
+        bob = Math.sin(time * 16 + index * 0.8) * 0.055;
+        yaw = Math.sin(time * 7 + index) * 0.1;
+      } else if (this.mode === "boss" || this.mode === "bossVictory") {
         const attackWave = Math.max(0, Math.sin(time * 5.8 - row * 0.85));
+        const victoryPush = this.mode === "bossVictory" ? clamp(this.bossVictoryTimer / 1.3, 0, 1) : 0;
         x = this.centerX + offsetX + Math.sin(time * 9 + index) * 0.07;
-        z = this.distance + offsetZ + attackWave * (row < 5 ? 0.78 : 0.32);
-        y = 0.55 + bob + attackWave * 0.07;
-        yaw = Math.sin(time * 8 + index * 0.5) * 0.16;
+        z = this.distance + offsetZ + attackWave * (row < 5 ? 0.78 : 0.32) + victoryPush * (1.65 + row * 0.035);
+        y = 0.55 + bob + attackWave * 0.07 + Math.sin(time * 13 + index) * 0.05 * victoryPush;
+        yaw = Math.sin(time * 8 + index * 0.5) * (0.16 + victoryPush * 0.08);
       }
 
       this.tmpQuaternion.setFromEuler(new THREE.Euler(0, yaw, 0));
@@ -1494,14 +1674,30 @@ export class Game {
   }
 
   private updateCamera(dt: number): void {
-    const targetZ = this.mode === "roulette" ? this.level.length + 18 : this.mode === "boss" ? this.level.length + 15.5 : this.distance + 8;
-    const targetY = this.mode === "roulette" ? 5.4 : this.mode === "boss" ? 7.5 : 8.5;
-    const cameraZ = this.mode === "roulette" ? this.level.length + 9 : this.mode === "boss" ? this.distance - 9.5 : this.distance - 10.5;
+    const isBossScene = this.mode === "boss" || this.mode === "bossVictory";
+    const targetZ =
+      this.mode === "roulette"
+        ? this.level.length + 18
+        : isBossScene
+          ? this.level.length + 15.5
+          : this.mode === "stairs"
+            ? this.level.length + 18.6
+            : this.distance + 8;
+    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : this.mode === "stairs" ? 6.6 : 8.5;
+    const cameraZ =
+      this.mode === "roulette"
+        ? this.level.length + 9
+        : isBossScene
+          ? this.distance - 9.5
+          : this.mode === "stairs"
+            ? this.level.length + 3.3
+            : this.distance - 10.5;
     const shake = this.cameraShake > 0 ? (Math.random() - 0.5) * this.cameraShake * 0.6 : 0;
+    const lookY = this.mode === "stairs" ? 1.35 : 0.75;
     this.camera.position.x = damp(this.camera.position.x, this.centerX * 0.42 + shake, 5, dt);
     this.camera.position.y = damp(this.camera.position.y, targetY + Math.abs(shake), 4.5, dt);
     this.camera.position.z = damp(this.camera.position.z, cameraZ, 5.2, dt);
-    this.camera.lookAt(this.centerX * 0.35, 0.75, targetZ);
+    this.camera.lookAt(this.centerX * 0.35, lookY, targetZ);
   }
 
   private updatePointerTarget(event: PointerEvent): void {
@@ -1528,6 +1724,30 @@ export class Game {
         mesh,
         velocity: new THREE.Vector3((Math.random() - 0.5) * 2.6, 1.2 + Math.random() * 1.6, (Math.random() - 0.5) * 2.6),
         life: 0.8
+      });
+    }
+  }
+
+  private spawnBossConfetti(): void {
+    const colors = [0xffd166, 0x58f29a, 0x36c9f6, 0xef476f, 0x9b5de5, 0xffffff];
+    for (let index = 0; index < 72; index += 1) {
+      const material = new THREE.MeshStandardMaterial({
+        color: colors[index % colors.length],
+        roughness: 0.52,
+        metalness: 0.03,
+        transparent: true,
+        opacity: 0.9
+      });
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.025, 0.18), material);
+      const side = index % 2 === 0 ? -1 : 1;
+      mesh.position.set(side * (1.2 + Math.random() * 1.4), 2.15 + Math.random() * 1.2, this.level.length + 16.2 + (Math.random() - 0.5) * 3.6);
+      mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      this.scene.add(mesh);
+      this.floating.push({
+        mesh,
+        velocity: new THREE.Vector3(side * (0.9 + Math.random() * 2.1), 1.35 + Math.random() * 1.8, (Math.random() - 0.5) * 2.8),
+        angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 12, (Math.random() - 0.5) * 14, (Math.random() - 0.5) * 16),
+        life: 1.9 + Math.random() * 0.8
       });
     }
   }
