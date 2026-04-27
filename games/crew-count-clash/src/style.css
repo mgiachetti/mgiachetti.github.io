@@ -338,6 +338,10 @@ button.is-active {
   width: min(780px, calc(100vw - 28px));
 }
 
+.panel.map {
+  width: min(760px, calc(100vw - 28px));
+}
+
 .brand-block,
 .shop-header {
   display: flex;
@@ -545,6 +549,76 @@ h3 {
   outline: 2px solid #21c55d;
 }
 
+.level-map {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.level-node {
+  position: relative;
+  min-height: 86px;
+  padding: 0.72rem;
+  overflow: hidden;
+  text-align: left;
+  background: linear-gradient(180deg, #ffffff, #eaf9ff);
+}
+
+.level-node::before {
+  position: absolute;
+  inset: auto -18px -28px auto;
+  width: 62px;
+  height: 62px;
+  border-radius: 8px;
+  background: #36c9f6;
+  transform: rotate(38deg);
+  content: "";
+}
+
+.level-node.bonus::before {
+  background: #ffd166;
+}
+
+.level-node.challenge::before {
+  background: #ef476f;
+}
+
+.level-node.boss::before {
+  background: #7c3aed;
+}
+
+.level-node.locked {
+  color: #64748b;
+  background: #e5e7eb;
+  box-shadow: none;
+}
+
+.level-node span,
+.level-node b,
+.level-node small {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.level-node span {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.level-node b {
+  margin-top: 0.28rem;
+  color: #102033;
+  font-size: 0.82rem;
+}
+
+.level-node small {
+  margin-top: 0.36rem;
+  color: #526078;
+  font-weight: 900;
+}
+
 .swatch {
   width: 34px;
   height: 34px;
@@ -585,7 +659,8 @@ h3 {
   }
 
   .upgrade-grid,
-  .cosmetics {
+  .cosmetics,
+  .level-map {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

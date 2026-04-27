@@ -330,6 +330,20 @@ export class Game {
       this.mode = "title";
       this.hud.showTitle(this.save);
     };
+    this.hud.onOpenMap = () => {
+      this.mode = "map";
+      void this.audio.unlock().then(() => this.audio.switchMusic("run"));
+      this.hud.showMap(this.save);
+    };
+    this.hud.onCloseMap = () => {
+      this.mode = "title";
+      this.hud.showTitle(this.save);
+    };
+    this.hud.onSelectLevel = (levelNumber) => {
+      if (levelNumber <= this.save.currentLevel) {
+        void this.beginLevel(levelNumber);
+      }
+    };
     this.hud.onResetSave = () => {
       this.save = resetSave();
       this.applyCosmetics();

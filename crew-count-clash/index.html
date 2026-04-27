@@ -8,8 +8,8 @@
       content="Crew Count Clash is a 3D crowd runner with math gates, crew swarms, traps, bosses, roulette rewards, final stairs, and upgrades."
     />
     <title>Crew Count Clash</title>
-    <script type="module" crossorigin src="/crew-count-clash/assets/index-BBB_u49l.js"></script>
-    <link rel="stylesheet" crossorigin href="/crew-count-clash/assets/index-ByUZxzpY.css">
+    <script type="module" crossorigin src="/crew-count-clash/assets/index-LgU57kCk.js"></script>
+    <link rel="stylesheet" crossorigin href="/crew-count-clash/assets/index-BrLlEqJ5.css">
   </head>
   <body>
     <div id="loading-screen" class="loading-screen" aria-hidden="true">
@@ -75,6 +75,7 @@
       </div>
       <div class="actions">
         <button class="primary" type="button" data-start>Start Run</button>
+        <button type="button" data-open-map>Map</button>
         <button type="button" data-open-shop>Shop</button>
         <button type="button" data-mute>Sound</button>
       </div>
@@ -125,6 +126,17 @@
         <button type="button" data-retry>Restart</button>
         <button type="button" data-home>Home</button>
       </div>
+    </section>
+
+    <section id="map-screen" class="panel map is-hidden">
+      <div class="shop-header">
+        <div>
+          <p class="kicker">Route</p>
+          <h2>Levels</h2>
+        </div>
+        <button class="icon-button" type="button" data-close-map aria-label="Close map">X</button>
+      </div>
+      <div class="level-map" data-level-map></div>
     </section>
 
     <section id="shop-screen" class="panel shop is-hidden">

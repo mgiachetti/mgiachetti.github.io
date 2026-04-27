@@ -1,5 +1,6 @@
 import { cosmeticCatalog, upgradeCosts } from "../game/saveData";
 import type { CosmeticSlot, RewardData, RunStats, SaveData, UpgradeKey } from "../game/types";
+import { getLevel } from "../levels/levelCatalog";
 import { formatNumber } from "../utils/math";
 
 export class Hud {
@@ -9,8 +10,10 @@ export class Hud {
   private fail = this.required<HTMLElement>("#fail-screen");
   private pause = this.required<HTMLElement>("#pause-screen");
   private shop = this.required<HTMLElement>("#shop-screen");
+  private map = this.required<HTMLElement>("#map-screen");
   private floatLayer = this.required<HTMLElement>("#float-layer");
   private cosmetics = this.required<HTMLElement>("[data-cosmetics]");
+  private levelMap = this.required<HTMLElement>("[data-level-map]");
   private roulettePrize = this.required<HTMLElement>("#roulette-prize");
 
   private level = this.required<HTMLElement>("[data-level]");
@@ -30,6 +33,9 @@ export class Hud {
   onResume: (() => void) | null = null;
   onOpenShop: (() => void) | null = null;
   onCloseShop: (() => void) | null = null;
+  onOpenMap: (() => void) | null = null;
+  onCloseMap: (() => void) | null = null;
+  onSelectLevel: ((level: number) => void) | null = null;
   onResetSave: (() => void) | null = null;
   onMute: (() => void) | null = null;
   onBuy: ((key: UpgradeKey) => void) | null = null;
@@ -60,6 +66,12 @@ export class Hud {
     document.querySelectorAll<HTMLElement>("[data-close-shop]").forEach((button) => {
       button.addEventListener("click", () => this.onCloseShop?.());
     });
+    document.querySelectorAll<HTMLElement>("[data-open-map]").forEach((button) => {
+      button.addEventListener("click", () => this.onOpenMap?.());
+    });
+    document.querySelectorAll<HTMLElement>("[data-close-map]").forEach((button) => {
+      button.addEventListener("click", () => this.onCloseMap?.());
+    });
     document.querySelectorAll<HTMLElement>("[data-reset-save]").forEach((button) => {
       button.addEventListener("click", () => this.onResetSave?.());
     });
@@ -75,6 +87,13 @@ export class Hud {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-cosmetic]");
       if (button?.dataset.cosmetic) {
         this.onCosmetic?.(button.dataset.cosmetic);
+      }
+    });
+    this.levelMap.addEventListener("click", (event) => {
+      const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-level-select]");
+      const level = Number(button?.dataset.levelSelect ?? "");
+      if (button && Number.isFinite(level)) {
+        this.onSelectLevel?.(level);
       }
     });
     this.mute.addEventListener("click", () => this.onMute?.());
@@ -128,6 +147,13 @@ export class Hud {
     this.hud.classList.add("is-hidden");
     this.showOnly(this.shop);
     this.updateShop(save);
+  }
+
+  showMap(save: SaveData): void {
+    this.hideRoulettePrize();
+    this.hud.classList.add("is-hidden");
+    this.showOnly(this.map);
+    this.renderLevelMap(save);
   }
 
   updateRun(levelNumber: number, progress: number, save: SaveData, stats: RunStats, count: number, shield: number): void {
@@ -202,8 +228,30 @@ export class Hud {
     });
   }
 
+  private renderLevelMap(save: SaveData): void {
+    this.levelMap.innerHTML = "";
+    const maxLevel = Math.max(20, save.currentLevel + 3);
+    for (let levelNumber = 1; levelNumber <= maxLevel; levelNumber += 1) {
+      const level = getLevel(levelNumber);
+      const unlocked = levelNumber <= save.currentLevel;
+      const stars = save.levelStars[String(levelNumber)] ?? 0;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `level-node ${level.kind} ${unlocked ? "unlocked" : "locked"}`;
+      button.dataset.levelSelect = String(levelNumber);
+      button.disabled = !unlocked;
+      button.setAttribute("aria-label", unlocked ? `Play level ${levelNumber}` : `Level ${levelNumber} locked`);
+      button.innerHTML = `
+        <span>${levelNumber}</span>
+        <b>${level.kind === "boss" ? "Boss" : level.kind === "bonus" ? "Bonus" : level.kind === "challenge" ? "Hard" : "Run"}</b>
+        <small>${unlocked ? "★".repeat(stars).padEnd(3, "☆") : "Locked"}</small>
+      `;
+      this.levelMap.append(button);
+    }
+  }
+
   private hidePanels(): void {
-    [this.title, this.reward, this.fail, this.pause, this.shop].forEach((panel) => panel.classList.add("is-hidden"));
+    [this.title, this.reward, this.fail, this.pause, this.shop, this.map].forEach((panel) => panel.classList.add("is-hidden"));
   }
 
   private showOnly(panel: HTMLElement): void {

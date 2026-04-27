@@ -1,4 +1,4 @@
-export type GameMode = "title" | "run" | "stairs" | "boss" | "bossVictory" | "roulette" | "reward" | "fail" | "shop" | "pause";
+export type GameMode = "title" | "run" | "stairs" | "boss" | "bossVictory" | "roulette" | "reward" | "fail" | "shop" | "map" | "pause";
 
 export type LevelKind = "normal" | "challenge" | "bonus" | "boss";
 

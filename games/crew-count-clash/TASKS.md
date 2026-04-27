@@ -245,7 +245,7 @@ Status markers:
 - [x] Build level complete screen.
 - [x] Build reward/chest screen.
 - [x] Build shop screen.
-- [ ] Build level map/progression screen.
+- [x] Build level map/progression screen.
 - [x] Build roulette reward screen.
 - [x] Add responsive mobile layout.
 - [x] Add accessible button labels.

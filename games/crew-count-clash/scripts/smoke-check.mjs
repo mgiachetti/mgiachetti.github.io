@@ -85,6 +85,23 @@ try {
   assert(shop.equipped >= 4, `Expected 4 equipped cosmetics, got ${shop.equipped}.`);
   assert(shop.withinViewport, "Shop should fit desktop viewport.");
   await desktop.screenshot(join(screenshotDir, "crew-count-clash-smoke-shop.png"));
+  await desktop.send("Runtime.evaluate", { expression: "document.querySelector('[data-close-shop]').click(); document.querySelector('[data-open-map]').click()" });
+  await sleep(300);
+  const map = await desktop.eval(`(() => {
+    const nodes = [...document.querySelectorAll("[data-level-map] .level-node")];
+    const panel = document.querySelector("#map-screen").getBoundingClientRect();
+    return {
+      count: nodes.length,
+      unlocked: nodes.filter((item) => item.classList.contains("unlocked")).length,
+      visible: !document.querySelector("#map-screen").classList.contains("is-hidden"),
+      withinViewport: panel.bottom <= innerHeight && panel.right <= innerWidth
+    };
+  })()`);
+  assert(map.visible, "Map should be visible.");
+  assert(map.count >= 20, `Expected at least 20 map levels, got ${map.count}.`);
+  assert(map.unlocked >= 1, `Expected at least one unlocked map node, got ${map.unlocked}.`);
+  assert(map.withinViewport, "Map should fit desktop viewport.");
+  await desktop.screenshot(join(screenshotDir, "crew-count-clash-smoke-map.png"));
   await desktop.close();
 
   const mobile = await openPage();
