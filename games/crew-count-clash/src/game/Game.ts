@@ -1142,20 +1142,47 @@ export class Game {
     this.bossGroup.add(this.bossRightArm);
 
     this.bossWeapon = new THREE.Group();
-    this.bossWeapon.position.set(0.1, -0.82, -0.78);
+    this.bossWeapon.position.set(0.1, -0.62, -0.36);
     const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.75, 12), this.materials.hazardDark);
-    handle.position.y = -0.52;
+    handle.rotation.x = Math.PI / 2;
+    handle.position.z = -0.86;
     handle.castShadow = true;
     this.bossWeapon.add(handle);
-    const head =
-      this.level.boss?.attackKind === "sweep"
-        ? new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.58, 1.55), this.materials.hazard)
-        : this.level.boss?.attackKind === "minions"
+    let head: THREE.Object3D;
+    if (this.level.boss?.attackKind === "sweep") {
+      head = new THREE.Group();
+      const mace = new THREE.Mesh(new THREE.SphereGeometry(0.42, 18, 12), this.materials.hazard);
+      mace.castShadow = true;
+      head.add(mace);
+      [-1, 1].forEach((side) => {
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.34, 8), this.materials.hazard);
+        spike.rotation.z = side * Math.PI / 2;
+        spike.position.x = side * 0.44;
+        spike.castShadow = true;
+        head.add(spike);
+      });
+    } else {
+      head =
+        this.level.boss?.attackKind === "minions"
           ? new THREE.Mesh(new THREE.ConeGeometry(0.52, 0.9, 6), this.materials.hazard)
-          : new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.48, 0.62), this.materials.hazard);
-    head.position.y = 0.46;
-    head.castShadow = true;
+          : new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.56, 0.62), this.materials.hazard);
+    }
+    head.position.z = -1.72;
+    if (this.level.boss?.attackKind === "minions") {
+      head.rotation.x = -Math.PI / 2;
+    }
+    if (head instanceof THREE.Mesh) {
+      head.castShadow = true;
+    }
     this.bossWeapon.add(head);
+    const grip = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.035, 8, 18), bossMaterial);
+    grip.position.z = -0.08;
+    grip.castShadow = true;
+    this.bossWeapon.add(grip);
+    const pommel = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 8), this.materials.bossGold);
+    pommel.position.z = 0.14;
+    pommel.castShadow = true;
+    this.bossWeapon.add(pommel);
     this.bossWeapon.rotation.z = -0.24;
     this.bossRightHand.add(this.bossWeapon);
 
@@ -1959,8 +1986,8 @@ export class Game {
       this.bossWeapon.rotation.z = -0.24 - stompWindup * 0.38 - slamImpact * 0.3 + sweepSwing * 0.32 + minionShake + bossIdle * 0.55;
       this.bossWeapon.rotation.x = bossAttackKind === "sweep" ? warningArc * 0.45 + impactArc * 0.18 : impactArc * 0.22;
       this.bossWeapon.position.x = 0.1 + this.bossAttackX * 0.025 + (bossAttackKind === "sweep" ? impactArc * Math.sign(this.bossAttackX || 1) * 0.1 : 0);
-      this.bossWeapon.position.y = -0.82 + Math.sin(this.lastTime * 3) * 0.025 + warningArc * 0.06 - impactArc * 0.08;
-      this.bossWeapon.position.z = -0.78 - warningArc * 0.08 - impactArc * 0.12;
+      this.bossWeapon.position.y = -0.62 + Math.sin(this.lastTime * 3) * 0.025 + warningArc * 0.04 - impactArc * 0.08;
+      this.bossWeapon.position.z = -0.36 - warningArc * 0.18 - impactArc * 0.22;
     }
     if (this.bossRightArm) {
       const sweepShoulder = bossAttackKind === "sweep" ? Math.sin(warningProgress * Math.PI * 1.2) * 0.7 + impactArc * 0.55 : 0;
@@ -2030,9 +2057,9 @@ export class Game {
       this.bossBody.scale.setScalar(1 - eased * 0.08);
     }
     if (this.bossWeapon) {
-      this.bossWeapon.position.y = -0.82 - eased * 0.26;
+      this.bossWeapon.position.y = -0.62 - eased * 0.26;
       this.bossWeapon.position.x = 0.1 + eased * 0.2;
-      this.bossWeapon.position.z = -0.78 + eased * 0.18;
+      this.bossWeapon.position.z = -0.36 + eased * 0.18;
       this.bossWeapon.rotation.x = eased * 1.1;
       this.bossWeapon.rotation.z = -0.24 - eased * 1.6;
     }
