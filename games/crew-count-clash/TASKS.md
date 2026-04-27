@@ -140,10 +140,10 @@ Status markers:
 - [x] Build Level 5 boss.
 - [x] Build Level 6 bonus roulette.
 - [x] Build Levels 7-10 with timed gates, platforms, traps.
-- [~] Build Levels 11-15 with advanced hazards and second boss.
-- [ ] Build Levels 16-20 with final boss and mixed gauntlets.
+- [x] Build Levels 11-15 with advanced hazards and second boss.
+- [x] Build Levels 16-20 with final boss and mixed gauntlets.
 - [~] Add procedural remix generator after level 20.
-- [ ] Add safe-route validation checks.
+- [x] Add safe-route validation checks.
 
 ## Phase 11 - Final Stairs
 
@@ -166,7 +166,7 @@ Status markers:
 - [ ] Implement weak-point gates.
 - [x] Implement defeat/castle capture sequence.
 - [x] Add boss medals and gems.
-- [~] Add at least 5 boss archetypes/configs.
+- [x] Add at least 5 boss archetypes/configs.
 
 ## Phase 13 - Bonus Roulette
 

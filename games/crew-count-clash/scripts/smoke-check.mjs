@@ -233,6 +233,23 @@ try {
   await boss.screenshot(join(screenshotDir, "crew-count-clash-smoke-boss.png"));
   await boss.close();
 
+  const finalBoss = await openPage();
+  await finalBoss.send("Page.enable");
+  await finalBoss.send("Runtime.enable");
+  await finalBoss.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await finalBoss.send("Page.navigate", { url: `${origin}?autostart=1&level=20&boss=1&count=160&pixel=1` });
+  await sleep(3600);
+  const finalBossGame = await finalBoss.eval(`(() => ({
+    count: Number(document.querySelector("[data-count]").textContent.replace(/,/g, "")),
+    hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+    rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden")
+  }))()`);
+  assert(finalBossGame.hudVisible, "Final boss QA should keep HUD visible.");
+  assert(!finalBossGame.rewardVisible, "Final boss direct QA should stay in combat.");
+  assert(finalBossGame.count > 0, `Final boss QA crew count should stay above zero, got ${finalBossGame.count}.`);
+  await finalBoss.screenshot(join(screenshotDir, "crew-count-clash-smoke-final-boss.png"));
+  await finalBoss.close();
+
   const bossVictory = await openPage();
   await bossVictory.send("Page.enable");
   await bossVictory.send("Runtime.enable");

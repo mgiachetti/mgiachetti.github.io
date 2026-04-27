@@ -372,7 +372,7 @@ export const levelCatalog: LevelData[] = [
       ...bonusItems("l11", 8),
       { id: "l11-frenzy", kind: "frenzy", x: 0, z: 76 },
       ...coinArc("l11-coins-d", 82, 1, 18),
-      { id: "l11-ticket", kind: "ticket", x: 2.35, z: 116 }
+      { id: "l11-ticket-b", kind: "ticket", x: 2.35, z: 116 }
     ]
   },
   {
@@ -405,8 +405,255 @@ export const levelCatalog: LevelData[] = [
       { id: "l12-bomb-b", kind: "bossBomb", x: 2.2, z: 198 },
       ...crewLine("l12-b", 198, 1, 8, 1.5)
     ]
+  },
+  {
+    id: 13,
+    kind: "normal",
+    name: "Prism Run",
+    length: 218,
+    targetScore: 6900,
+    targetStair: 21,
+    startCount: 13,
+    track: [
+      track("l13-a", -10, 54, 7.4),
+      movingTrack("l13-moving-a", 54, 88, 1.8, 1.7),
+      track("l13-b", 88, 138, 6.4),
+      conveyorTrack("l13-conveyor", 138, 174, 1, 6.8),
+      track("l13-c", 174, 242, 7.4)
+    ],
+    entities: [
+      ...crewLine("l13-a", 8, 1, 10, 1.8),
+      { id: "l13-lime-pad", kind: "colorPad", x: -2.35, z: 30, color: "lime" },
+      { id: "l13-violet-pad", kind: "colorPad", x: 2.35, z: 30, color: "violet" },
+      ...colorPair("l13-cg1", 48, "lime", "violet"),
+      { id: "l13-axe-a", kind: "swingingAxe", x: 0, z: 68, width: 1.45, depth: 2.3, range: 2.8, speed: 2.7 },
+      ...timedGatePair("l13-tg1", 92, ["multiply", 2, "subtract", 30], ["percent", 70, "divide", 3]),
+      { id: "l13-saw-a", kind: "sawLane", x: -2.2, z: 116, width: 1.7, depth: 3 },
+      { id: "l13-saw-b", kind: "sawLane", x: 2.2, z: 124, width: 1.7, depth: 3 },
+      ...coinArc("l13-coins", 132, 1, 12),
+      { id: "l13-coral-pad", kind: "colorPad", x: 0, z: 154, color: "coral" },
+      ...colorPair("l13-cg2", 174, "cyan", "coral"),
+      { id: "l13-enemy-a", kind: "enemy", x: -1.8, z: 194, count: 46, strength: 1, width: 3.2 },
+      { id: "l13-enemy-b", kind: "enemy", x: 1.8, z: 202, count: 24, strength: 2, width: 3.2 },
+      ...crewLine("l13-b", 208, 1, 8, 1.4)
+    ]
+  },
+  {
+    id: 14,
+    kind: "challenge",
+    name: "Crush Corridor",
+    length: 226,
+    targetScore: 7600,
+    targetStair: 22,
+    startCount: 14,
+    track: [
+      track("l14-a", -10, 62, 7.2),
+      collapsingTrack("l14-collapse-a", 62, 92, 5.3),
+      turntableTrack("l14-turn-a", 92, 128, 6, 2.05),
+      collapsingTrack("l14-collapse-b", 128, 158, 5.2),
+      movingTrack("l14-moving", 158, 194, 1.9, 2),
+      track("l14-b", 194, 250, 7.2)
+    ],
+    entities: [
+      ...crewLine("l14-a", 8, 0, 8, 1.8),
+      ...crewLine("l14-b", 10, 2, 8, 1.8),
+      ...timedGatePair("l14-tg1", 34, ["add", 40, "divide", 2], ["multiply", 3, "subtract", 38]),
+      { id: "l14-hole-a", kind: "hole", x: -1.9, z: 72, width: 1.9, depth: 3.3 },
+      { id: "l14-hole-b", kind: "hole", x: 1.9, z: 88, width: 1.9, depth: 3.3 },
+      { id: "l14-crusher-a", kind: "crusher", x: -1.9, z: 108, width: 2, depth: 2, speed: 3.1 },
+      { id: "l14-crusher-b", kind: "crusher", x: 1.9, z: 122, width: 2, depth: 2, speed: 3.3, phase: 1.1 },
+      ...gatePair("l14-g2", 146, ["multiply", 2], ["percent", 90]),
+      { id: "l14-roller-a", kind: "spikeRoller", x: 0, z: 166, width: 1.9, depth: 2.4, range: 2.6, speed: 3.7 },
+      { id: "l14-shield", kind: "shield", x: -2.3, z: 184 },
+      { id: "l14-enemy-a", kind: "enemy", x: 0, z: 204, count: 58, strength: 2, width: 4.8 },
+      ...coinArc("l14-coins", 210, 1, 10)
+    ]
+  },
+  {
+    id: 15,
+    kind: "boss",
+    name: "Crusher Queen",
+    length: 230,
+    targetScore: 8200,
+    targetStair: 0,
+    startCount: 15,
+    track: [
+      track("l15-a", -10, 76, 7.4),
+      conveyorTrack("l15-conveyor-a", 76, 116, 1, 6.8),
+      movingTrack("l15-moving", 116, 154, 1.7, 1.95),
+      track("l15-b", 154, 254, 7.4)
+    ],
+    boss: { name: "Crusher Queen", hp: 280, attackInterval: 1.38, gemReward: 10, medalReward: 1, bodyColor: 0xef476f, arenaColor: 0xffd166, attackKind: "stomp" },
+    entities: [
+      ...crewLine("l15-a", 8, 1, 12, 1.7),
+      ...timedGatePair("l15-tg1", 32, ["multiply", 3, "subtract", 45], ["add", 42, "divide", 2]),
+      { id: "l15-crusher-a", kind: "crusher", x: -2.1, z: 56, width: 2, depth: 2.2, speed: 3.2 },
+      { id: "l15-crusher-b", kind: "crusher", x: 2.1, z: 70, width: 2, depth: 2.2, speed: 3.45, phase: 1.3 },
+      { id: "l15-frenzy", kind: "frenzy", x: 0, z: 88 },
+      { id: "l15-axe-a", kind: "swingingAxe", x: 0, z: 108, width: 1.5, depth: 2.4, range: 2.8, speed: 2.8 },
+      ...gatePair("l15-g2", 132, ["percent", 100], ["subtract", 50]),
+      { id: "l15-enemy-a", kind: "enemy", x: -1.8, z: 156, count: 48, strength: 2, width: 3.2 },
+      { id: "l15-enemy-b", kind: "enemy", x: 1.8, z: 168, count: 64, strength: 1, width: 3.2 },
+      { id: "l15-shield", kind: "shield", x: 0, z: 184 },
+      { id: "l15-bomb-a", kind: "bossBomb", x: -2.2, z: 198 },
+      { id: "l15-bomb-b", kind: "bossBomb", x: 2.2, z: 208 },
+      ...crewLine("l15-b", 210, 1, 9, 1.4)
+    ]
+  },
+  {
+    id: 16,
+    kind: "challenge",
+    name: "Twin Islands",
+    length: 238,
+    targetScore: 9000,
+    targetStair: 23,
+    startCount: 15,
+    track: [
+      track("l16-a", -10, 56, 7.4),
+      movingTrack("l16-left-island", 56, 92, 2.3, 1.55),
+      movingTrack("l16-right-island", 92, 130, 2.2, 1.85),
+      track("l16-mid", 130, 166, 5.8),
+      conveyorTrack("l16-conveyor", 166, 204, -1, 6.8),
+      track("l16-b", 204, 262, 7.4)
+    ],
+    entities: [
+      ...crewLine("l16-a", 8, 1, 10, 1.7),
+      ...gatePair("l16-g1", 30, ["multiply", 3], ["add", 46]),
+      { id: "l16-fan-a", kind: "fan", x: -3, z: 62, width: 2, depth: 7, value: 1 },
+      { id: "l16-fan-b", kind: "fan", x: 3, z: 96, width: 2, depth: 7, value: -1 },
+      { id: "l16-cannon-a", kind: "cannon", x: -3.2, z: 118, width: 1.3, depth: 3.4, range: 3.2, speed: 4 },
+      ...timedGatePair("l16-tg1", 146, ["percent", 120, "divide", 4], ["multiply", 2, "subtract", 46]),
+      { id: "l16-laser-a", kind: "laser", x: 0, z: 166, width: 6.2, depth: 1.2, speed: 3.8 },
+      { id: "l16-roller-a", kind: "spikeRoller", x: 0, z: 188, width: 1.9, depth: 2.4, range: 2.8, speed: 3.8 },
+      { id: "l16-enemy-a", kind: "enemy", x: -1.8, z: 210, count: 36, strength: 2, width: 3.2 },
+      { id: "l16-enemy-b", kind: "enemy", x: 1.8, z: 220, count: 68, strength: 1, width: 3.2 },
+      ...crewLine("l16-b", 226, 1, 8, 1.4)
+    ]
+  },
+  {
+    id: 17,
+    kind: "boss",
+    name: "Storm Warden",
+    length: 242,
+    targetScore: 9800,
+    targetStair: 0,
+    startCount: 16,
+    track: [
+      track("l17-a", -10, 70, 7.4),
+      turntableTrack("l17-turn-a", 70, 112, 6.1, 2.1),
+      conveyorTrack("l17-conveyor", 112, 152, -1, 6.8),
+      movingTrack("l17-moving", 152, 190, 2, 2),
+      track("l17-b", 190, 266, 7.4)
+    ],
+    boss: { name: "Storm Warden", hp: 330, attackInterval: 1.32, gemReward: 11, medalReward: 1, bodyColor: 0x146ef5, arenaColor: 0x7bdff2, attackKind: "sweep" },
+    entities: [
+      ...crewLine("l17-a", 8, 1, 12, 1.65),
+      ...timedGatePair("l17-tg1", 34, ["add", 50, "subtract", 52], ["multiply", 3, "divide", 3]),
+      { id: "l17-scraper-a", kind: "sideScraper", x: -3.2, z: 58, width: 1.1, depth: 5.4 },
+      { id: "l17-scraper-b", kind: "sideScraper", x: 3.2, z: 76, width: 1.1, depth: 5.4 },
+      { id: "l17-laser-a", kind: "laser", x: 0, z: 100, width: 6.3, depth: 1.2, speed: 4 },
+      { id: "l17-violet-pad", kind: "colorPad", x: 0, z: 118, color: "violet" },
+      ...colorPair("l17-cg1", 138, "violet", "lime"),
+      { id: "l17-cannon-a", kind: "cannon", x: 3.2, z: 160, width: 1.3, depth: 3.4, range: 3.3, speed: 4 },
+      { id: "l17-enemy-a", kind: "enemy", x: 0, z: 184, count: 72, strength: 2, width: 4.8 },
+      { id: "l17-bomb-a", kind: "bossBomb", x: -2.2, z: 202 },
+      { id: "l17-bomb-b", kind: "bossBomb", x: 2.2, z: 214 },
+      ...coinArc("l17-coins", 216, 1, 12)
+    ]
+  },
+  {
+    id: 18,
+    kind: "bonus",
+    name: "Vault Wheel",
+    length: 142,
+    targetScore: 2600,
+    targetStair: 0,
+    startCount: 18,
+    track: [track("l18-bonus", -10, 168, 8.4)],
+    entities: [
+      ...bonusItems("l18", 8),
+      { id: "l18-magnet-b", kind: "magnet", x: -2.35, z: 74 },
+      { id: "l18-frenzy", kind: "frenzy", x: 2.35, z: 82 },
+      ...coinArc("l18-coins-d", 90, 0, 16),
+      ...coinArc("l18-coins-e", 94, 2, 16),
+      { id: "l18-ticket-b", kind: "ticket", x: 0, z: 126 }
+    ]
+  },
+  {
+    id: 19,
+    kind: "challenge",
+    name: "Final Gauntlet",
+    length: 256,
+    targetScore: 10800,
+    targetStair: 24,
+    startCount: 17,
+    track: [
+      track("l19-a", -10, 58, 7.4),
+      collapsingTrack("l19-collapse-a", 58, 90, 5.4),
+      movingTrack("l19-moving-a", 90, 126, 2.2, 2.15),
+      turntableTrack("l19-turn", 126, 164, 6, 2.35),
+      conveyorTrack("l19-conveyor", 164, 204, 1, 6.8),
+      collapsingTrack("l19-collapse-b", 204, 232, 5.2),
+      track("l19-b", 232, 280, 7.4)
+    ],
+    entities: [
+      ...crewLine("l19-a", 8, 0, 9, 1.65),
+      ...crewLine("l19-b", 10, 2, 9, 1.65),
+      ...timedGatePair("l19-tg1", 34, ["multiply", 3, "subtract", 60], ["percent", 130, "divide", 4]),
+      { id: "l19-hole-a", kind: "hole", x: 0, z: 68, width: 1.9, depth: 3.3 },
+      { id: "l19-axe-a", kind: "swingingAxe", x: 0, z: 96, width: 1.5, depth: 2.4, range: 3, speed: 3 },
+      { id: "l19-crusher-a", kind: "crusher", x: -2.1, z: 120, width: 2, depth: 2.2, speed: 3.4 },
+      { id: "l19-crusher-b", kind: "crusher", x: 2.1, z: 134, width: 2, depth: 2.2, speed: 3.55, phase: 1.2 },
+      ...gatePair("l19-g2", 154, ["add", 60], ["multiply", 2]),
+      { id: "l19-roller-a", kind: "spikeRoller", x: 0, z: 178, width: 1.9, depth: 2.4, range: 2.9, speed: 4.2 },
+      { id: "l19-cannon-a", kind: "cannon", x: -3.2, z: 198, width: 1.3, depth: 3.5, range: 3.4, speed: 4.2 },
+      { id: "l19-enemy-a", kind: "enemy", x: -1.8, z: 222, count: 54, strength: 2, width: 3.2 },
+      { id: "l19-enemy-b", kind: "enemy", x: 1.8, z: 232, count: 78, strength: 1, width: 3.2 },
+      { id: "l19-shield", kind: "shield", x: 0, z: 240 },
+      ...crewLine("l19-c", 244, 1, 8, 1.3)
+    ]
+  },
+  {
+    id: 20,
+    kind: "boss",
+    name: "Crown Core",
+    length: 268,
+    targetScore: 12200,
+    targetStair: 0,
+    startCount: 18,
+    track: [
+      track("l20-a", -10, 70, 7.6),
+      conveyorTrack("l20-conveyor-a", 70, 110, 1, 6.9),
+      movingTrack("l20-moving-a", 110, 150, 2.2, 2.05),
+      turntableTrack("l20-turn", 150, 190, 6.2, 2.4),
+      collapsingTrack("l20-collapse", 190, 220, 5.4),
+      track("l20-b", 220, 292, 7.6)
+    ],
+    boss: { name: "Crown Core", hp: 410, attackInterval: 1.22, gemReward: 14, medalReward: 2, bodyColor: 0xffc857, arenaColor: 0xd8d3ff, attackKind: "minions" },
+    entities: [
+      ...crewLine("l20-a", 8, 1, 14, 1.55),
+      { id: "l20-lime-pad", kind: "colorPad", x: -2.35, z: 28, color: "lime" },
+      { id: "l20-violet-pad", kind: "colorPad", x: 2.35, z: 28, color: "violet" },
+      ...colorPair("l20-cg1", 46, "lime", "violet"),
+      ...timedGatePair("l20-tg1", 68, ["multiply", 3, "subtract", 70], ["percent", 140, "divide", 4]),
+      { id: "l20-laser-a", kind: "laser", x: 0, z: 92, width: 6.4, depth: 1.2, speed: 4.4 },
+      { id: "l20-axe-a", kind: "swingingAxe", x: 0, z: 118, width: 1.55, depth: 2.5, range: 3, speed: 3.1 },
+      { id: "l20-coral-pad", kind: "colorPad", x: 0, z: 138, color: "coral" },
+      ...colorPair("l20-cg2", 160, "coral", "cyan"),
+      { id: "l20-crusher-a", kind: "crusher", x: -2.1, z: 182, width: 2, depth: 2.2, speed: 3.6 },
+      { id: "l20-crusher-b", kind: "crusher", x: 2.1, z: 194, width: 2, depth: 2.2, speed: 3.8, phase: 1.2 },
+      { id: "l20-enemy-a", kind: "enemy", x: -1.8, z: 218, count: 70, strength: 2, width: 3.2 },
+      { id: "l20-enemy-b", kind: "enemy", x: 1.8, z: 228, count: 86, strength: 1, width: 3.2 },
+      { id: "l20-frenzy", kind: "frenzy", x: 0, z: 238 },
+      { id: "l20-bomb-a", kind: "bossBomb", x: -2.2, z: 248 },
+      { id: "l20-bomb-b", kind: "bossBomb", x: 0, z: 256 },
+      { id: "l20-bomb-c", kind: "bossBomb", x: 2.2, z: 264 },
+      ...crewLine("l20-b", 252, 1, 10, 1.35)
+    ]
   }
 ];
+
+validateLevelCatalog();
 
 export function getLevel(levelNumber: number): LevelData {
   const base = levelCatalog[(levelNumber - 1) % levelCatalog.length];
@@ -428,4 +675,57 @@ export function getLevel(levelNumber: number): LevelData {
         }
       : undefined
   };
+}
+
+function validateLevelCatalog(): void {
+  const bossNames = new Set<string>();
+  levelCatalog.forEach((level, index) => {
+    if (level.id !== index + 1) {
+      throw new Error(`Level catalog id mismatch at slot ${index + 1}: got ${level.id}`);
+    }
+    if (level.track.length === 0) {
+      throw new Error(`Level ${level.id} has no track segments`);
+    }
+    if (!level.track.some((segment) => segment.zStart <= -5)) {
+      throw new Error(`Level ${level.id} does not cover the start line`);
+    }
+    if (!level.track.some((segment) => segment.zEnd >= level.length)) {
+      throw new Error(`Level ${level.id} track ends before level length ${level.length}`);
+    }
+    if (level.kind === "boss") {
+      if (!level.boss) {
+        throw new Error(`Boss level ${level.id} is missing boss config`);
+      }
+      bossNames.add(level.boss.name);
+    }
+    if (level.kind !== "boss" && level.boss) {
+      throw new Error(`Non-boss level ${level.id} has boss config`);
+    }
+    if (level.kind !== "bonus" && !level.entities.some((entity) => entity.kind === "gate" || entity.kind === "colorGate")) {
+      throw new Error(`Run level ${level.id} has no gates`);
+    }
+
+    const ids = new Set<string>();
+    level.entities.forEach((entity) => {
+      if (ids.has(entity.id)) {
+        throw new Error(`Level ${level.id} has duplicate entity id ${entity.id}`);
+      }
+      ids.add(entity.id);
+      if (entity.z < -12 || entity.z > level.length + 4) {
+        throw new Error(`Level ${level.id} entity ${entity.id} is outside playable z bounds`);
+      }
+      const segment = level.track.find((candidate) => entity.z >= candidate.zStart && entity.z <= candidate.zEnd);
+      if (!segment) {
+        throw new Error(`Level ${level.id} entity ${entity.id} is not on a track segment`);
+      }
+      const center = segment.x ?? 0;
+      const margin = entity.kind === "sideScraper" || entity.kind === "fan" || entity.kind === "cannon" ? 1.1 : 0.65;
+      if (Math.abs(entity.x - center) > segment.width / 2 + margin) {
+        throw new Error(`Level ${level.id} entity ${entity.id} is outside track width`);
+      }
+    });
+  });
+  if (bossNames.size < 5) {
+    throw new Error(`Expected at least 5 boss archetypes, got ${bossNames.size}`);
+  }
 }
