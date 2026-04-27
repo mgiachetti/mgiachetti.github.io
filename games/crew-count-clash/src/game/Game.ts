@@ -4,7 +4,7 @@ import { getLevel } from "../levels/levelCatalog";
 import { Hud } from "../ui/Hud";
 import { clamp, damp, seededRandom } from "../utils/math";
 import { buyOrEquipCosmetic, buyUpgrade, cosmeticCatalog, getEquippedCosmetic, grantRunRewards, loadSave, resetSave, saveGame } from "./saveData";
-import type { GameMode, LevelData, LevelEntity, RunStats, SaveData, TrackSegment } from "./types";
+import type { GameMode, LevelData, LevelEntity, RewardData, RunStats, SaveData, TrackSegment } from "./types";
 
 type RuntimeEntity = {
   data: LevelEntity;
@@ -111,6 +111,8 @@ export class Game {
   private rouletteSpinEnd = 0;
   private rouletteRevealTimer = 0;
   private rouletteResolved = false;
+  private rouletteDirectPayout = false;
+  private extraSpinReward: RewardData | null = null;
   private stairTimer = 0;
   private count = 1;
   private centerX = 0;
@@ -303,6 +305,7 @@ export class Game {
   private bindUi(): void {
     this.hud.onStart = () => void this.beginLevel(this.save.currentLevel);
     this.hud.onNext = () => void this.beginLevel(this.save.currentLevel);
+    this.hud.onExtraSpin = () => this.startExtraSpin();
     this.hud.onRetry = () => void this.beginLevel(this.level.id);
     this.hud.onHome = () => {
       this.mode = "title";
@@ -509,6 +512,8 @@ export class Game {
     this.rouletteSpinEnd = 0;
     this.rouletteRevealTimer = 0;
     this.rouletteResolved = false;
+    this.rouletteDirectPayout = false;
+    this.extraSpinReward = null;
     this.rouletteSelectedReward = null;
     this.stairTimer = 0;
     this.stairFinaleStarted = false;
@@ -543,6 +548,8 @@ export class Game {
     this.stairFinaleTimer = 0;
     this.rouletteWheel = null;
     this.roulettePrizeSprite = null;
+    this.rouletteDirectPayout = false;
+    this.extraSpinReward = null;
     this.rouletteGroup.clear();
   }
 
@@ -1915,7 +1922,20 @@ export class Game {
     }
   }
 
-  private startRoulette(): void {
+  private startExtraSpin(): void {
+    if (this.mode !== "reward" || this.save.tickets <= 0) {
+      this.audio.hit();
+      return;
+    }
+    this.save.tickets -= 1;
+    saveGame(this.save);
+    if (!this.rouletteWheel) {
+      this.createRouletteWheel(this.level.length + 18);
+    }
+    this.startRoulette(true);
+  }
+
+  private startRoulette(directPayout = false): void {
     this.mode = "roulette";
     this.speed = 0;
     this.distance = this.level.length + 10;
@@ -1923,7 +1943,10 @@ export class Game {
     this.rouletteTick = 0;
     this.rouletteRevealTimer = 0;
     this.rouletteResolved = false;
+    this.rouletteDirectPayout = directPayout;
+    this.extraSpinReward = null;
     this.hud.hideRoulettePrize();
+    this.hud.showRun();
     this.pickRouletteReward();
     if (this.rouletteWheel) {
       this.rouletteWheel.rotation.z = this.rouletteSpinStart;
@@ -1941,7 +1964,12 @@ export class Game {
       }
       this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
       if (this.rouletteRevealTimer <= 0) {
-        this.finishLevel(false, false);
+        if (this.rouletteDirectPayout && this.extraSpinReward) {
+          this.mode = "reward";
+          this.hud.showReward(this.extraSpinReward, this.save);
+        } else {
+          this.finishLevel(false, false);
+        }
       }
       return;
     }
@@ -1996,7 +2024,7 @@ export class Game {
       return;
     }
     const reward = this.rouletteSelectedReward ?? this.rouletteRewards[0];
-    const prizeLabel = this.applyRouletteReward(reward);
+    const prizeLabel = this.rouletteDirectPayout ? this.applyDirectRouletteReward(reward) : this.applyRouletteReward(reward);
     this.rouletteResolved = true;
     this.rouletteRevealTimer = 3.2;
     this.hud.showRoulettePrize(prizeLabel);
@@ -2004,7 +2032,9 @@ export class Game {
     this.showRoulettePrizeSprite(prizeLabel, reward.color);
     this.spawnBurst(0, this.level.length + 18, reward.color);
     this.audio.reward();
-    this.stats.score += 650;
+    if (!this.rouletteDirectPayout) {
+      this.stats.score += 650;
+    }
     this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
   }
 
@@ -2040,6 +2070,47 @@ export class Game {
     return "Gems +10";
   }
 
+  private applyDirectRouletteReward(reward: RouletteReward): string {
+    let prizeLabel = "";
+    let coins = 0;
+    let gems = 0;
+    if (reward.kind === "coins") {
+      coins = reward.amount;
+      this.save.coins += coins;
+      prizeLabel = `Coins +${coins}`;
+    } else if (reward.kind === "gems") {
+      gems = reward.amount;
+      this.save.gems += gems;
+      prizeLabel = `Gems +${gems}`;
+    } else if (reward.kind === "ticket") {
+      this.save.tickets += reward.amount;
+      prizeLabel = `Ticket +${reward.amount}`;
+    } else {
+      const skin = cosmeticCatalog.find((item) => item.cost > 0 && !this.save.ownedCosmetics.includes(item.key));
+      if (skin) {
+        this.save.ownedCosmetics.push(skin.key);
+        this.save.equippedCosmetics[skin.slot] = skin.key;
+        this.applyCosmetics();
+        prizeLabel = skin.label;
+      } else {
+        gems = 10;
+        this.save.gems += gems;
+        prizeLabel = "Gems +10";
+      }
+    }
+    saveGame(this.save);
+    this.extraSpinReward = {
+      title: "Extra Spin Paid",
+      kind: "Ticket Spin",
+      score: 0,
+      coins,
+      gems,
+      stars: 0,
+      extra: `No-ad ticket spin: ${prizeLabel}.`
+    };
+    return prizeLabel;
+  }
+
   private showRoulettePrizeSprite(label: string, color: number): void {
     if (this.roulettePrizeSprite) {
       this.rouletteGroup.remove(this.roulettePrizeSprite);
@@ -2057,7 +2128,7 @@ export class Game {
       this.audio.reward();
     }
     const reward = grantRunRewards(this.save, this.level.id, this.stats, this.level.targetScore, this.level.targetStair);
-    this.hud.showReward(reward);
+    this.hud.showReward(reward, this.save);
   }
 
   private failRun(_reason: string): void {

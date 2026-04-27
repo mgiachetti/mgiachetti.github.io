@@ -24,9 +24,11 @@ export class Hud {
   private shield = this.required<HTMLElement>("[data-shield]");
   private combo = this.required<HTMLElement>("[data-combo]");
   private mute = this.required<HTMLButtonElement>("[data-mute]");
+  private extraSpin = this.required<HTMLButtonElement>("[data-extra-spin]");
 
   onStart: (() => void) | null = null;
   onNext: (() => void) | null = null;
+  onExtraSpin: (() => void) | null = null;
   onRetry: (() => void) | null = null;
   onHome: (() => void) | null = null;
   onPause: (() => void) | null = null;
@@ -48,6 +50,7 @@ export class Hud {
     document.querySelectorAll<HTMLElement>("[data-next]").forEach((button) => {
       button.addEventListener("click", () => this.onNext?.());
     });
+    this.extraSpin.addEventListener("click", () => this.onExtraSpin?.());
     document.querySelectorAll<HTMLElement>("[data-retry]").forEach((button) => {
       button.addEventListener("click", () => this.onRetry?.());
     });
@@ -129,7 +132,7 @@ export class Hud {
     this.set("[data-fail-count]", formatNumber(stats.maxCount));
   }
 
-  showReward(data: RewardData): void {
+  showReward(data: RewardData, save?: SaveData): void {
     this.hideRoulettePrize();
     this.hud.classList.add("is-hidden");
     this.showOnly(this.reward);
@@ -140,6 +143,9 @@ export class Hud {
     this.countTo("[data-result-gems]", data.gems, "+");
     this.set("[data-result-stars]", "★".repeat(data.stars));
     this.set("[data-result-extra]", data.extra);
+    const canSpin = (save?.tickets ?? 0) > 0;
+    this.extraSpin.classList.toggle("is-hidden", !canSpin);
+    this.extraSpin.textContent = canSpin ? `Extra Spin (${save?.tickets ?? 0})` : "Extra Spin";
   }
 
   showShop(save: SaveData): void {

@@ -176,7 +176,7 @@ Status markers:
 - [x] Implement earned tickets.
 - [~] Implement coin/gem/skin/upgrades rewards.
 - [x] Implement jackpot skin reward.
-- [ ] Add no-ad extra spin rules using tickets/gems.
+- [x] Add no-ad extra spin rules using tickets/gems.
 - [x] Add roulette SFX and reward fanfare.
 
 ## Phase 14 - Scoring And Economy
@@ -215,7 +215,7 @@ Status markers:
 - [x] Implement Roulette Luck upgrade.
 - [~] Implement body/visor/backpack/hat/trail cosmetics.
 - [x] Implement equip/owned/locked states.
-- [ ] Implement duplicate conversion.
+- [x] Implement duplicate conversion.
 - [ ] Implement base/castle build screen.
 
 ## Phase 17 - Audio

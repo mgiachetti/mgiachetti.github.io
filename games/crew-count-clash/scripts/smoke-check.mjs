@@ -343,10 +343,20 @@ try {
   );
   const stairFinaleDone = await stairFinale.eval(`(() => ({
     rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
-    title: document.querySelector("[data-result-title]").textContent
+    title: document.querySelector("[data-result-title]").textContent,
+    extraSpinVisible: !document.querySelector("[data-extra-spin]").classList.contains("is-hidden")
   }))()`);
   assert(stairFinaleDone.rewardVisible, "Stair finale should eventually continue to reward screen.");
   assert(stairFinaleDone.title === "Level Clear", `Expected Level Clear reward, got ${stairFinaleDone.title}.`);
+  assert(stairFinaleDone.extraSpinVisible, "Reward screen should offer no-ad extra spin when tickets are available.");
+  await stairFinale.send("Runtime.evaluate", { expression: "document.querySelector('[data-extra-spin]').click()" });
+  await sleep(850);
+  const extraSpin = await stairFinale.eval(`(() => ({
+    hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+    rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden")
+  }))()`);
+  assert(extraSpin.hudVisible, "Extra spin should return to HUD/roulette view.");
+  assert(!extraSpin.rewardVisible, "Extra spin should hide the reward panel while spinning.");
   await stairFinale.close();
 
   console.log("Smoke check passed.");
