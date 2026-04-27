@@ -567,7 +567,9 @@ export class Game {
     this.battleAppliedDefeats = 0;
     this.crowdImpactPulse = 0;
     this.stairsGroup.clear();
+    this.stairsGroup.visible = true;
     this.bossGroup.clear();
+    this.bossGroup.visible = true;
     this.bossTelegraph = null;
     this.bossWeapon = null;
     this.bossRightArm = null;
@@ -585,6 +587,7 @@ export class Game {
     this.rouletteDirectPayout = false;
     this.extraSpinReward = null;
     this.rouletteGroup.clear();
+    this.rouletteGroup.visible = true;
   }
 
   private buildLevel(): void {
@@ -2118,6 +2121,11 @@ export class Game {
     this.rouletteResolved = false;
     this.rouletteDirectPayout = directPayout;
     this.extraSpinReward = null;
+    if (directPayout) {
+      this.stairsGroup.visible = false;
+      this.bossGroup.visible = false;
+    }
+    this.rouletteGroup.visible = true;
     this.hud.hideRoulettePrize();
     this.hud.showRun();
     this.pickRouletteReward();
