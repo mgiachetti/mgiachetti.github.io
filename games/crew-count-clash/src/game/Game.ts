@@ -1343,7 +1343,8 @@ export class Game {
           break;
         }
       } else if (entity.data.kind === "enemy") {
-        if (dz < 1.4 && Math.abs(this.centerX - entity.data.x) < (entity.data.width ?? 3.4) / 2) {
+        const enemyX = this.getEnemyX(entity.data, time);
+        if (dz < 1.4 && Math.abs(this.centerX - enemyX) < (entity.data.width ?? 3.4) / 2) {
           this.battleEnemy(entity);
         }
       } else {
@@ -1507,6 +1508,7 @@ export class Game {
     entity.mesh.visible = false;
     const enemyCount = entity.data.count ?? 8;
     const loss = Math.ceil(enemyCount * (entity.data.strength ?? 1));
+    const enemyX = entity.mesh.position.x;
     this.count -= loss;
     this.stats.score += enemyCount * 34;
     this.stats.enemiesDefeated += enemyCount;
@@ -1515,8 +1517,8 @@ export class Game {
     this.crowdImpactPulse = 0.9;
     this.hud.popText(`Battle -${loss}`, this.count > 0 ? "boss" : "bad");
     this.audio.battle();
-    this.spawnBurst(entity.data.x, entity.data.z, 0xef476f);
-    this.spawnBattleClash(entity.data.x, entity.data.z, loss);
+    this.spawnBurst(enemyX, entity.data.z, 0xef476f);
+    this.spawnBattleClash(enemyX, entity.data.z, loss);
     if (this.count <= 0) {
       this.failRun("Lost battle");
     }
@@ -1571,6 +1573,13 @@ export class Game {
   private getHazardX(data: LevelEntity, time: number): number {
     if (data.kind === "spikeRoller" || data.kind === "cannon" || data.kind === "swingingAxe") {
       return data.x + Math.sin(time * (data.speed ?? 2.1) + (data.phase ?? 0)) * (data.range ?? 2.3);
+    }
+    return data.x;
+  }
+
+  private getEnemyX(data: LevelEntity, time: number): number {
+    if (data.kind === "enemy" && data.range && data.speed) {
+      return data.x + Math.sin(time * data.speed + (data.phase ?? 0)) * data.range;
     }
     return data.x;
   }
@@ -2108,6 +2117,7 @@ export class Game {
         entity.mesh.rotation.y += dt * 2.2;
         entity.mesh.position.y = 0.7 + Math.sin(time * 3 + entity.data.z) * 0.08;
       } else if (entity.data.kind === "enemy") {
+        entity.mesh.position.x = this.getEnemyX(entity.data, time);
         const models = entity.mesh.userData.enemyModels as THREE.Object3D[] | undefined;
         const ring = entity.mesh.userData.enemyRing as THREE.Object3D | undefined;
         const variant = entity.mesh.userData.enemyVariant as string | undefined;

@@ -123,9 +123,9 @@ Status markers:
 
 - [x] Define enemy squad data.
 - [x] Implement static enemy squads.
-- [ ] Implement patrolling enemy squads.
-- [ ] Implement armored squads.
-- [ ] Implement mini-boss guards.
+- [x] Implement patrolling enemy squads.
+- [x] Implement armored squads.
+- [x] Implement mini-boss guards.
 - [ ] Implement enemy gate/spawner.
 - [x] Implement battle subtraction formula.
 - [x] Add battle animation swirl.

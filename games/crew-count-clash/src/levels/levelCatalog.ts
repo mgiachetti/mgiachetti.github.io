@@ -433,8 +433,8 @@ export const levelCatalog: LevelData[] = [
       ...coinArc("l13-coins", 132, 1, 12),
       { id: "l13-coral-pad", kind: "colorPad", x: 0, z: 154, color: "coral" },
       ...colorPair("l13-cg2", 174, "cyan", "coral"),
-      { id: "l13-enemy-a", kind: "enemy", x: -1.8, z: 194, count: 46, strength: 1, width: 3.2 },
-      { id: "l13-enemy-b", kind: "enemy", x: 1.8, z: 202, count: 24, strength: 2, width: 3.2 },
+      { id: "l13-enemy-a", kind: "enemy", x: -1.8, z: 194, count: 46, strength: 1, width: 3.2, range: 0.9, speed: 1.8 },
+      { id: "l13-enemy-b", kind: "enemy", x: 1.8, z: 202, count: 24, strength: 2, width: 3.2, range: 0.9, speed: 2, phase: 1.2 },
       ...crewLine("l13-b", 208, 1, 8, 1.4)
     ]
   },
@@ -465,7 +465,7 @@ export const levelCatalog: LevelData[] = [
       ...gatePair("l14-g2", 146, ["multiply", 2], ["percent", 90]),
       { id: "l14-roller-a", kind: "spikeRoller", x: 0, z: 166, width: 1.9, depth: 2.4, range: 2.6, speed: 3.7 },
       { id: "l14-shield", kind: "shield", x: -2.3, z: 184 },
-      { id: "l14-enemy-a", kind: "enemy", x: 0, z: 204, count: 58, strength: 2, width: 4.8 },
+      { id: "l14-enemy-a", kind: "enemy", x: 0, z: 204, count: 58, strength: 2, width: 4.8, range: 1.2, speed: 1.9 },
       ...coinArc("l14-coins", 210, 1, 10)
     ]
   },
@@ -492,8 +492,8 @@ export const levelCatalog: LevelData[] = [
       { id: "l15-frenzy", kind: "frenzy", x: 0, z: 88 },
       { id: "l15-axe-a", kind: "swingingAxe", x: 0, z: 108, width: 1.5, depth: 2.4, range: 2.8, speed: 2.8 },
       ...gatePair("l15-g2", 132, ["percent", 100], ["subtract", 50]),
-      { id: "l15-enemy-a", kind: "enemy", x: -1.8, z: 156, count: 48, strength: 2, width: 3.2 },
-      { id: "l15-enemy-b", kind: "enemy", x: 1.8, z: 168, count: 64, strength: 1, width: 3.2 },
+      { id: "l15-enemy-a", kind: "enemy", x: -1.8, z: 156, count: 48, strength: 2, width: 3.2, range: 0.85, speed: 2.1 },
+      { id: "l15-enemy-b", kind: "enemy", x: 1.8, z: 168, count: 64, strength: 1, width: 3.2, range: 0.85, speed: 2.25, phase: 1.4 },
       { id: "l15-shield", kind: "shield", x: 0, z: 184 },
       { id: "l15-bomb-a", kind: "bossBomb", x: -2.2, z: 198 },
       { id: "l15-bomb-b", kind: "bossBomb", x: 2.2, z: 208 },
@@ -525,8 +525,8 @@ export const levelCatalog: LevelData[] = [
       ...timedGatePair("l16-tg1", 146, ["percent", 120, "divide", 4], ["multiply", 2, "subtract", 46]),
       { id: "l16-laser-a", kind: "laser", x: 0, z: 166, width: 6.2, depth: 1.2, speed: 3.8 },
       { id: "l16-roller-a", kind: "spikeRoller", x: 0, z: 188, width: 1.9, depth: 2.4, range: 2.8, speed: 3.8 },
-      { id: "l16-enemy-a", kind: "enemy", x: -1.8, z: 210, count: 36, strength: 2, width: 3.2 },
-      { id: "l16-enemy-b", kind: "enemy", x: 1.8, z: 220, count: 68, strength: 1, width: 3.2 },
+      { id: "l16-enemy-a", kind: "enemy", x: -1.8, z: 210, count: 36, strength: 2, width: 3.2, range: 1.1, speed: 2.15 },
+      { id: "l16-enemy-b", kind: "enemy", x: 1.8, z: 220, count: 68, strength: 1, width: 3.2, range: 1.1, speed: 2.35, phase: 1.6 },
       ...crewLine("l16-b", 226, 1, 8, 1.4)
     ]
   },
@@ -555,7 +555,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l17-violet-pad", kind: "colorPad", x: 0, z: 118, color: "violet" },
       ...colorPair("l17-cg1", 138, "violet", "lime"),
       { id: "l17-cannon-a", kind: "cannon", x: 3.2, z: 160, width: 1.3, depth: 3.4, range: 3.3, speed: 4 },
-      { id: "l17-enemy-a", kind: "enemy", x: 0, z: 184, count: 72, strength: 2, width: 4.8 },
+      { id: "l17-enemy-a", kind: "enemy", x: 0, z: 184, count: 72, strength: 2, width: 4.8, range: 1.35, speed: 2.25 },
       { id: "l17-bomb-a", kind: "bossBomb", x: -2.2, z: 202 },
       { id: "l17-bomb-b", kind: "bossBomb", x: 2.2, z: 214 },
       ...coinArc("l17-coins", 216, 1, 12)
@@ -607,8 +607,8 @@ export const levelCatalog: LevelData[] = [
       ...gatePair("l19-g2", 154, ["add", 60], ["multiply", 2]),
       { id: "l19-roller-a", kind: "spikeRoller", x: 0, z: 178, width: 1.9, depth: 2.4, range: 2.9, speed: 4.2 },
       { id: "l19-cannon-a", kind: "cannon", x: -3.2, z: 198, width: 1.3, depth: 3.5, range: 3.4, speed: 4.2 },
-      { id: "l19-enemy-a", kind: "enemy", x: -1.8, z: 222, count: 54, strength: 2, width: 3.2 },
-      { id: "l19-enemy-b", kind: "enemy", x: 1.8, z: 232, count: 78, strength: 1, width: 3.2 },
+      { id: "l19-enemy-a", kind: "enemy", x: -1.8, z: 222, count: 54, strength: 2, width: 3.2, range: 1.05, speed: 2.4 },
+      { id: "l19-enemy-b", kind: "enemy", x: 1.8, z: 232, count: 78, strength: 1, width: 3.2, range: 1.05, speed: 2.65, phase: 1.5 },
       { id: "l19-shield", kind: "shield", x: 0, z: 240 },
       ...crewLine("l19-c", 244, 1, 8, 1.3)
     ]
@@ -642,8 +642,8 @@ export const levelCatalog: LevelData[] = [
       ...colorPair("l20-cg2", 160, "coral", "cyan"),
       { id: "l20-crusher-a", kind: "crusher", x: -2.1, z: 182, width: 2, depth: 2.2, speed: 3.6 },
       { id: "l20-crusher-b", kind: "crusher", x: 2.1, z: 194, width: 2, depth: 2.2, speed: 3.8, phase: 1.2 },
-      { id: "l20-enemy-a", kind: "enemy", x: -1.8, z: 218, count: 70, strength: 2, width: 3.2 },
-      { id: "l20-enemy-b", kind: "enemy", x: 1.8, z: 228, count: 86, strength: 1, width: 3.2 },
+      { id: "l20-enemy-a", kind: "enemy", x: -1.8, z: 218, count: 70, strength: 2, width: 3.2, range: 1.1, speed: 2.5 },
+      { id: "l20-enemy-b", kind: "enemy", x: 1.8, z: 228, count: 86, strength: 1, width: 3.2, range: 1.1, speed: 2.7, phase: 1.7 },
       { id: "l20-frenzy", kind: "frenzy", x: 0, z: 238 },
       { id: "l20-bomb-a", kind: "bossBomb", x: -2.2, z: 248 },
       { id: "l20-bomb-b", kind: "bossBomb", x: 0, z: 256 },
