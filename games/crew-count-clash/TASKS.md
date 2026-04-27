@@ -270,10 +270,10 @@ Status markers:
 
 - [x] Add visible city/castle/base progression to the main loop.
 - [x] Make boss victory read as a castle takeover with gate animation, flag change, crowd push-in, and delayed reward.
-- [ ] Add denser track set dressing: buildings, towers, walls, banners, and route signs.
-- [ ] Give gates stronger glow, post silhouettes, number badges, and pass-through impact particles.
-- [ ] Add trap-specific visual identity: sparks, smoke, dust, warning stripes, and stronger telegraphs.
-- [ ] Add distinct boss arena dressing per boss archetype.
+- [x] Add denser track set dressing: buildings, towers, walls, banners, and route signs.
+- [x] Give gates stronger glow, post silhouettes, number badges, and pass-through impact particles.
+- [x] Add trap-specific visual identity: sparks, smoke, dust, warning stripes, and stronger telegraphs.
+- [x] Add distinct boss arena dressing per boss archetype.
 - [ ] Add more visible cosmetics: hats/helmets, stronger trails, backpack silhouettes, and victory poses.
 - [ ] Add reward set pieces: gem piles, ticket cards, jackpot spotlight, and chest variants.
 - [ ] Add level-end castle/city build celebration after major milestones.

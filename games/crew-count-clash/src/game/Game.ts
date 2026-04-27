@@ -653,6 +653,10 @@ export class Game {
     const flagA = new THREE.MeshStandardMaterial({ color: theme.sideA, roughness: 0.5, metalness: 0.04 });
     const flagB = new THREE.MeshStandardMaterial({ color: theme.sideB, roughness: 0.5, metalness: 0.04 });
     const gemMaterial = new THREE.MeshStandardMaterial({ color: theme.sideB, roughness: 0.24, metalness: 0.18 });
+    const wallMaterial = new THREE.MeshStandardMaterial({ color: theme.castle, roughness: 0.72, metalness: 0.02 });
+    const roofMaterial = new THREE.MeshStandardMaterial({ color: theme.sideA, roughness: 0.48, metalness: 0.05 });
+    const windowMaterial = new THREE.MeshStandardMaterial({ color: theme.sideB, roughness: 0.24, metalness: 0.15, emissive: theme.sideB, emissiveIntensity: 0.08 });
+    const shadowMaterial = new THREE.MeshStandardMaterial({ color: 0x203047, roughness: 0.82, transparent: true, opacity: 0.22 });
     const label = this.makeTextSprite(this.level.kind === "bonus" ? "BONUS" : this.level.kind === "boss" ? "BOSS RUN" : `LEVEL ${this.level.id}`, "#ffffff", "#102033");
     label.position.set(0, 1.45, 4);
     label.scale.set(1.75, 0.42, 1);
@@ -667,6 +671,12 @@ export class Game {
       const sideX = track.data.width / 2 + 0.9;
       [-1, 1].forEach((side) => {
         const x = center + side * sideX;
+        const curb = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.36, 4.4), wallMaterial);
+        curb.position.set(center + side * (track.data.width / 2 + 0.24), 0.1, z);
+        curb.castShadow = true;
+        curb.receiveShadow = true;
+        this.decorGroup.add(curb);
+
         const post = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.075, 1.45, 10), postMaterial);
         post.position.set(x, 0.38, z);
         post.castShadow = true;
@@ -677,6 +687,37 @@ export class Game {
         flag.userData.floatBaseY = flag.position.y;
         flag.userData.floatPhase = index * 0.8 + side;
         this.decorGroup.add(flag);
+
+        const buildingHeight = 0.9 + ((index + (side > 0 ? 1 : 2)) % 3) * 0.42;
+        const building = new THREE.Mesh(new THREE.BoxGeometry(0.86, buildingHeight, 0.95), wallMaterial);
+        building.position.set(center + side * (sideX + 1.35 + (index % 2) * 0.2), buildingHeight / 2 - 0.28, z + 2.8);
+        building.castShadow = true;
+        building.receiveShadow = true;
+        this.decorGroup.add(building);
+        const roof = new THREE.Mesh(new THREE.ConeGeometry(0.58, 0.48, 4), roofMaterial);
+        roof.position.set(building.position.x, building.position.y + buildingHeight / 2 + 0.2, building.position.z);
+        roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
+        this.decorGroup.add(roof);
+        for (let floor = 0; floor < Math.min(3, Math.ceil(buildingHeight)); floor += 1) {
+          const window = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.28), windowMaterial);
+          window.position.set(building.position.x - side * 0.44, 0.42 + floor * 0.32, building.position.z);
+          window.castShadow = false;
+          this.setPulse(window, 0.08, 2.4, index + floor + side);
+          this.decorGroup.add(window);
+        }
+
+        if (index % 3 === 1) {
+          const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.42, 1.85, 8), wallMaterial);
+          tower.position.set(center + side * (sideX + 2.05), 0.62, z - 5);
+          tower.castShadow = true;
+          tower.receiveShadow = true;
+          this.decorGroup.add(tower);
+          const towerRoof = new THREE.Mesh(new THREE.ConeGeometry(0.46, 0.54, 6), side > 0 ? flagB : flagA);
+          towerRoof.position.set(tower.position.x, 1.78, tower.position.z);
+          towerRoof.castShadow = true;
+          this.decorGroup.add(towerRoof);
+        }
       });
 
       if (index % 2 === 0) {
@@ -690,6 +731,18 @@ export class Game {
           this.decorGroup.add(orb);
         });
       }
+
+      if (index % 2 === 1) {
+        const routeShadow = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.035, 0.7), shadowMaterial);
+        routeShadow.position.set(center, 0.095, z - 7);
+        routeShadow.rotation.y = 0.08;
+        this.decorGroup.add(routeShadow);
+        const routeSign = this.makeTextSprite(this.level.kind === "boss" ? "CASTLE" : this.level.kind === "bonus" ? "LUCKY" : "CLASH", "#ffffff", "#102033");
+        routeSign.position.set(center - 2.15, 1.05, z - 7.4);
+        routeSign.scale.set(1.05, 0.28, 1);
+        routeSign.rotation.y = 0.26;
+        this.decorGroup.add(routeSign);
+      }
     }
 
     const finishLabel = this.makeTextSprite(this.level.kind === "boss" ? "KING" : this.level.kind === "bonus" ? "SPIN" : "STAIRS", "#13223a", "#ffffff");
@@ -697,6 +750,41 @@ export class Game {
     finishLabel.scale.set(1.5, 0.38, 1);
     this.decorGroup.add(finishLabel);
     this.world.add(this.decorGroup);
+  }
+
+  private setPulse(object: THREE.Object3D, amount: number, speed: number, phase = 0): void {
+    object.userData.pulseAmount = amount;
+    object.userData.pulseSpeed = speed;
+    object.userData.pulsePhase = phase;
+    object.userData.baseScaleX = object.scale.x;
+    object.userData.baseScaleY = object.scale.y;
+    object.userData.baseScaleZ = object.scale.z;
+  }
+
+  private animateTaggedObject(root: THREE.Object3D, time: number, dt: number): void {
+    root.traverse((item) => {
+      if (typeof item.userData.floatBaseY === "number") {
+        item.position.y = item.userData.floatBaseY + Math.sin(time * 2.5 + (item.userData.floatPhase ?? 0)) * 0.08;
+      }
+      if (typeof item.userData.spin === "number") {
+        item.rotation.y += item.userData.spin * dt;
+      }
+      if (typeof item.userData.spinZ === "number") {
+        item.rotation.z += item.userData.spinZ * dt;
+      }
+      const pulseAmount = Number(item.userData.pulseAmount);
+      if (Number.isFinite(pulseAmount)) {
+        const pulse = 1 + Math.sin(time * (item.userData.pulseSpeed ?? 3) + (item.userData.pulsePhase ?? 0)) * pulseAmount;
+        item.scale.set(
+          (item.userData.baseScaleX ?? 1) * pulse,
+          (item.userData.baseScaleY ?? 1) * pulse,
+          (item.userData.baseScaleZ ?? 1) * pulse
+        );
+      }
+      if (typeof item.userData.blinkSpeed === "number") {
+        item.visible = Math.sin(time * item.userData.blinkSpeed + (item.userData.blinkPhase ?? 0)) > -0.45;
+      }
+    });
   }
 
   private createTrackMesh(segment: TrackSegment): THREE.Mesh {
@@ -762,16 +850,59 @@ export class Game {
     const gate = this.getGateState(entity);
     const helpful = entity.kind === "colorGate" || gate.helpful;
     const width = entity.width ?? 2.5;
+    const gateColor = helpful ? 0x58f29a : 0xff5a5f;
+    const glowMaterial = new THREE.MeshStandardMaterial({
+      color: gateColor,
+      roughness: 0.2,
+      transparent: true,
+      opacity: 0.28,
+      emissive: gateColor,
+      emissiveIntensity: 0.22,
+      side: THREE.DoubleSide
+    });
+    const glow = new THREE.Mesh(new THREE.BoxGeometry(width + 0.54, 2.42, 0.08), glowMaterial);
+    glow.position.set(0, 1.28, 0.06);
+    this.setPulse(glow, 0.035, 3.8, entity.z * 0.1);
+    group.add(glow);
     const panel = new THREE.Mesh(new THREE.BoxGeometry(width, 2.15, 0.18), helpful ? this.materials.gateGood : this.materials.gateBad);
     panel.position.y = 1.25;
     panel.castShadow = true;
     group.add(panel);
+    const topBar = new THREE.Mesh(new THREE.BoxGeometry(width + 0.5, 0.24, 0.32), this.materials.gatePost);
+    topBar.position.set(0, 2.38, 0);
+    topBar.castShadow = true;
+    group.add(topBar);
+    const badge = new THREE.Mesh(new THREE.CylinderGeometry(0.76, 0.76, 0.08, 28), this.materials.gatePost);
+    badge.rotation.x = Math.PI / 2;
+    badge.position.set(0, 2.78, 0.02);
+    badge.castShadow = true;
+    group.add(badge);
     [-width / 2, width / 2].forEach((x) => {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.5, 0.24), this.materials.gatePost);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, 2.55, 0.3), this.materials.gatePost);
       post.position.set(x, 1.15, 0);
       post.castShadow = true;
       group.add(post);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 8), helpful ? this.materials.gateGood : this.materials.gateBad);
+      bulb.position.set(x, 2.56, -0.02);
+      bulb.castShadow = true;
+      this.setPulse(bulb, 0.18, 4.3, entity.z + x);
+      group.add(bulb);
     });
+    const arrowMaterial = new THREE.MeshStandardMaterial({
+      color: gateColor,
+      roughness: 0.42,
+      transparent: true,
+      opacity: 0.52,
+      emissive: gateColor,
+      emissiveIntensity: 0.1
+    });
+    for (let index = -1; index <= 1; index += 1) {
+      const chevron = new THREE.Mesh(new THREE.BoxGeometry(width * 0.22, 0.035, 0.12), arrowMaterial);
+      chevron.position.set(index * width * 0.18, 0.095, -0.7 - Math.abs(index) * 0.08);
+      chevron.rotation.y = index * 0.24;
+      this.setPulse(chevron, 0.08, 5.5, entity.z + index);
+      group.add(chevron);
+    }
     const label = this.makeTextSprite(entity.kind === "colorGate" ? `${(entity.color ?? "cyan").toUpperCase()}` : gate.label, helpful ? "#0d8f52" : "#b82032", "#ffffff");
     label.position.set(0, 2.75, -0.08);
     label.scale.set(2.4, 0.86, 1);
@@ -888,34 +1019,90 @@ export class Game {
     const warning = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 2.2, 0.04, entity.depth ?? 2), this.materials.warning);
     warning.position.y = 0.08;
     group.add(warning);
+    const stripeMaterial = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.74, transparent: true, opacity: 0.5 });
+    const sparkMaterial = new THREE.MeshStandardMaterial({ color: 0xffca3a, roughness: 0.34, metalness: 0.12, emissive: 0xff9f1c, emissiveIntensity: 0.25 });
+    const dustMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, transparent: true, opacity: 0.38 });
+    const stripeCount = Math.min(6, Math.max(2, Math.ceil((entity.width ?? 2.2) * 1.2)));
+    for (let index = 0; index < stripeCount; index += 1) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.045, (entity.depth ?? 2) * 0.86), stripeMaterial);
+      stripe.position.set((-0.5 + (index + 0.5) / stripeCount) * (entity.width ?? 2.2), 0.115, 0);
+      stripe.rotation.y = 0.42;
+      group.add(stripe);
+    }
 
     if (entity.kind === "sideScraper") {
       const wall = new THREE.Mesh(new THREE.BoxGeometry(0.34, 1.35, entity.depth ?? 4), this.materials.hazard);
       wall.position.set(Math.sign(entity.x || 1) * 0.18, 0.72, 0);
       wall.castShadow = true;
       group.add(wall);
+      for (let index = 0; index < 5; index += 1) {
+        const spark = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 5), sparkMaterial);
+        spark.position.set(Math.sign(entity.x || 1) * 0.38, 0.34 + index * 0.2, -1.4 + index * 0.7);
+        spark.rotation.z = Math.PI / 2;
+        spark.userData.blinkSpeed = 7 + index;
+        spark.userData.blinkPhase = index * 0.8;
+        this.setPulse(spark, 0.18, 5.2, index);
+        group.add(spark);
+      }
     } else if (entity.kind === "bumper") {
       const bumper = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 2.2, 0.38, entity.depth ?? 1.1), this.materials.hazard);
       bumper.position.y = 0.3;
       bumper.castShadow = true;
       group.add(bumper);
+      [-1, 1].forEach((side) => {
+        const cap = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.48, entity.depth ?? 1.1), this.materials.gatePost);
+        cap.position.set(side * ((entity.width ?? 2.2) / 2 + 0.05), 0.32, 0);
+        cap.castShadow = true;
+        group.add(cap);
+      });
     } else if (entity.kind === "rotatingBar") {
       const bar = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 5.6, 0.22, 0.36), this.materials.hazard);
       bar.position.y = 0.7;
       bar.castShadow = true;
       group.add(bar);
+      [-1, 1].forEach((side) => {
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 8), this.materials.hazardDark);
+        cap.position.set(side * ((entity.width ?? 5.6) / 2 + 0.02), 0.7, 0);
+        cap.castShadow = true;
+        group.add(cap);
+      });
     } else if (entity.kind === "sawLane") {
       const saw = new THREE.Mesh(this.geometries.cylinder, this.materials.hazard);
       saw.rotation.z = Math.PI / 2;
       saw.position.y = 0.28;
       saw.scale.set(0.72, 0.16, 0.72);
       saw.castShadow = true;
+      group.userData.saw = saw;
       group.add(saw);
+      const teeth = new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.055, 8, 18), this.materials.hazardDark);
+      teeth.rotation.z = Math.PI / 2;
+      saw.add(teeth);
+      for (let index = 0; index < 10; index += 1) {
+        const tooth = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.18, 4), this.materials.hazardDark);
+        const angle = (index / 10) * Math.PI * 2;
+        tooth.position.set(Math.cos(angle) * 0.52, Math.sin(angle) * 0.52, 0);
+        tooth.rotation.z = angle - Math.PI / 2;
+        tooth.castShadow = true;
+        saw.add(tooth);
+      }
     } else if (entity.kind === "crusher") {
       const hammer = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 2, 0.45, entity.depth ?? 2), this.materials.hazard);
       hammer.position.y = 2.15;
       hammer.castShadow = true;
+      group.userData.crusherHammer = hammer;
       group.add(hammer);
+      [-1, 1].forEach((side) => {
+        const guide = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 0.12), this.materials.hazardDark);
+        guide.position.set(side * ((entity.width ?? 2) / 2 + 0.26), 1.12, 0);
+        guide.castShadow = true;
+        group.add(guide);
+      });
+      for (let index = 0; index < 4; index += 1) {
+        const dust = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), dustMaterial);
+        dust.position.set(-0.48 + index * 0.32, 0.16, (index % 2 ? 0.34 : -0.34));
+        this.setPulse(dust, 0.28, 8, index);
+        group.add(dust);
+      }
     } else if (entity.kind === "swingingAxe") {
       const arm = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.8, 0.15), this.materials.hazardDark);
       arm.position.y = 1.42;
@@ -923,6 +1110,9 @@ export class Game {
       blade.position.y = 0.48;
       blade.castShadow = true;
       arm.add(blade);
+      const pivot = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 8), this.materials.bossGold);
+      pivot.position.y = 2.34;
+      group.add(pivot);
       group.add(arm);
     } else if (entity.kind === "spikeRoller") {
       const roller = new THREE.Mesh(this.geometries.cylinder, this.materials.hazard);
@@ -951,20 +1141,52 @@ export class Game {
       ball.scale.setScalar(0.34);
       group.userData.ball = ball;
       group.add(ball);
+      const flash = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.38, 8), sparkMaterial);
+      flash.rotation.z = -Math.sign(entity.x || 1) * Math.PI / 2;
+      flash.position.set(Math.sign(entity.x || 1) * 1.06, 0.62, 0);
+      flash.userData.blinkSpeed = 9;
+      flash.userData.blinkPhase = entity.z;
+      group.add(flash);
     } else if (entity.kind === "laser") {
+      const beamGlow = new THREE.Mesh(
+        new THREE.BoxGeometry(entity.width ?? 5.8, 0.34, 0.34),
+        new THREE.MeshStandardMaterial({ color: 0xef476f, roughness: 0.2, transparent: true, opacity: 0.28, emissive: 0xef476f, emissiveIntensity: 0.4 })
+      );
+      beamGlow.position.y = 0.85;
+      group.userData.laserGlow = beamGlow;
+      group.add(beamGlow);
       const beam = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 5.8, 0.18, 0.18), this.materials.hazard);
       beam.position.y = 0.85;
+      group.userData.laserBeam = beam;
       group.add(beam);
+      [-1, 1].forEach((side) => {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.24, 1.36, 0.28), this.materials.hazardDark);
+        post.position.set(side * ((entity.width ?? 5.8) / 2 + 0.16), 0.65, 0);
+        post.castShadow = true;
+        group.add(post);
+      });
     } else if (entity.kind === "hole") {
       const hole = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 2.2, 0.05, entity.depth ?? 3), this.materials.hazardDark);
       hole.position.y = 0.06;
       group.add(hole);
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.78, 0.055, 8, 34), this.materials.warning);
+      rim.scale.set((entity.width ?? 2.2) * 0.65, 1, (entity.depth ?? 3) * 0.42);
+      rim.rotation.x = Math.PI / 2;
+      rim.position.y = 0.13;
+      group.add(rim);
     } else if (entity.kind === "fan") {
       const fan = new THREE.Mesh(this.geometries.cylinder, this.materials.hazardDark);
       fan.rotation.z = Math.PI / 2;
       fan.position.y = 0.75;
       fan.scale.set(0.6, 0.22, 0.6);
+      group.userData.fan = fan;
       group.add(fan);
+      for (let index = 0; index < 4; index += 1) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.07, 0.14), this.materials.gatePost);
+        blade.rotation.z = (index / 4) * Math.PI * 2;
+        blade.position.y = 0.01;
+        fan.add(blade);
+      }
     } else {
       const block = new THREE.Mesh(new THREE.BoxGeometry(entity.width ?? 2, 0.18, entity.depth ?? 2), this.materials.hazard);
       block.position.y = 0.14;
@@ -1107,6 +1329,7 @@ export class Game {
     arena.position.y = -0.04;
     arena.receiveShadow = true;
     this.bossGroup.add(arena);
+    this.createBossArenaDressing();
 
     this.bossTelegraph = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.06, 6.4), this.materials.warning);
     this.bossTelegraph.position.set(0, 0.16, -3.4);
@@ -1289,6 +1512,111 @@ export class Game {
     label.scale.set(2.3, 0.52, 1);
     this.bossGroup.add(label);
     this.world.add(this.bossGroup);
+  }
+
+  private createBossArenaDressing(): void {
+    const attackKind = this.level.boss?.attackKind ?? "stomp";
+    const accentColor = this.level.boss?.arenaColor ?? this.getLevelTheme().accent;
+    const accentMaterial = new THREE.MeshStandardMaterial({
+      color: accentColor,
+      roughness: 0.38,
+      metalness: 0.08,
+      emissive: accentColor,
+      emissiveIntensity: 0.08
+    });
+    const glowMaterial = new THREE.MeshStandardMaterial({
+      color: accentColor,
+      roughness: 0.3,
+      transparent: true,
+      opacity: 0.36,
+      emissive: accentColor,
+      emissiveIntensity: 0.22
+    });
+    const darkMaterial = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.78, metalness: 0.06 });
+
+    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(4.62, 0.055, 10, 96), accentMaterial);
+    outerRing.rotation.x = Math.PI / 2;
+    outerRing.position.y = 0.18;
+    outerRing.userData.spin = attackKind === "sweep" ? 0.35 : 0.12;
+    this.setPulse(outerRing, 0.018, 2.4, this.level.id);
+    this.bossGroup.add(outerRing);
+
+    const centerSeal = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.92, 0.055, 36), this.materials.bossGold);
+    centerSeal.position.y = 0.18;
+    centerSeal.castShadow = true;
+    this.setPulse(centerSeal, 0.03, 2.8, this.level.id * 0.3);
+    this.bossGroup.add(centerSeal);
+
+    if (attackKind === "sweep") {
+      for (let index = 0; index < 4; index += 1) {
+        const lane = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.04, 7.2), glowMaterial);
+        lane.position.y = 0.2;
+        lane.rotation.y = (index / 4) * Math.PI;
+        lane.userData.spin = 0.25;
+        this.bossGroup.add(lane);
+      }
+      [-1, 1].forEach((side) => {
+        const pylon = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 1.36, 10), darkMaterial);
+        pylon.position.set(side * 4.15, 0.62, 0.45);
+        pylon.castShadow = true;
+        this.bossGroup.add(pylon);
+        const coil = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.045, 8, 26), accentMaterial);
+        coil.position.set(side * 4.15, 1.28, 0.45);
+        coil.rotation.x = Math.PI / 2;
+        coil.userData.spin = side * 1.6;
+        this.setPulse(coil, 0.08, 4.2, side);
+        this.bossGroup.add(coil);
+      });
+    } else if (attackKind === "minions") {
+      [-1, 1].forEach((side) => {
+        for (let index = 0; index < 2; index += 1) {
+          const door = new THREE.Mesh(new THREE.BoxGeometry(0.86, 1.05, 0.2), darkMaterial);
+          door.position.set(side * 4.1, 0.68, -1.35 + index * 2.2);
+          door.rotation.y = -side * 0.72;
+          door.castShadow = true;
+          this.bossGroup.add(door);
+          const signal = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.22, 0.08), this.materials.hazard);
+          signal.position.set(side * 4.0, 1.34, -1.35 + index * 2.2);
+          signal.rotation.y = -side * 0.72;
+          signal.userData.blinkSpeed = 5 + index;
+          signal.userData.blinkPhase = side;
+          this.bossGroup.add(signal);
+        }
+      });
+      for (let index = 0; index < 7; index += 1) {
+        const pod = new THREE.Mesh(new THREE.CapsuleGeometry(0.12, 0.25, 5, 8), this.materials.hazard);
+        const angle = (index / 7) * Math.PI * 2;
+        pod.position.set(Math.cos(angle) * 3.25, 0.34, Math.sin(angle) * 2.2);
+        pod.rotation.y = -angle;
+        pod.castShadow = true;
+        pod.userData.floatBaseY = pod.position.y;
+        pod.userData.floatPhase = index * 0.6;
+        this.bossGroup.add(pod);
+      }
+    } else {
+      for (let index = 0; index < 7; index += 1) {
+        const crack = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.035, 1.25 + (index % 3) * 0.32), darkMaterial);
+        crack.position.set(-2.7 + index * 0.9, 0.19, -0.6 + Math.sin(index) * 1.4);
+        crack.rotation.y = -0.65 + index * 0.22;
+        this.bossGroup.add(crack);
+      }
+      [-1, 1].forEach((side) => {
+        const statue = new THREE.Group();
+        statue.position.set(side * 4.05, 0, 1.55);
+        const base = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.34, 0.55), darkMaterial);
+        base.position.y = 0.16;
+        base.castShadow = true;
+        statue.add(base);
+        const crown = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.58, 5), this.materials.bossGold);
+        crown.position.y = 0.74;
+        crown.rotation.y = side * 0.4;
+        crown.castShadow = true;
+        statue.add(crown);
+        statue.userData.floatBaseY = statue.position.y;
+        statue.userData.floatPhase = side;
+        this.bossGroup.add(statue);
+      });
+    }
   }
 
   private createRouletteWheel(z: number): void {
@@ -2001,6 +2329,7 @@ export class Game {
   }
 
   private updateBoss(dt: number): void {
+    this.animateTaggedObject(this.bossGroup, this.lastTime, dt);
     this.centerX = damp(this.centerX, this.targetX, 8, dt);
     this.targetX += this.keyboardX * 3.8 * dt;
     this.targetX = clamp(this.targetX, -3.2, 3.2);
@@ -2126,6 +2455,7 @@ export class Game {
   }
 
   private updateBossVictory(dt: number): void {
+    this.animateTaggedObject(this.bossGroup, this.lastTime, dt);
     this.bossVictoryTimer += dt;
     this.bossHitPulse = Math.max(0, this.bossHitPulse - dt * 1.5);
     this.cameraShake = Math.max(0, this.cameraShake - dt * 1.6);
@@ -2459,12 +2789,7 @@ export class Game {
 
   private updateDecorations(time: number, dt: number): void {
     this.decorGroup.children.forEach((item) => {
-      if (typeof item.userData.floatBaseY === "number") {
-        item.position.y = item.userData.floatBaseY + Math.sin(time * 2.5 + (item.userData.floatPhase ?? 0)) * 0.08;
-      }
-      if (typeof item.userData.spin === "number") {
-        item.rotation.y += item.userData.spin * dt;
-      }
+      this.animateTaggedObject(item, time, dt);
     });
     if (this.stairVault) {
       const lid = this.stairVault.userData.lid as THREE.Object3D | undefined;
@@ -2485,6 +2810,7 @@ export class Game {
       if (entity.data.kind === "gate" && entity.data.altOp && entity.data.altValue !== undefined) {
         this.updateTimedGateLabel(entity);
       }
+      this.animateTaggedObject(entity.mesh, time, dt);
       if (entity.data.kind === "coin" || entity.data.kind === "gem") {
         entity.mesh.rotation.y += dt * 4;
         entity.mesh.position.y = 0.68 + Math.sin(time * 4 + entity.data.z) * 0.08;
@@ -2519,19 +2845,32 @@ export class Game {
       } else if (entity.data.kind === "rotatingBar") {
         entity.mesh.rotation.y += dt * (entity.data.speed ?? 2.4);
       } else if (entity.data.kind === "sawLane") {
-        entity.mesh.rotation.y += dt * 6;
+        const saw = entity.mesh.userData.saw as THREE.Object3D | undefined;
+        if (saw) {
+          saw.rotation.y += dt * 9;
+        }
       } else if (entity.data.kind === "crusher") {
         const active = Math.sin(time * (entity.data.speed ?? 2.4) + (entity.data.phase ?? 0));
-        entity.mesh.children.forEach((child, index) => {
-          if (index === 1) {
-            child.position.y = active > 0.2 ? 0.6 : 2.15;
-          }
-        });
+        const hammer = entity.mesh.userData.crusherHammer as THREE.Object3D | undefined;
+        if (hammer) {
+          hammer.position.y = active > 0.2 ? 0.6 : 2.15;
+        }
       } else if (entity.data.kind === "laser") {
         const active = Math.sin(time * (entity.data.speed ?? 2.4) + (entity.data.phase ?? 0)) > 0.15;
-        entity.mesh.visible = active;
+        const beam = entity.mesh.userData.laserBeam as THREE.Object3D | undefined;
+        const beamGlow = entity.mesh.userData.laserGlow as THREE.Object3D | undefined;
+        if (beam) {
+          beam.visible = active;
+        }
+        if (beamGlow) {
+          beamGlow.visible = active;
+          beamGlow.scale.y = 1 + Math.sin(time * 12) * 0.18;
+        }
       } else if (entity.data.kind === "fan") {
-        entity.mesh.rotation.z += dt * 8;
+        const fan = entity.mesh.userData.fan as THREE.Object3D | undefined;
+        if (fan) {
+          fan.rotation.x += dt * 9;
+        }
       } else if (entity.data.kind === "swingingAxe") {
         entity.mesh.rotation.z = Math.sin(time * (entity.data.speed ?? 1.9) + (entity.data.phase ?? 0)) * 0.95;
       } else if (entity.data.kind === "spikeRoller") {
