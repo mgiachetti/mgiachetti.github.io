@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Crew Count Clash icon">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#aee8ff"/>
+      <stop offset="1" stop-color="#54bdd8"/>
+    </linearGradient>
+    <linearGradient id="crew" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#36c9f6"/>
+      <stop offset="1" stop-color="#1686b4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="92" fill="url(#sky)"/>
+  <path d="M256 120 420 456H92Z" fill="#64dfdf"/>
+  <path d="M188 132h136l54 324H134Z" fill="#67d7e5"/>
+  <rect x="115" y="146" width="118" height="82" rx="16" fill="#21c55d"/>
+  <rect x="279" y="146" width="118" height="82" rx="16" fill="#ef476f"/>
+  <text x="174" y="198" text-anchor="middle" font-family="Arial, sans-serif" font-size="44" font-weight="900" fill="#ffffff">x2</text>
+  <text x="338" y="198" text-anchor="middle" font-family="Arial, sans-serif" font-size="38" font-weight="900" fill="#ffffff">-18</text>
+  <g fill="url(#crew)" stroke="#13799f" stroke-width="6">
+    <path d="M184 300c0-48 26-76 72-76s72 28 72 76v54c0 32-21 52-54 52h-36c-33 0-54-20-54-52z"/>
+    <rect x="224" y="270" width="78" height="34" rx="16" fill="#bdefff" stroke="none"/>
+    <rect x="168" y="336" width="34" height="86" rx="16"/>
+    <rect x="310" y="336" width="34" height="86" rx="16"/>
+  </g>
+  <circle cx="184" cy="94" r="24" fill="#ffd166"/>
+  <circle cx="328" cy="94" r="24" fill="#ffd166"/>
+</svg>

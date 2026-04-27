@@ -264,7 +264,7 @@ Status markers:
 - [x] Add boss defeat confetti.
 - [x] Add themed track biomes.
 - [x] Add loading screen.
-- [ ] Add app icon/preview image.
+- [x] Add app icon/preview image.
 
 ## Phase 20 - QA And Shipping
 
