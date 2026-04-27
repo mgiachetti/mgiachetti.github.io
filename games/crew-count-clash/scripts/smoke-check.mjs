@@ -165,6 +165,46 @@ try {
   await advanced.screenshot(join(screenshotDir, "crew-count-clash-smoke-level12.png"));
   await advanced.close();
 
+  const battle = await openPage();
+  await battle.send("Page.enable");
+  await battle.send("Runtime.enable");
+  await battle.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await battle.send("Page.navigate", { url: `${origin}?autostart=1&level=2&battle=1&count=42&pixel=1` });
+  await waitForEval(
+    battle,
+    `!document.querySelector("#hud").classList.contains("is-hidden") && Number(document.querySelector("[data-count]").textContent.replace(/,/g, "")) < 42`,
+    5000,
+    "Battle QA should apply its first visible crew loss."
+  );
+  const battleGame = await battle.eval(`(() => {
+    const canvas = document.querySelector("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const samples = [];
+    const centerX = Math.floor(canvas.width * 0.5);
+    const centerY = Math.floor(canvas.height * 0.53);
+    for (let y = centerY - 110; y <= centerY + 110; y += 10) {
+      for (let x = centerX - 210; x <= centerX + 210; x += 10) {
+        const sample = new Uint8Array(4);
+        gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, sample);
+        samples.push(Array.from(sample));
+      }
+    }
+    const enemyPixels = samples.filter(([r, g, b]) => r > 95 && b > 75 && g < 120).length;
+    return {
+      enemyPixels,
+      count: Number(document.querySelector("[data-count]").textContent.replace(/,/g, "")),
+      hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+      rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
+      failVisible: !document.querySelector("#fail-screen").classList.contains("is-hidden")
+    };
+  })()`);
+  assert(battleGame.hudVisible, `Battle QA should keep HUD visible, got count=${battleGame.count} reward=${battleGame.rewardVisible} fail=${battleGame.failVisible}.`);
+  assert(!battleGame.rewardVisible, "Battle QA should not show reward while clashing.");
+  assert(battleGame.count > 0 && battleGame.count < 42, `Battle QA should apply partial losses, got ${battleGame.count}.`);
+  assert(battleGame.enemyPixels > 0, "Battle QA should keep enemy pixels visible during clash.");
+  await battle.screenshot(join(screenshotDir, "crew-count-clash-smoke-battle.png"));
+  await battle.close();
+
   const roulette = await openPage();
   await roulette.send("Page.enable");
   await roulette.send("Runtime.enable");

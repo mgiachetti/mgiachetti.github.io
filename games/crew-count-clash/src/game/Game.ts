@@ -119,6 +119,16 @@ export class Game {
   private targetX = 0;
   private distance = 0;
   private speed = 0;
+  private currentBattle: RuntimeEntity | null = null;
+  private battleTimer = 0;
+  private battleDuration = 1.5;
+  private battleEnemyCount = 0;
+  private battleLoss = 0;
+  private battleAppliedLoss = 0;
+  private battleAppliedDefeats = 0;
+  private battleX = 0;
+  private battleZ = 0;
+  private battleBeat = 0;
   private shield = 0;
   private magnetTimer = 0;
   private frenzyTimer = 0;
@@ -299,6 +309,16 @@ export class Game {
       this.startStairs();
     } else if (params.has("roulette")) {
       this.startRoulette();
+    } else if (params.has("battle")) {
+      const count = Number(params.get("count") ?? "48");
+      this.count = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 48;
+      this.stats.maxCount = Math.max(this.stats.maxCount, this.count);
+      const enemy = this.level.entities.find((entity) => entity.kind === "enemy");
+      if (enemy) {
+        this.targetX = enemy.x;
+        this.centerX = enemy.x;
+        this.distance = enemy.z - 1.2;
+      }
     }
   }
 
@@ -489,6 +509,16 @@ export class Game {
     this.centerX = 0;
     this.targetX = 0;
     this.speed = 0;
+    this.currentBattle = null;
+    this.battleTimer = 0;
+    this.battleDuration = 1.5;
+    this.battleEnemyCount = 0;
+    this.battleLoss = 0;
+    this.battleAppliedLoss = 0;
+    this.battleAppliedDefeats = 0;
+    this.battleX = 0;
+    this.battleZ = 0;
+    this.battleBeat = 0;
     this.count = this.level.startCount + this.save.upgrades.startCrew * 2;
     this.shield = this.save.upgrades.shield > 0 ? 1 : 0;
     this.magnetTimer = 0;
@@ -531,6 +561,10 @@ export class Game {
     this.entities = [];
     this.floating.forEach((item) => this.scene.remove(item.mesh));
     this.floating = [];
+    this.currentBattle = null;
+    this.battleTimer = 0;
+    this.battleAppliedLoss = 0;
+    this.battleAppliedDefeats = 0;
     this.crowdImpactPulse = 0;
     this.stairsGroup.clear();
     this.bossGroup.clear();
@@ -803,6 +837,7 @@ export class Game {
     group.userData.enemyVariant = variant;
     group.userData.enemyModels = models;
     group.userData.enemyRing = battleRing;
+    group.userData.enemyLabel = label;
     return group;
   }
 
@@ -1230,6 +1265,8 @@ export class Game {
 
     if (this.mode === "run") {
       this.updateRun(time, dt);
+    } else if (this.mode === "battle") {
+      this.updateBattle(time, dt);
     } else if (this.mode === "stairs") {
       this.updateStairs(dt);
     } else if (this.mode === "boss") {
@@ -1352,7 +1389,7 @@ export class Game {
       } else if (entity.data.kind === "enemy") {
         const enemyX = this.getEnemyX(entity.data, time);
         if (dz < 1.4 && Math.abs(this.centerX - enemyX) < (entity.data.width ?? 3.4) / 2) {
-          this.battleEnemy(entity);
+          this.startEnemyBattle(entity, enemyX);
         }
       } else {
         this.checkHazard(entity, time);
@@ -1510,24 +1547,133 @@ export class Game {
     });
   }
 
-  private battleEnemy(entity: RuntimeEntity): void {
+  private startEnemyBattle(entity: RuntimeEntity, enemyX: number): void {
+    if (this.currentBattle) {
+      return;
+    }
+    const enemyCount = entity.data.count ?? 8;
+    this.mode = "battle";
+    this.speed = 0;
+    this.currentBattle = entity;
+    this.battleTimer = 0;
+    this.battleDuration = clamp(1.32 + enemyCount / 120 + (entity.data.strength ?? 1) * 0.18, 1.35, 2.25);
+    this.battleEnemyCount = enemyCount;
+    this.battleLoss = Math.max(1, Math.ceil(enemyCount * (entity.data.strength ?? 1)));
+    this.battleAppliedLoss = 0;
+    this.battleAppliedDefeats = 0;
+    this.battleX = enemyX;
+    this.battleZ = entity.data.z;
+    this.battleBeat = 0;
+    this.targetX = enemyX;
+    this.centerX = damp(this.centerX, enemyX, 12, 0.08);
+    this.distance = entity.data.z - 0.45;
+    this.camera.position.y = 5.8;
+    this.camera.position.z = entity.data.z - 6.2;
+    entity.cooldown = this.battleDuration + 0.5;
+    entity.mesh.position.x = enemyX;
+    entity.mesh.userData.battleProgress = 0;
+    this.cameraShake = 0.35;
+    this.crowdImpactPulse = 0.45;
+    this.hud.popText("Battle", "boss");
+    this.audio.battle();
+  }
+
+  private updateBattle(time: number, dt: number): void {
+    const entity = this.currentBattle;
+    if (!entity || entity.consumed) {
+      this.mode = "run";
+      this.currentBattle = null;
+      return;
+    }
+
+    this.battleTimer += dt;
+    const progress = clamp(this.battleTimer / this.battleDuration, 0, 1);
+    const eased = 1 - (1 - progress) ** 2;
+    this.speed = 0;
+    this.targetX = this.battleX;
+    this.centerX = damp(this.centerX, this.battleX, 10, dt);
+    this.distance = damp(this.distance, this.battleZ - 0.35, 7, dt);
+    this.cameraShake = Math.max(0, this.cameraShake - dt * 1.7);
+
+    const targetLoss = Math.min(this.battleLoss, Math.floor(this.battleLoss * eased));
+    if (targetLoss > this.battleAppliedLoss) {
+      const delta = targetLoss - this.battleAppliedLoss;
+      this.battleAppliedLoss = targetLoss;
+      const applied = Math.min(this.count, delta);
+      this.count -= applied;
+      this.stats.losses += applied;
+      this.stats.noHit = false;
+      this.stats.combo = 1;
+      this.crowdImpactPulse = 0.9;
+      this.cameraShake = Math.max(this.cameraShake, 0.42);
+      this.spawnCrewKnockouts(applied, this.centerX, this.distance + 0.35);
+      if (this.count <= 0) {
+        this.finishEnemyBattle(false);
+        return;
+      }
+    }
+
+    const targetDefeats = Math.min(this.battleEnemyCount, Math.floor(this.battleEnemyCount * eased));
+    if (targetDefeats > this.battleAppliedDefeats) {
+      const delta = targetDefeats - this.battleAppliedDefeats;
+      this.battleAppliedDefeats = targetDefeats;
+      this.stats.enemiesDefeated += delta;
+      this.stats.score += delta * 34;
+      if (targetDefeats >= this.battleBeat) {
+        this.battleBeat = targetDefeats + Math.max(4, Math.floor(this.battleEnemyCount / 5));
+        this.spawnBattleClash(this.battleX, this.battleZ, Math.max(delta, 4));
+        this.audio.battle();
+      }
+    }
+
+    this.updateEnemyBattleVisual(entity, progress, time);
+    this.hud.updateRun(this.level.id, clamp(this.distance / this.level.length, 0, 1), this.save, this.stats, this.count, this.shield);
+
+    if (progress >= 1) {
+      this.finishEnemyBattle(true);
+    }
+  }
+
+  private finishEnemyBattle(won: boolean): void {
+    const entity = this.currentBattle;
+    if (!entity) {
+      return;
+    }
     entity.consumed = true;
     entity.mesh.visible = false;
-    const enemyCount = entity.data.count ?? 8;
-    const loss = Math.ceil(enemyCount * (entity.data.strength ?? 1));
-    const enemyX = entity.mesh.position.x;
-    this.count -= loss;
-    this.stats.score += enemyCount * 34;
-    this.stats.enemiesDefeated += enemyCount;
-    this.stats.combo = 1;
-    this.cameraShake = 0.7;
-    this.crowdImpactPulse = 0.9;
-    this.hud.popText(`Battle -${loss}`, this.count > 0 ? "boss" : "bad");
-    this.audio.battle();
-    this.spawnBurst(enemyX, entity.data.z, 0xef476f);
-    this.spawnBattleClash(enemyX, entity.data.z, loss);
-    if (this.count <= 0) {
+    this.currentBattle = null;
+    this.crowdImpactPulse = won ? 0.45 : 0.9;
+    this.cameraShake = Math.max(this.cameraShake, won ? 0.35 : 0.75);
+    this.spawnBurst(this.battleX, this.battleZ, won ? 0xffd166 : 0xef476f);
+    this.hud.popText(won ? `Battle -${this.battleAppliedLoss}` : "Crew Lost", won ? "boss" : "bad");
+    if (!won || this.count <= 0) {
       this.failRun("Lost battle");
+      return;
+    }
+    this.mode = "run";
+    this.distance = Math.max(this.distance, this.battleZ + 0.65);
+  }
+
+  private updateEnemyBattleVisual(entity: RuntimeEntity, progress: number, time: number): void {
+    entity.mesh.position.x = this.battleX + Math.sin(time * 28) * (1 - progress) * 0.035;
+    entity.mesh.position.z = entity.data.z + 0.62 + progress * 0.35;
+    entity.mesh.scale.setScalar(1 + Math.sin(time * 18) * 0.025 * (1 - progress));
+    entity.mesh.userData.battleProgress = progress;
+    const models = entity.mesh.userData.enemyModels as THREE.Object3D[] | undefined;
+    const label = entity.mesh.userData.enemyLabel as THREE.Object3D | undefined;
+    if (models) {
+      const visibleCount = Math.ceil(models.length * (1 - progress));
+      models.forEach((model, index) => {
+        model.visible = index < visibleCount;
+        if (model.visible) {
+          const phase = model.userData.phase ?? index;
+          model.position.y += Math.max(0, Math.sin(time * 16 + phase)) * 0.012;
+          model.rotation.z = Math.sin(time * 10 + phase) * 0.08 * progress;
+        }
+      });
+    }
+    if (label) {
+      label.visible = progress < 0.72;
     }
   }
 
@@ -2188,23 +2334,28 @@ export class Game {
         entity.mesh.rotation.y += dt * 2.2;
         entity.mesh.position.y = 0.7 + Math.sin(time * 3 + entity.data.z) * 0.08;
       } else if (entity.data.kind === "enemy") {
-        entity.mesh.position.x = this.getEnemyX(entity.data, time);
+        entity.mesh.position.x = this.currentBattle === entity ? this.battleX : this.getEnemyX(entity.data, time);
         const models = entity.mesh.userData.enemyModels as THREE.Object3D[] | undefined;
         const ring = entity.mesh.userData.enemyRing as THREE.Object3D | undefined;
         const variant = entity.mesh.userData.enemyVariant as string | undefined;
+        const battleProgress = Number(entity.mesh.userData.battleProgress ?? 0);
         if (ring) {
           ring.rotation.z += dt * (variant === "armored" ? -0.9 : 0.7);
-          ring.scale.setScalar(1 + Math.sin(time * 4 + entity.data.z) * 0.035);
+          ring.scale.setScalar(1 + Math.sin(time * (battleProgress > 0 ? 11 : 4) + entity.data.z) * (battleProgress > 0 ? 0.08 : 0.035));
         }
         models?.forEach((model, index) => {
+          if (!model.visible) {
+            return;
+          }
           const phase = model.userData.phase ?? index;
           const baseX = model.userData.baseX ?? model.position.x;
           const baseZ = model.userData.baseZ ?? model.position.z;
+          const battleLean = battleProgress > 0 ? Math.sin(time * 13 + phase) * 0.12 : 0;
           const march = Math.sin(time * (variant === "armored" ? 4.4 : 5.7) + phase);
-          model.position.x = baseX + Math.sin(time * 2.2 + phase) * 0.035;
+          model.position.x = baseX + Math.sin(time * 2.2 + phase) * (battleProgress > 0 ? 0.07 : 0.035);
           model.position.y = 0.38 + Math.max(0, march) * (variant === "armored" ? 0.035 : 0.07);
-          model.position.z = baseZ + Math.cos(time * 3.1 + phase) * 0.026;
-          model.rotation.y = Math.sin(time * 4.2 + phase) * (variant === "armored" ? 0.08 : 0.16);
+          model.position.z = baseZ + Math.cos(time * 3.1 + phase) * 0.026 + battleProgress * 0.22;
+          model.rotation.y = Math.sin(time * 4.2 + phase) * (variant === "armored" ? 0.08 : 0.16) + battleLean;
           model.scale.set(1 + Math.max(0, march) * 0.025, 1 - Math.max(0, march) * 0.018, 1 + Math.max(0, march) * 0.025);
         });
       } else if (entity.data.kind === "rotatingBar") {
@@ -2314,6 +2465,14 @@ export class Game {
           bob = Math.sin(time * 16 + index * 0.8) * 0.055;
           yaw = Math.sin(time * 7 + index) * 0.1;
         }
+      } else if (this.mode === "battle") {
+        const battleProgress = clamp(this.battleTimer / Math.max(0.1, this.battleDuration), 0, 1);
+        const attackWave = Math.max(0, Math.sin(time * 13.5 - row * 0.72));
+        const frontPush = row < 6 ? attackWave * (0.42 + battleProgress * 0.18) : attackWave * 0.18;
+        x = this.battleX + offsetX * 0.82 + Math.sin(time * 10 + index) * 0.07;
+        z = this.battleZ - 0.55 - row * 0.34 + frontPush;
+        y = 0.55 + bob + attackWave * 0.12;
+        yaw = Math.sin(time * 12 + index * 0.45) * 0.32;
       } else if (this.mode === "boss" || this.mode === "bossVictory") {
         const attackWave = Math.max(0, Math.sin(time * 5.8 - row * 0.85));
         const victoryPush = this.mode === "bossVictory" ? clamp(this.bossVictoryTimer / 1.3, 0, 1) : 0;
@@ -2351,22 +2510,27 @@ export class Game {
   private updateCamera(dt: number): void {
     const isBossScene = this.mode === "boss" || this.mode === "bossVictory";
     const isStairFinale = this.mode === "stairs" && this.stairFinaleStarted;
+    const isBattleScene = this.mode === "battle";
     const targetZ =
       this.mode === "roulette"
         ? this.level.length + 18
         : isBossScene
           ? this.level.length + 15.5
+          : isBattleScene
+            ? this.battleZ + 2.8
           : isStairFinale
             ? this.level.length + 28
           : this.mode === "stairs"
             ? this.level.length + 18.2
             : this.distance + 8;
-    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : isStairFinale ? 6.9 : this.mode === "stairs" ? 6.15 : 8.5;
+    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : isBattleScene ? 5.9 : isStairFinale ? 6.9 : this.mode === "stairs" ? 6.15 : 8.5;
     const cameraZ =
       this.mode === "roulette"
         ? this.level.length + 9
         : isBossScene
           ? this.distance - 9.5
+          : isBattleScene
+            ? this.battleZ - 6.2
           : isStairFinale
             ? this.level.length + 15.5
           : this.mode === "stairs"
@@ -2374,10 +2538,11 @@ export class Game {
             : this.distance - 10.5;
     const shake = this.cameraShake > 0 ? (Math.random() - 0.5) * this.cameraShake * 0.6 : 0;
     const lookY = isStairFinale ? 3.1 : this.mode === "stairs" ? 1.35 : 0.75;
-    this.camera.position.x = damp(this.camera.position.x, this.centerX * 0.42 + shake, 5, dt);
+    const lookX = isBattleScene ? this.battleX * 0.35 : this.centerX * 0.35;
+    this.camera.position.x = damp(this.camera.position.x, (isBattleScene ? this.battleX : this.centerX) * 0.42 + shake, 5, dt);
     this.camera.position.y = damp(this.camera.position.y, targetY + Math.abs(shake), 4.5, dt);
     this.camera.position.z = damp(this.camera.position.z, cameraZ, 5.2, dt);
-    this.camera.lookAt(this.centerX * 0.35, lookY, targetZ);
+    this.camera.lookAt(lookX, lookY, targetZ);
   }
 
   private updatePointerTarget(event: PointerEvent): void {
