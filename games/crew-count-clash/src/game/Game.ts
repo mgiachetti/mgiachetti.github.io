@@ -134,6 +134,7 @@ export class Game {
   private shield = 0;
   private magnetTimer = 0;
   private frenzyTimer = 0;
+  private commanderTimer = 0;
   private gooTimer = 0;
   private cameraShake = 0;
   private crowdImpactPulse = 0;
@@ -542,6 +543,7 @@ export class Game {
     this.shield = this.save.upgrades.shield > 0 ? 1 : 0;
     this.magnetTimer = 0;
     this.frenzyTimer = 0;
+    this.commanderTimer = 0;
     this.gooTimer = 0;
     this.activeTeamColor = "cyan";
     this.materials.body.color.setHex(this.teamColors.cyan);
@@ -845,6 +847,7 @@ export class Game {
       entity.kind === "shield" ||
       entity.kind === "magnet" ||
       entity.kind === "frenzy" ||
+      entity.kind === "commander" ||
       entity.kind === "ticket" ||
       entity.kind === "bossBomb" ||
       entity.kind === "colorPad"
@@ -1001,6 +1004,7 @@ export class Game {
       shield: this.materials.shield,
       magnet: this.materials.magnet,
       frenzy: this.materials.frenzy,
+      commander: this.materials.bossGold,
       ticket: this.materials.gem,
       bossBomb: this.materials.hazard,
       colorPad: new THREE.MeshStandardMaterial({ color: this.teamColors[entity.color ?? "cyan"], roughness: 0.42, metalness: 0.08 })
@@ -1015,7 +1019,19 @@ export class Game {
     mesh.scale.setScalar(entity.kind === "bossBomb" ? 0.6 : 0.52);
     mesh.castShadow = true;
     group.add(mesh);
-    const labelMap: Record<string, string> = { shield: "SH", magnet: "MG", frenzy: "FR", ticket: "TK", bossBomb: "B", colorPad: (entity.color ?? "cyan").slice(0, 2).toUpperCase() };
+    if (entity.kind === "commander") {
+      const pole = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.9, 0.08), this.materials.gatePost);
+      pole.position.set(0, 0.16, -0.28);
+      pole.castShadow = true;
+      group.add(pole);
+      const flag = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.32, 0.05), this.materials.bossGold);
+      flag.position.set(0.28, 0.44, -0.28);
+      flag.castShadow = true;
+      flag.userData.floatBaseY = flag.position.y;
+      flag.userData.floatPhase = entity.z * 0.1;
+      group.add(flag);
+    }
+    const labelMap: Record<string, string> = { shield: "SH", magnet: "MG", frenzy: "FR", commander: "CMD", ticket: "TK", bossBomb: "B", colorPad: (entity.color ?? "cyan").slice(0, 2).toUpperCase() };
     const label = this.makeTextSprite(labelMap[entity.kind] ?? "?", "#1f2937", "#ffffff");
     label.position.y = 0.72;
     label.scale.set(0.9, 0.34, 1);
@@ -1746,6 +1762,7 @@ export class Game {
 
     this.magnetTimer = Math.max(0, this.magnetTimer - dt);
     this.frenzyTimer = Math.max(0, this.frenzyTimer - dt);
+    this.commanderTimer = Math.max(0, this.commanderTimer - dt);
     this.gooTimer = Math.max(0, this.gooTimer - dt);
     this.cameraShake = Math.max(0, this.cameraShake - dt * 2.5);
 
@@ -1852,7 +1869,7 @@ export class Game {
   }
 
   private isCollectable(kind: string): boolean {
-    return ["crew", "crewCapsule", "coin", "gem", "shield", "magnet", "frenzy", "ticket", "bossBomb", "colorPad"].includes(kind);
+    return ["crew", "crewCapsule", "coin", "gem", "shield", "magnet", "frenzy", "commander", "ticket", "bossBomb", "colorPad"].includes(kind);
   }
 
   private collectEntity(entity: RuntimeEntity): void {
@@ -1886,6 +1903,10 @@ export class Game {
     } else if (entity.data.kind === "frenzy") {
       this.frenzyTimer = 4.5;
       this.hud.popText("Frenzy", "good");
+      this.audio.collect();
+    } else if (entity.data.kind === "commander") {
+      this.commanderTimer = 7;
+      this.hud.popText("Tight Crew", "good");
       this.audio.collect();
     } else if (entity.data.kind === "ticket") {
       this.save.tickets += 1;
@@ -2942,7 +2963,7 @@ export class Game {
     this.trailInstances.count = visible;
     this.leftLegInstances.count = visible;
     this.rightLegInstances.count = visible;
-    const spacing = clamp(0.52 - this.save.upgrades.formation * 0.025, 0.38, 0.52);
+    const spacing = clamp(0.52 - this.save.upgrades.formation * 0.025 - (this.commanderTimer > 0 ? 0.08 : 0), 0.34, 0.52);
     const perRow = Math.max(3, Math.ceil(Math.sqrt(Math.max(visible, 1)) * 1.42));
     const track = this.getTrackAt(this.distance);
     const trackWidth = track?.data.width ?? 7;
@@ -3115,7 +3136,8 @@ export class Game {
   }
 
   private formationRadius(): number {
-    return clamp(0.45 + Math.sqrt(Math.max(1, this.count)) * 0.11 - this.save.upgrades.formation * 0.04, 0.45, 2.3);
+    const commanderBoost = this.commanderTimer > 0 ? 0.32 : 0;
+    return clamp(0.45 + Math.sqrt(Math.max(1, this.count)) * 0.11 - this.save.upgrades.formation * 0.04 - commanderBoost, 0.38, 2.3);
   }
 
   private spawnBurst(x: number, z: number, color: number): void {

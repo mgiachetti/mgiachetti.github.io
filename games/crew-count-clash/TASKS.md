@@ -83,7 +83,7 @@ Status markers:
 - [x] Implement shield battery.
 - [x] Implement magnet drone.
 - [x] Implement frenzy beacon.
-- [ ] Implement commander flag.
+- [x] Implement commander flag.
 - [x] Implement boss bomb.
 - [x] Implement roulette ticket.
 - [x] Add collection particles and score popups.

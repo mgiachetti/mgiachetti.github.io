@@ -15,6 +15,7 @@ export type EntityKind =
   | "shield"
   | "magnet"
   | "frenzy"
+  | "commander"
   | "ticket"
   | "bossBomb"
   | "enemy"
