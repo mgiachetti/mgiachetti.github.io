@@ -2740,6 +2740,9 @@ export class Game {
       coins,
       gems,
       stars: 0,
+      castleXP: 0,
+      castleLeveledUp: false,
+      castleStage: "",
       extra: `No-ad ticket spin: ${prizeLabel}.`
     };
     return prizeLabel;

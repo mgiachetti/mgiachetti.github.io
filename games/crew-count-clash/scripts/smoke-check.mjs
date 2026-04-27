@@ -340,11 +340,16 @@ try {
   const bossVictoryDone = await bossVictory.eval(`(() => ({
     rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
     title: document.querySelector("[data-result-title]").textContent,
-    extra: document.querySelector("[data-result-extra]").textContent
+    extra: document.querySelector("[data-result-extra]").textContent,
+    castleVisible: !document.querySelector("[data-reward-castle]").classList.contains("is-hidden"),
+    castleTitle: document.querySelector("[data-reward-castle-title]").textContent
   }))()`);
   assert(bossVictoryDone.rewardVisible, "Boss victory should finish on the reward panel.");
   assert(bossVictoryDone.title === "Boss Defeated", `Expected Boss Defeated reward, got ${bossVictoryDone.title}.`);
   assert(bossVictoryDone.extra.includes("Boss medal"), `Expected boss reward copy, got ${bossVictoryDone.extra}.`);
+  assert(bossVictoryDone.castleVisible, "Boss reward should show castle build progress.");
+  assert(bossVictoryDone.castleTitle.includes("Castle"), `Expected castle reward copy, got ${bossVictoryDone.castleTitle}.`);
+  await bossVictory.screenshot(join(screenshotDir, "crew-count-clash-smoke-reward.png"));
   await bossVictory.close();
 
   const stairs = await openPage();

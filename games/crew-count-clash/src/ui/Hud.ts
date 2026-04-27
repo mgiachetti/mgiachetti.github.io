@@ -16,6 +16,7 @@ export class Hud {
   private cosmetics = this.required<HTMLElement>("[data-cosmetics]");
   private levelMap = this.required<HTMLElement>("[data-level-map]");
   private baseMilestones = this.required<HTMLElement>("[data-base-milestones]");
+  private rewardCastle = this.required<HTMLElement>("[data-reward-castle]");
   private roulettePrize = this.required<HTMLElement>("#roulette-prize");
 
   private level = this.required<HTMLElement>("[data-level]");
@@ -153,6 +154,9 @@ export class Hud {
     this.countTo("[data-result-gems]", data.gems, "+");
     this.set("[data-result-stars]", "★".repeat(data.stars));
     this.set("[data-result-extra]", data.extra);
+    this.rewardCastle.classList.toggle("is-hidden", data.castleXP <= 0);
+    this.set("[data-reward-castle-title]", data.castleLeveledUp ? "Castle Upgraded" : `Castle +${formatNumber(data.castleXP)} XP`);
+    this.set("[data-reward-castle-stage]", data.castleLeveledUp ? `New stage: ${data.castleStage}` : data.castleStage);
     const canSpin = (save?.tickets ?? 0) > 0;
     this.extraSpin.classList.toggle("is-hidden", !canSpin);
     this.extraSpin.textContent = canSpin ? `Extra Spin (${save?.tickets ?? 0})` : "Extra Spin";

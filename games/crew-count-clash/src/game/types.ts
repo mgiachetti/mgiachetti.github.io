@@ -155,5 +155,8 @@ export type RewardData = {
   coins: number;
   gems: number;
   stars: number;
+  castleXP: number;
+  castleLeveledUp: boolean;
+  castleStage: string;
   extra: string;
 };

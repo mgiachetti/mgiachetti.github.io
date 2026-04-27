@@ -215,11 +215,14 @@ export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats
     save.medals += 1;
     save.tickets += 1;
   }
-  save.castleXP +=
+  const oldCastleTier = getCastleProgress(save).tier;
+  const castleXP =
     Math.max(1, stars) +
     Math.floor(Math.max(0, stats.finalStair) / 4) +
     (stats.bossDefeated ? 8 : 0) +
     (stats.rouletteLabel ? 2 : 0);
+  save.castleXP += castleXP;
+  const castleProgress = getCastleProgress(save);
 
   save.highScores[levelKey] = Math.max(save.highScores[levelKey] ?? 0, stats.score);
   save.bestCounts[levelKey] = Math.max(save.bestCounts[levelKey] ?? 0, stats.maxCount);
@@ -234,6 +237,9 @@ export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats
     coins: earnedCoins,
     gems: earnedGems,
     stars,
+    castleXP,
+    castleLeveledUp: castleProgress.tier > oldCastleTier,
+    castleStage: castleProgress.stage,
     extra: stats.rouletteLabel || (stats.bossDefeated ? "Boss medal earned. Roulette ticket added." : `Reached stair ${stats.finalStair}.`)
   };
 }
