@@ -56,7 +56,7 @@ Status markers:
 - [x] Implement runner slot seeking and bob animation.
 - [x] Implement add/remove count operations.
 - [x] Implement visible cap and high-count badge.
-- [~] Add knocked-out runner fly-away animation.
+- [x] Add knocked-out runner fly-away animation.
 - [x] Add count HUD binding.
 
 ## Phase 5 - Gates
@@ -128,7 +128,7 @@ Status markers:
 - [ ] Implement mini-boss guards.
 - [ ] Implement enemy gate/spawner.
 - [x] Implement battle subtraction formula.
-- [~] Add battle animation swirl.
+- [x] Add battle animation swirl.
 - [x] Add battle result feedback.
 
 ## Phase 10 - Level System
@@ -243,7 +243,7 @@ Status markers:
 - [x] Build pause/settings overlay.
 - [x] Build fail screen.
 - [x] Build level complete screen.
-- [~] Build reward/chest screen.
+- [x] Build reward/chest screen.
 - [x] Build shop screen.
 - [ ] Build level map/progression screen.
 - [x] Build roulette reward screen.
@@ -254,16 +254,16 @@ Status markers:
 ## Phase 19 - Visual Polish And Assets
 
 - [x] Add procedural crew skin variants.
-- [~] Add enemy variants.
+- [x] Add enemy variants.
 - [x] Add gate material polish.
 - [x] Add trap animations.
 - [x] Add particles for count gain/loss.
 - [x] Add coin/gem bursts.
-- [~] Add impact squash/stretch.
+- [x] Add impact squash/stretch.
 - [x] Add camera shake for major hits.
 - [x] Add boss defeat confetti.
 - [x] Add themed track biomes.
-- [ ] Add loading screen.
+- [x] Add loading screen.
 - [ ] Add app icon/preview image.
 
 ## Phase 20 - QA And Shipping

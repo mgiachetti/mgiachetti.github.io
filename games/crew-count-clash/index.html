@@ -10,6 +10,13 @@
     <title>Crew Count Clash</title>
   </head>
   <body>
+    <div id="loading-screen" class="loading-screen" aria-hidden="true">
+      <div class="loader-mark">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </div>
     <canvas id="game-canvas" aria-label="Crew Count Clash 3D canvas"></canvas>
 
     <div id="hud" class="hud is-hidden">
@@ -74,6 +81,13 @@
     <section id="reward-screen" class="panel compact is-hidden">
       <p class="kicker" data-result-kind>Run Complete</p>
       <h2 data-result-title>Level Clear</h2>
+      <div class="reward-chest" aria-hidden="true">
+        <span class="chest-lid"></span>
+        <span class="chest-body"></span>
+        <i></i>
+        <i></i>
+        <i></i>
+      </div>
       <div class="result-grid">
         <div><span>Score</span><b data-result-score>0</b></div>
         <div><span>Coins</span><b data-result-coins>0</b></div>

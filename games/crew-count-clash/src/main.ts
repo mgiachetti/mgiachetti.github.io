@@ -9,6 +9,9 @@ if (!canvas) {
 
 const game = new Game(canvas);
 game.start();
+window.requestAnimationFrame(() => {
+  document.querySelector("#loading-screen")?.classList.add("is-hidden");
+});
 
 if (new URLSearchParams(window.location.search).has("autostart")) {
   window.setTimeout(() => {

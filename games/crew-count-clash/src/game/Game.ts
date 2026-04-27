@@ -122,6 +122,7 @@ export class Game {
   private frenzyTimer = 0;
   private gooTimer = 0;
   private cameraShake = 0;
+  private crowdImpactPulse = 0;
   private lastTime = 0;
   private pointerDown = false;
   private keyboardX = 0;
@@ -479,6 +480,7 @@ export class Game {
     this.activeTeamColor = "cyan";
     this.materials.body.color.setHex(this.teamColors.cyan);
     this.cameraShake = 0;
+    this.crowdImpactPulse = 0;
     this.bossBombs = 0;
     this.bossHp = 0;
     this.bossMaxHp = 1;
@@ -510,6 +512,7 @@ export class Game {
     this.entities = [];
     this.floating.forEach((item) => this.scene.remove(item.mesh));
     this.floating = [];
+    this.crowdImpactPulse = 0;
     this.stairsGroup.clear();
     this.bossGroup.clear();
     this.bossTelegraph = null;
@@ -715,19 +718,70 @@ export class Game {
     const group = new THREE.Group();
     group.position.set(entity.x, 0, entity.z);
     const count = Math.min(entity.count ?? 8, 28);
+    const strength = entity.strength ?? 1;
+    const variant = strength >= 2 ? "armored" : (entity.count ?? count) >= 36 ? "guard" : "scout";
+    const bodyColor = variant === "armored" ? 0x5b21b6 : variant === "guard" ? 0xf97316 : 0xf05252;
+    const packColor = variant === "armored" ? 0x111827 : variant === "guard" ? 0x7f1d1d : 0x3c1642;
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.58, metalness: variant === "armored" ? 0.1 : 0.04 });
+    const visorMaterial = new THREE.MeshStandardMaterial({ color: variant === "armored" ? 0xfef08a : 0x231942, roughness: 0.24, metalness: 0.12 });
+    const packMaterial = new THREE.MeshStandardMaterial({ color: packColor, roughness: 0.56, metalness: 0.08 });
+    const armorMaterial = new THREE.MeshStandardMaterial({ color: variant === "armored" ? 0xd1d5db : 0xffd166, roughness: 0.36, metalness: 0.28 });
+    const battleRing = new THREE.Mesh(new THREE.TorusGeometry((entity.width ?? 3.4) * 0.46, 0.028, 8, 44), variant === "scout" ? this.materials.warning : armorMaterial);
+    battleRing.rotation.x = Math.PI / 2;
+    battleRing.position.y = 0.08;
+    battleRing.position.z = -0.3;
+    battleRing.userData.spin = variant === "armored" ? -0.75 : 0.55;
+    group.add(battleRing);
+    const models: THREE.Object3D[] = [];
     const perRow = Math.ceil(Math.sqrt(count) * 1.35);
     for (let index = 0; index < count; index += 1) {
       const row = Math.floor(index / perRow);
       const col = index % perRow;
       const rowCount = Math.min(perRow, count - row * perRow);
-      const model = this.createCrewModel(this.materials.enemy, this.materials.enemyVisor, this.materials.hazardDark, 0.66);
+      const model = this.createCrewModel(bodyMaterial, visorMaterial, packMaterial, variant === "scout" ? 0.64 : 0.69);
       model.position.set((col - (rowCount - 1) / 2) * 0.46, 0.38, -row * 0.42);
+      model.userData.baseX = model.position.x;
+      model.userData.baseZ = model.position.z;
+      model.userData.phase = index * 0.73;
+      if (variant !== "scout") {
+        const helmet = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 0.36), armorMaterial);
+        helmet.position.set(0, 0.84, 0.02);
+        helmet.castShadow = true;
+        model.add(helmet);
+      }
+      if (variant === "armored" && index % 3 === 0) {
+        const shield = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.05, 18), armorMaterial);
+        shield.rotation.x = Math.PI / 2;
+        shield.position.set(index % 2 ? -0.28 : 0.28, 0.49, 0.38);
+        shield.castShadow = true;
+        model.add(shield);
+      }
+      if (index === 0 && variant !== "scout") {
+        const pole = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.05), armorMaterial);
+        pole.position.set(0.38, 0.9, -0.1);
+        pole.castShadow = true;
+        model.add(pole);
+        const flag = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.24, 0.04), variant === "armored" ? this.materials.hazardDark : this.materials.bossGold);
+        flag.position.set(0.58, 1.18, -0.1);
+        flag.castShadow = true;
+        model.add(flag);
+      }
+      models.push(model);
       group.add(model);
     }
-    const label = this.makeTextSprite(`${entity.count ?? count}`, "#3c1642", "#ffffff");
+    const label = this.makeTextSprite(`${entity.count ?? count}`, variant === "armored" ? "#111827" : "#3c1642", "#ffffff");
     label.position.set(0, 1.9, -0.6);
     label.scale.set(1.5, 0.55, 1);
     group.add(label);
+    if (variant !== "scout") {
+      const badge = this.makeTextSprite(variant === "armored" ? "ARMOR" : "GUARD", "#ffffff", variant === "armored" ? "#111827" : "#7f1d1d");
+      badge.position.set(0, 2.34, -0.58);
+      badge.scale.set(1.08, 0.32, 1);
+      group.add(badge);
+    }
+    group.userData.enemyVariant = variant;
+    group.userData.enemyModels = models;
+    group.userData.enemyRing = battleRing;
     return group;
   }
 
@@ -1151,6 +1205,7 @@ export class Game {
     this.updateDecorations(time, dt);
     this.animateEntities(time, dt);
     this.updateFloating(dt);
+    this.crowdImpactPulse = Math.max(0, this.crowdImpactPulse - dt * 2.5);
 
     if (this.mode === "run") {
       this.updateRun(time, dt);
@@ -1373,6 +1428,7 @@ export class Game {
     }
 
     const delta = this.count - before;
+    this.crowdImpactPulse = delta >= 0 ? 0.36 : 0.78;
     this.stats.gates += 1;
     this.stats.score += Math.max(0, delta) * 18 + 70;
     this.stats.combo = delta >= 0 ? this.stats.combo + 0.3 : 1;
@@ -1442,9 +1498,11 @@ export class Game {
     this.stats.enemiesDefeated += enemyCount;
     this.stats.combo = 1;
     this.cameraShake = 0.7;
+    this.crowdImpactPulse = 0.9;
     this.hud.popText(`Battle -${loss}`, this.count > 0 ? "boss" : "bad");
     this.audio.battle();
     this.spawnBurst(entity.data.x, entity.data.z, 0xef476f);
+    this.spawnBattleClash(entity.data.x, entity.data.z, loss);
     if (this.count <= 0) {
       this.failRun("Lost battle");
     }
@@ -1517,9 +1575,11 @@ export class Game {
     this.stats.combo = 1;
     this.stats.noHit = false;
     this.cameraShake = 0.7;
+    this.crowdImpactPulse = 0.86;
     this.hud.popText(`${reason} -${loss}`, "bad");
     this.audio.hit();
     this.spawnBurst(this.centerX, this.distance, 0xef476f);
+    this.spawnCrewKnockouts(loss);
     if (this.count <= 0) {
       this.failRun(reason);
     }
@@ -1544,9 +1604,11 @@ export class Game {
     this.stats.combo = 1;
     this.stats.noHit = false;
     this.cameraShake = 0.7;
+    this.crowdImpactPulse = 0.86;
     this.hud.popText(`${reason} -${loss}`, "bad");
     this.audio.hit();
     this.spawnBurst(this.centerX, this.distance, 0xef476f);
+    this.spawnCrewKnockouts(loss);
   }
 
   private startStairs(): void {
@@ -2031,6 +2093,25 @@ export class Game {
       } else if (this.isCollectable(entity.data.kind)) {
         entity.mesh.rotation.y += dt * 2.2;
         entity.mesh.position.y = 0.7 + Math.sin(time * 3 + entity.data.z) * 0.08;
+      } else if (entity.data.kind === "enemy") {
+        const models = entity.mesh.userData.enemyModels as THREE.Object3D[] | undefined;
+        const ring = entity.mesh.userData.enemyRing as THREE.Object3D | undefined;
+        const variant = entity.mesh.userData.enemyVariant as string | undefined;
+        if (ring) {
+          ring.rotation.z += dt * (variant === "armored" ? -0.9 : 0.7);
+          ring.scale.setScalar(1 + Math.sin(time * 4 + entity.data.z) * 0.035);
+        }
+        models?.forEach((model, index) => {
+          const phase = model.userData.phase ?? index;
+          const baseX = model.userData.baseX ?? model.position.x;
+          const baseZ = model.userData.baseZ ?? model.position.z;
+          const march = Math.sin(time * (variant === "armored" ? 4.4 : 5.7) + phase);
+          model.position.x = baseX + Math.sin(time * 2.2 + phase) * 0.035;
+          model.position.y = 0.38 + Math.max(0, march) * (variant === "armored" ? 0.035 : 0.07);
+          model.position.z = baseZ + Math.cos(time * 3.1 + phase) * 0.026;
+          model.rotation.y = Math.sin(time * 4.2 + phase) * (variant === "armored" ? 0.08 : 0.16);
+          model.scale.set(1 + Math.max(0, march) * 0.025, 1 - Math.max(0, march) * 0.018, 1 + Math.max(0, march) * 0.025);
+        });
       } else if (entity.data.kind === "rotatingBar") {
         entity.mesh.rotation.y += dt * (entity.data.speed ?? 2.4);
       } else if (entity.data.kind === "sawLane") {
@@ -2148,7 +2229,8 @@ export class Game {
       }
 
       this.tmpQuaternion.setFromEuler(new THREE.Euler(0, yaw, 0));
-      this.tmpScale.setScalar(1);
+      const impact = this.crowdImpactPulse * clamp(1 - row * 0.07, 0.28, 1);
+      this.tmpScale.set(1 + impact * 0.18, 1 - impact * 0.16, 1 + impact * 0.12);
       this.tmpMatrix.compose(new THREE.Vector3(x, y, z), this.tmpQuaternion, this.tmpScale);
       this.bodyInstances.setMatrixAt(index, this.tmpMatrix);
 
@@ -2227,6 +2309,43 @@ export class Game {
         mesh,
         velocity: new THREE.Vector3((Math.random() - 0.5) * 2.6, 1.2 + Math.random() * 1.6, (Math.random() - 0.5) * 2.6),
         life: 0.8
+      });
+    }
+  }
+
+  private spawnBattleClash(x: number, z: number, loss: number): void {
+    const colors = [0xef476f, 0xffd166, 0xffffff, 0x7c3aed];
+    const count = Math.min(20, 8 + Math.floor(loss / 4));
+    for (let index = 0; index < count; index += 1) {
+      const material = new THREE.MeshStandardMaterial({ color: colors[index % colors.length], roughness: 0.42, metalness: 0.08, transparent: true, opacity: 0.92 });
+      const slash = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.05, 0.12), material);
+      const side = index % 2 === 0 ? -1 : 1;
+      slash.position.set(x + (Math.random() - 0.5) * 1.2, 0.78 + Math.random() * 0.7, z + (Math.random() - 0.5) * 1.2);
+      slash.rotation.set(Math.random() * 0.8, side * 0.55, Math.random() * Math.PI);
+      this.scene.add(slash);
+      this.floating.push({
+        mesh: slash,
+        velocity: new THREE.Vector3(side * (0.8 + Math.random() * 1.7), 0.85 + Math.random() * 1.2, (Math.random() - 0.5) * 2.2),
+        angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 10, side * 8, (Math.random() - 0.5) * 16),
+        life: 0.95 + Math.random() * 0.45
+      });
+    }
+    this.spawnCrewKnockouts(Math.min(loss, 10), x, z);
+  }
+
+  private spawnCrewKnockouts(loss: number, x = this.centerX, z = this.distance): void {
+    const count = Math.min(8, Math.max(1, Math.floor(loss / 3)));
+    for (let index = 0; index < count; index += 1) {
+      const model = this.createCrewModel(this.materials.body, this.materials.visor, this.materials.pack, 0.5);
+      const side = index % 2 === 0 ? -1 : 1;
+      model.position.set(x + (Math.random() - 0.5) * 0.9, 0.45 + Math.random() * 0.25, z - 0.35 + Math.random() * 0.7);
+      model.rotation.set((Math.random() - 0.5) * 0.8, Math.random() * Math.PI, (Math.random() - 0.5) * 0.8);
+      this.scene.add(model);
+      this.floating.push({
+        mesh: model,
+        velocity: new THREE.Vector3(side * (0.85 + Math.random() * 1.6), 1.35 + Math.random() * 1.35, -0.5 - Math.random() * 1.35),
+        angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 7, (Math.random() - 0.5) * 9, side * (4 + Math.random() * 5)),
+        life: 1.15 + Math.random() * 0.45
       });
     }
   }
