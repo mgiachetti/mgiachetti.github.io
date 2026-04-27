@@ -82,7 +82,7 @@ try {
   })()`);
   assert(shop.visible, "Shop should be visible.");
   assert(shop.count >= 12, `Expected at least 12 cosmetics, got ${shop.count}.`);
-  assert(shop.equipped >= 4, `Expected 4 equipped cosmetics, got ${shop.equipped}.`);
+  assert(shop.equipped >= 5, `Expected 5 equipped cosmetics, got ${shop.equipped}.`);
   assert(shop.withinViewport, "Shop should fit desktop viewport.");
   await desktop.screenshot(join(screenshotDir, "crew-count-clash-smoke-shop.png"));
   await desktop.send("Runtime.evaluate", { expression: "document.querySelector('[data-close-shop]').click(); document.querySelector('[data-open-map]').click()" });

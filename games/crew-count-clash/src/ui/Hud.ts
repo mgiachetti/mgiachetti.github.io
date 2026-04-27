@@ -147,6 +147,10 @@ export class Hud {
     this.hideRoulettePrize();
     this.hud.classList.add("is-hidden");
     this.showOnly(this.reward);
+    this.reward.classList.toggle("boss-reward", data.kind.includes("Boss"));
+    this.reward.classList.toggle("roulette-reward", data.kind.includes("Roulette") || data.kind.includes("Ticket"));
+    this.reward.classList.toggle("jackpot-reward", data.extra.includes("Jackpot") || data.title.includes("Jackpot"));
+    this.reward.classList.toggle("castle-level-reward", data.castleLeveledUp);
     this.set("[data-result-kind]", data.kind);
     this.set("[data-result-title]", data.title);
     this.countTo("[data-result-score]", data.score, "");
@@ -260,6 +264,7 @@ export class Hud {
       body: "Body",
       visor: "Visor",
       backpack: "Pack",
+      hat: "Hat",
       trail: "Trail"
     };
     this.cosmetics.innerHTML = "";

@@ -1,7 +1,7 @@
 import type { CosmeticItem, CosmeticSlot, RewardData, RunStats, SaveData, UpgradeKey } from "./types";
 
 const storageKey = "crew-count-clash-save-v1";
-const saveVersion = 2;
+const saveVersion = 3;
 
 const castleThresholds = [0, 6, 16, 31, 52, 80, 116, 160, 212];
 const castleStages = [
@@ -30,13 +30,18 @@ export const cosmeticCatalog: CosmeticItem[] = [
   { key: "standard-pack", label: "Standard Pack", slot: "backpack", primary: 0x2087ad, secondary: 0x155b78, cost: 0 },
   { key: "jet-pack", label: "Jet Pack", slot: "backpack", primary: 0x4f5d75, secondary: 0xef8354, cost: 780 },
   { key: "star-pack", label: "Star Pack", slot: "backpack", primary: 0x363f72, secondary: 0xffd166, cost: 1150 },
+  { key: "no-hat", label: "No Hat", slot: "hat", primary: 0xffffff, cost: 0 },
+  { key: "crew-cap", label: "Crew Cap", slot: "hat", primary: 0x146ef5, secondary: 0x00f5d4, cost: 0 },
+  { key: "crown-hat", label: "Crown Hat", slot: "hat", primary: 0xffca3a, secondary: 0xff9f1c, cost: 900 },
+  { key: "antenna-hat", label: "Antenna Hat", slot: "hat", primary: 0x00f5d4, secondary: 0x146ef5, cost: 1050 },
+  { key: "party-hat", label: "Party Hat", slot: "hat", primary: 0xef476f, secondary: 0xffd166, cost: 1250 },
   { key: "plain-trail", label: "Plain Trail", slot: "trail", primary: 0xffffff, cost: 0 },
   { key: "spark-trail", label: "Spark Trail", slot: "trail", primary: 0xffd166, cost: 620 },
   { key: "neon-trail", label: "Neon Trail", slot: "trail", primary: 0x00f5d4, cost: 960 },
   { key: "medal-trail", label: "Medal Trail", slot: "trail", primary: 0xff9f1c, cost: 1400 }
 ];
 
-const defaultCosmetics = ["cyan-body", "blue-visor", "standard-pack", "plain-trail"];
+const defaultCosmetics = ["cyan-body", "blue-visor", "standard-pack", "no-hat", "crew-cap", "plain-trail"];
 
 export function createDefaultSave(): SaveData {
   return {
@@ -57,6 +62,7 @@ export function createDefaultSave(): SaveData {
       body: "cyan-body",
       visor: "blue-visor",
       backpack: "standard-pack",
+      hat: "crew-cap",
       trail: "plain-trail"
     },
     upgrades: {

@@ -103,7 +103,7 @@ export type UpgradeKey =
   | "magnet"
   | "rouletteLuck";
 
-export type CosmeticSlot = "body" | "visor" | "backpack" | "trail";
+export type CosmeticSlot = "body" | "visor" | "backpack" | "hat" | "trail";
 
 export type CosmeticItem = {
   key: string;

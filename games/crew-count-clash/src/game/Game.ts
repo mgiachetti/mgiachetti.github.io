@@ -73,6 +73,8 @@ export class Game {
   private bodyInstances: THREE.InstancedMesh;
   private visorInstances: THREE.InstancedMesh;
   private packInstances: THREE.InstancedMesh;
+  private hatInstances: THREE.InstancedMesh;
+  private trailInstances: THREE.InstancedMesh;
   private leftLegInstances: THREE.InstancedMesh;
   private rightLegInstances: THREE.InstancedMesh;
   private tracks: RuntimeTrack[] = [];
@@ -139,6 +141,8 @@ export class Game {
   private pointerDown = false;
   private keyboardX = 0;
   private activeTeamColor: "cyan" | "lime" | "coral" | "violet" = "cyan";
+  private hatEquipped = false;
+  private trailEquipped = false;
 
   private stats: RunStats = this.createStats();
 
@@ -208,6 +212,7 @@ export class Game {
     body: new THREE.MeshStandardMaterial({ color: 0x36c9f6, roughness: 0.58, metalness: 0.05 }),
     visor: new THREE.MeshStandardMaterial({ color: 0xbdefff, roughness: 0.18, metalness: 0.2 }),
     pack: new THREE.MeshStandardMaterial({ color: 0x2087ad, roughness: 0.58, metalness: 0.05 }),
+    hat: new THREE.MeshStandardMaterial({ color: 0xffca3a, roughness: 0.42, metalness: 0.12 }),
     ground: new THREE.MeshStandardMaterial({ color: 0x7dd6f6, roughness: 0.82 }),
     enemy: new THREE.MeshStandardMaterial({ color: 0xf05252, roughness: 0.62, metalness: 0.04 }),
     enemyVisor: new THREE.MeshStandardMaterial({ color: 0x231942, roughness: 0.3, metalness: 0.1 }),
@@ -229,7 +234,7 @@ export class Game {
     bossGold: new THREE.MeshStandardMaterial({ color: 0xffc857, roughness: 0.36, metalness: 0.18 }),
     castle: new THREE.MeshStandardMaterial({ color: 0xc7d1da, roughness: 0.75, metalness: 0.03 }),
     wheel: new THREE.MeshStandardMaterial({ color: 0xffca3a, roughness: 0.42, metalness: 0.08 }),
-    trail: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, transparent: true, opacity: 0.62 })
+    trail: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.44, transparent: true, opacity: 0.5, emissive: 0xffffff, emissiveIntensity: 0.1 })
   };
 
   private readonly teamColors = {
@@ -243,6 +248,8 @@ export class Game {
     body: new THREE.CapsuleGeometry(0.3, 0.54, 8, 18),
     visor: new THREE.BoxGeometry(0.46, 0.22, 0.08),
     pack: new THREE.BoxGeometry(0.24, 0.48, 0.16),
+    hat: new THREE.CylinderGeometry(0.2, 0.24, 0.13, 10),
+    trail: new THREE.BoxGeometry(0.26, 0.035, 0.66),
     leg: new THREE.CapsuleGeometry(0.1, 0.18, 6, 10),
     cube: new THREE.BoxGeometry(1, 1, 1),
     sphere: new THREE.SphereGeometry(0.5, 24, 16),
@@ -268,17 +275,20 @@ export class Game {
     this.bodyInstances = new THREE.InstancedMesh(this.geometries.body, this.materials.body, this.maxVisibleCrew);
     this.visorInstances = new THREE.InstancedMesh(this.geometries.visor, this.materials.visor, this.maxVisibleCrew);
     this.packInstances = new THREE.InstancedMesh(this.geometries.pack, this.materials.pack, this.maxVisibleCrew);
+    this.hatInstances = new THREE.InstancedMesh(this.geometries.hat, this.materials.hat, this.maxVisibleCrew);
+    this.trailInstances = new THREE.InstancedMesh(this.geometries.trail, this.materials.trail, this.maxVisibleCrew);
     this.leftLegInstances = new THREE.InstancedMesh(this.geometries.leg, this.materials.body, this.maxVisibleCrew);
     this.rightLegInstances = new THREE.InstancedMesh(this.geometries.leg, this.materials.body, this.maxVisibleCrew);
     this.bodyInstances.castShadow = true;
     this.visorInstances.castShadow = true;
     this.packInstances.castShadow = true;
+    this.hatInstances.castShadow = true;
     this.leftLegInstances.castShadow = true;
     this.rightLegInstances.castShadow = true;
-    [this.bodyInstances, this.visorInstances, this.packInstances, this.leftLegInstances, this.rightLegInstances].forEach((mesh) => {
+    [this.bodyInstances, this.visorInstances, this.packInstances, this.hatInstances, this.trailInstances, this.leftLegInstances, this.rightLegInstances].forEach((mesh) => {
       mesh.frustumCulled = false;
     });
-    this.crowd.add(this.leftLegInstances, this.rightLegInstances, this.bodyInstances, this.visorInstances, this.packInstances);
+    this.crowd.add(this.trailInstances, this.leftLegInstances, this.rightLegInstances, this.bodyInstances, this.visorInstances, this.packInstances, this.hatInstances);
 
     this.bindUi();
     this.bindInput();
@@ -2915,6 +2925,8 @@ export class Game {
     this.bodyInstances.count = visible;
     this.visorInstances.count = visible;
     this.packInstances.count = visible;
+    this.hatInstances.count = visible;
+    this.trailInstances.count = visible;
     this.leftLegInstances.count = visible;
     this.rightLegInstances.count = visible;
     const spacing = clamp(0.52 - this.save.upgrades.formation * 0.025, 0.38, 0.52);
@@ -2929,6 +2941,8 @@ export class Game {
         this.bodyInstances.setMatrixAt(index, this.hiddenMatrix);
         this.visorInstances.setMatrixAt(index, this.hiddenMatrix);
         this.packInstances.setMatrixAt(index, this.hiddenMatrix);
+        this.hatInstances.setMatrixAt(index, this.hiddenMatrix);
+        this.trailInstances.setMatrixAt(index, this.hiddenMatrix);
         this.leftLegInstances.setMatrixAt(index, this.hiddenMatrix);
         this.rightLegInstances.setMatrixAt(index, this.hiddenMatrix);
         continue;
@@ -3000,6 +3014,25 @@ export class Game {
       this.tmpMatrix.compose(new THREE.Vector3(x, y + 0.01, z - 0.33), this.tmpQuaternion, this.tmpScale);
       this.packInstances.setMatrixAt(index, this.tmpMatrix);
 
+      if (this.hatEquipped) {
+        const hatBob = Math.sin(time * 8 + index * 0.73) * 0.018;
+        this.tmpScale.set(0.78 + impact * 0.08, 0.72 + impact * 0.06, 0.78 + impact * 0.08);
+        this.tmpMatrix.compose(new THREE.Vector3(x, y + 0.7 + hatBob, z + 0.03), this.tmpQuaternion, this.tmpScale);
+        this.hatInstances.setMatrixAt(index, this.tmpMatrix);
+      } else {
+        this.hatInstances.setMatrixAt(index, this.hiddenMatrix);
+      }
+
+      if (this.trailEquipped) {
+        const trailScale = clamp(0.75 + Math.abs(bob) * 4 + (this.frenzyTimer > 0 ? 0.35 : 0), 0.72, 1.24);
+        this.tmpScale.set(0.65 + impact * 0.08, 1, trailScale);
+        this.tmpMatrix.compose(new THREE.Vector3(x, 0.105, z - 0.74), this.tmpQuaternion, this.tmpScale);
+        this.trailInstances.setMatrixAt(index, this.tmpMatrix);
+      } else {
+        this.trailInstances.setMatrixAt(index, this.hiddenMatrix);
+      }
+
+      this.tmpScale.set(1 + impact * 0.18, 1 - impact * 0.16, 1 + impact * 0.12);
       const stride = Math.sin(time * 12 + index * 0.7) * 0.05;
       this.tmpMatrix.compose(new THREE.Vector3(x - 0.13, y - 0.39 + bob * 0.3, z + stride), this.tmpQuaternion, this.tmpScale);
       this.leftLegInstances.setMatrixAt(index, this.tmpMatrix);
@@ -3009,6 +3042,8 @@ export class Game {
     this.bodyInstances.instanceMatrix.needsUpdate = true;
     this.visorInstances.instanceMatrix.needsUpdate = true;
     this.packInstances.instanceMatrix.needsUpdate = true;
+    this.hatInstances.instanceMatrix.needsUpdate = true;
+    this.trailInstances.instanceMatrix.needsUpdate = true;
     this.leftLegInstances.instanceMatrix.needsUpdate = true;
     this.rightLegInstances.instanceMatrix.needsUpdate = true;
   }
@@ -3219,11 +3254,16 @@ export class Game {
     const body = getEquippedCosmetic(this.save, "body");
     const visor = getEquippedCosmetic(this.save, "visor");
     const pack = getEquippedCosmetic(this.save, "backpack");
+    const hat = getEquippedCosmetic(this.save, "hat");
     const trail = getEquippedCosmetic(this.save, "trail");
     this.materials.body.color.setHex(body.primary);
     this.materials.pack.color.setHex(pack.primary);
     this.materials.visor.color.setHex(visor.primary);
+    this.materials.hat.color.setHex(hat.primary);
+    this.hatEquipped = hat.key !== "no-hat";
     this.materials.trail.color.setHex(trail.primary);
+    this.materials.trail.emissive.setHex(trail.primary);
+    this.trailEquipped = trail.key !== "plain-trail";
   }
 
   private createStats(): RunStats {

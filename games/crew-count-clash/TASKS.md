@@ -213,7 +213,7 @@ Status markers:
 - [x] Implement Boss Damage upgrade.
 - [x] Implement Magnet Range upgrade.
 - [x] Implement Roulette Luck upgrade.
-- [~] Implement body/visor/backpack/hat/trail cosmetics.
+- [x] Implement body/visor/backpack/hat/trail cosmetics.
 - [x] Implement equip/owned/locked states.
 - [x] Implement duplicate conversion.
 - [x] Implement base/castle build screen.
@@ -274,8 +274,8 @@ Status markers:
 - [x] Give gates stronger glow, post silhouettes, number badges, and pass-through impact particles.
 - [x] Add trap-specific visual identity: sparks, smoke, dust, warning stripes, and stronger telegraphs.
 - [x] Add distinct boss arena dressing per boss archetype.
-- [ ] Add more visible cosmetics: hats/helmets, stronger trails, backpack silhouettes, and victory poses.
-- [~] Add reward set pieces: gem piles, ticket cards, jackpot spotlight, and chest variants.
+- [~] Add more visible cosmetics: hats/helmets, stronger trails, backpack silhouettes, and victory poses.
+- [x] Add reward set pieces: gem piles, ticket cards, jackpot spotlight, and chest variants.
 - [x] Add level-end castle/city build celebration after major milestones.
 
 ## Phase 20 - QA And Shipping
