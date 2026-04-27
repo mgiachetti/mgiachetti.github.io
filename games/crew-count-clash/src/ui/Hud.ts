@@ -1,4 +1,4 @@
-import { cosmeticCatalog, upgradeCosts } from "../game/saveData";
+import { cosmeticCatalog, getCastleProgress, upgradeCosts } from "../game/saveData";
 import type { CosmeticSlot, RewardData, RunStats, SaveData, UpgradeKey } from "../game/types";
 import { getLevel } from "../levels/levelCatalog";
 import { formatNumber } from "../utils/math";
@@ -11,9 +11,11 @@ export class Hud {
   private pause = this.required<HTMLElement>("#pause-screen");
   private shop = this.required<HTMLElement>("#shop-screen");
   private map = this.required<HTMLElement>("#map-screen");
+  private base = this.required<HTMLElement>("#base-screen");
   private floatLayer = this.required<HTMLElement>("#float-layer");
   private cosmetics = this.required<HTMLElement>("[data-cosmetics]");
   private levelMap = this.required<HTMLElement>("[data-level-map]");
+  private baseMilestones = this.required<HTMLElement>("[data-base-milestones]");
   private roulettePrize = this.required<HTMLElement>("#roulette-prize");
 
   private level = this.required<HTMLElement>("[data-level]");
@@ -37,6 +39,8 @@ export class Hud {
   onCloseShop: (() => void) | null = null;
   onOpenMap: (() => void) | null = null;
   onCloseMap: (() => void) | null = null;
+  onOpenBase: (() => void) | null = null;
+  onCloseBase: (() => void) | null = null;
   onSelectLevel: ((level: number) => void) | null = null;
   onResetSave: (() => void) | null = null;
   onMute: (() => void) | null = null;
@@ -74,6 +78,12 @@ export class Hud {
     });
     document.querySelectorAll<HTMLElement>("[data-close-map]").forEach((button) => {
       button.addEventListener("click", () => this.onCloseMap?.());
+    });
+    document.querySelectorAll<HTMLElement>("[data-open-base]").forEach((button) => {
+      button.addEventListener("click", () => this.onOpenBase?.());
+    });
+    document.querySelectorAll<HTMLElement>("[data-close-base]").forEach((button) => {
+      button.addEventListener("click", () => this.onCloseBase?.());
     });
     document.querySelectorAll<HTMLElement>("[data-reset-save]").forEach((button) => {
       button.addEventListener("click", () => this.onResetSave?.());
@@ -162,6 +172,13 @@ export class Hud {
     this.renderLevelMap(save);
   }
 
+  showBase(save: SaveData): void {
+    this.hideRoulettePrize();
+    this.hud.classList.add("is-hidden");
+    this.showOnly(this.base);
+    this.updateBase(save);
+  }
+
   updateRun(levelNumber: number, progress: number, save: SaveData, stats: RunStats, count: number, shield: number): void {
     this.level.textContent = String(levelNumber);
     this.progress.style.width = `${Math.round(progress * 100)}%`;
@@ -196,6 +213,32 @@ export class Hud {
       this.set(`[data-upgrade-${key}]`, cost === null ? "Max" : `T${tier} • ${cost}`);
     });
     this.renderCosmetics(save);
+  }
+
+  updateBase(save: SaveData): void {
+    const progress = getCastleProgress(save);
+    this.set("[data-base-tier]", `${progress.tier}/${progress.maxTier}`);
+    this.set("[data-base-stage]", progress.stage);
+    this.set("[data-base-xp]", formatNumber(progress.xp));
+    const bar = document.querySelector<HTMLElement>("[data-base-progress]");
+    if (bar) {
+      bar.style.width = `${Math.round(progress.percent * 100)}%`;
+    }
+    document.querySelectorAll<HTMLElement>("[data-castle-piece]").forEach((piece) => {
+      const unlockTier = Number(piece.dataset.castlePiece ?? "0");
+      piece.classList.toggle("is-active", progress.tier >= unlockTier);
+    });
+    this.baseMilestones.innerHTML = "";
+    progress.milestones.slice(1).forEach((milestone) => {
+      const item = document.createElement("div");
+      item.className = `base-milestone ${milestone.unlocked ? "unlocked" : "locked"}`;
+      item.innerHTML = `
+        <span>Lv ${milestone.tier}</span>
+        <b>${milestone.label}</b>
+        <small>${milestone.unlocked ? "Built" : `${formatNumber(milestone.xp)} XP`}</small>
+      `;
+      this.baseMilestones.append(item);
+    });
   }
 
   popText(text: string, tone: "good" | "bad" | "coin" | "boss" = "good"): void {
@@ -257,7 +300,7 @@ export class Hud {
   }
 
   private hidePanels(): void {
-    [this.title, this.reward, this.fail, this.pause, this.shop, this.map].forEach((panel) => panel.classList.add("is-hidden"));
+    [this.title, this.reward, this.fail, this.pause, this.shop, this.map, this.base].forEach((panel) => panel.classList.add("is-hidden"));
   }
 
   private showOnly(panel: HTMLElement): void {

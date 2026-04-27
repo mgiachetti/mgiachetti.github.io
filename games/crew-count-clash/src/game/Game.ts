@@ -362,6 +362,15 @@ export class Game {
       this.mode = "title";
       this.hud.showTitle(this.save);
     };
+    this.hud.onOpenBase = () => {
+      this.mode = "base";
+      void this.audio.unlock().then(() => this.audio.switchMusic("shop"));
+      this.hud.showBase(this.save);
+    };
+    this.hud.onCloseBase = () => {
+      this.mode = "title";
+      this.hud.showTitle(this.save);
+    };
     this.hud.onSelectLevel = (levelNumber) => {
       if (levelNumber <= this.save.currentLevel) {
         void this.beginLevel(levelNumber);
@@ -1195,10 +1204,86 @@ export class Game {
     this.bossCrown.castShadow = true;
     this.bossGroup.add(this.bossCrown);
 
-    this.bossGate = new THREE.Mesh(new THREE.BoxGeometry(4.8, 3.4, 0.6), this.materials.castle);
-    this.bossGate.position.set(0, 1.45, 8);
-    this.bossGate.castShadow = true;
-    this.bossGroup.add(this.bossGate);
+    const castleGate = new THREE.Group();
+    castleGate.position.set(0, 0, 8);
+    const backWall = new THREE.Mesh(new THREE.BoxGeometry(5.8, 3.2, 0.5), this.materials.castle);
+    backWall.position.set(0, 1.42, 0.16);
+    backWall.castShadow = true;
+    castleGate.add(backWall);
+    const archShadow = new THREE.Mesh(new THREE.BoxGeometry(2.38, 2.56, 0.16), this.materials.hazardDark);
+    archShadow.position.set(0, 1.14, -0.18);
+    castleGate.add(archShadow);
+    const leftDoorGroup = new THREE.Group();
+    leftDoorGroup.position.set(-0.04, 0, -0.36);
+    const leftDoor = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.34, 0.18), this.materials.trackDark);
+    leftDoor.position.set(-0.56, 1.14, 0);
+    leftDoor.castShadow = true;
+    leftDoorGroup.add(leftDoor);
+    const rightDoorGroup = new THREE.Group();
+    rightDoorGroup.position.set(0.04, 0, -0.36);
+    const rightDoor = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.34, 0.18), this.materials.trackDark);
+    rightDoor.position.set(0.56, 1.14, 0);
+    rightDoor.castShadow = true;
+    rightDoorGroup.add(rightDoor);
+    castleGate.add(leftDoorGroup, rightDoorGroup);
+    const portcullis = new THREE.Group();
+    portcullis.position.set(0, 1.18, -0.48);
+    for (let index = -2; index <= 2; index += 1) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.42, 0.08), this.materials.bossGold);
+      bar.position.x = index * 0.44;
+      bar.castShadow = true;
+      portcullis.add(bar);
+    }
+    const bottomRail = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.08, 0.08), this.materials.bossGold);
+    bottomRail.position.y = -1.12;
+    portcullis.add(bottomRail);
+    castleGate.add(portcullis);
+    for (let index = -2; index <= 2; index += 1) {
+      const block = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.42, 0.58), this.materials.castle);
+      block.position.set(index * 1.08, 3.22, 0.12);
+      block.castShadow = true;
+      castleGate.add(block);
+    }
+    [-1, 1].forEach((side) => {
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.64, 3.82, 12), this.materials.castle);
+      tower.position.set(side * 3.05, 1.72, 0.08);
+      tower.castShadow = true;
+      castleGate.add(tower);
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(0.74, 0.78, 6), this.materials.bossGold);
+      roof.position.set(side * 3.05, 3.98, 0.08);
+      roof.castShadow = true;
+      castleGate.add(roof);
+      const pennant = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.28, 0.05), side > 0 ? this.materials.hazard : this.materials.hazardDark);
+      pennant.position.set(side * 3.28, 4.36, -0.18);
+      pennant.userData.floatBaseY = pennant.position.y;
+      pennant.userData.floatPhase = side * 1.4;
+      castleGate.add(pennant);
+    });
+    const enemyBanner = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.5, 0.08), this.materials.hazard);
+    enemyBanner.position.set(0, 2.94, -0.42);
+    enemyBanner.castShadow = true;
+    castleGate.add(enemyBanner);
+    const victoryFlag = new THREE.Group();
+    victoryFlag.visible = false;
+    victoryFlag.position.set(-0.28, 3.05, -0.52);
+    victoryFlag.scale.set(1, 0.01, 1);
+    const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 1.38, 8), this.materials.gatePost);
+    flagPole.position.y = 0.58;
+    flagPole.castShadow = true;
+    victoryFlag.add(flagPole);
+    const flagBanner = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.44, 0.06), this.materials.gateGood);
+    flagBanner.position.set(0.45, 1.02, 0);
+    flagBanner.castShadow = true;
+    victoryFlag.add(flagBanner);
+    castleGate.add(victoryFlag);
+    castleGate.userData.leftDoorGroup = leftDoorGroup;
+    castleGate.userData.rightDoorGroup = rightDoorGroup;
+    castleGate.userData.portcullis = portcullis;
+    castleGate.userData.enemyBanner = enemyBanner;
+    castleGate.userData.victoryFlag = victoryFlag;
+    castleGate.userData.flagBanner = flagBanner;
+    this.bossGate = castleGate;
+    this.bossGroup.add(castleGate);
     const label = this.makeTextSprite(this.level.boss?.name ?? "BOSS", "#3c1642", "#ffffff");
     label.position.set(0, 3.75, 3.7);
     label.scale.set(2.3, 0.52, 1);
@@ -2046,10 +2131,14 @@ export class Game {
     this.cameraShake = Math.max(0, this.cameraShake - dt * 1.6);
     this.targetX = damp(this.targetX, 0, 5, dt);
     this.centerX = damp(this.centerX, 0, 5, dt);
-    this.distance = damp(this.distance, this.level.length + 9.2, 1.9, dt);
+    this.distance = damp(this.distance, this.level.length + 10.8, 1.9, dt);
 
     const progress = clamp(this.bossVictoryTimer / 1.35, 0, 1);
     const eased = 1 - (1 - progress) ** 3;
+    const gateProgress = clamp((this.bossVictoryTimer - 0.38) / 1.45, 0, 1);
+    const gateEased = 1 - (1 - gateProgress) ** 3;
+    const flagProgress = clamp((this.bossVictoryTimer - 1.08) / 1.12, 0, 1);
+    const flagEased = Math.sin(flagProgress * Math.PI * 0.5);
     const crownLift = Math.sin(clamp(this.bossVictoryTimer / 0.78, 0, 1) * Math.PI) * 0.9;
 
     if (this.bossBody) {
@@ -2085,15 +2174,49 @@ export class Game {
       this.bossCrown.rotation.z = Math.sin(this.lastTime * 9) * (1 - progress) * 0.45;
     }
     if (this.bossGate) {
-      this.bossGate.position.y = 1.45 + eased * 2.2;
-      this.bossGate.scale.x = 1 + eased * 0.08;
+      this.bossGate.position.y = Math.sin(this.lastTime * 18) * (1 - gateProgress) * 0.035;
+      this.bossGate.scale.x = 1 + gateEased * 0.035;
+      const leftDoorGroup = this.bossGate.userData.leftDoorGroup as THREE.Object3D | undefined;
+      const rightDoorGroup = this.bossGate.userData.rightDoorGroup as THREE.Object3D | undefined;
+      const portcullis = this.bossGate.userData.portcullis as THREE.Object3D | undefined;
+      const enemyBanner = this.bossGate.userData.enemyBanner as THREE.Object3D | undefined;
+      const victoryFlag = this.bossGate.userData.victoryFlag as THREE.Object3D | undefined;
+      const flagBanner = this.bossGate.userData.flagBanner as THREE.Object3D | undefined;
+      if (leftDoorGroup) {
+        leftDoorGroup.position.x = -0.04 - gateEased * 0.2;
+        leftDoorGroup.rotation.y = -gateEased * 1.22;
+      }
+      if (rightDoorGroup) {
+        rightDoorGroup.position.x = 0.04 + gateEased * 0.2;
+        rightDoorGroup.rotation.y = gateEased * 1.22;
+      }
+      if (portcullis) {
+        portcullis.position.y = 1.18 + gateEased * 2.05;
+      }
+      if (enemyBanner) {
+        const bannerDrop = clamp(this.bossVictoryTimer / 0.72, 0, 1);
+        enemyBanner.position.y = 2.94 - bannerDrop * 0.48;
+        enemyBanner.rotation.z = bannerDrop * 0.42;
+        enemyBanner.scale.setScalar(Math.max(0.05, 1 - flagProgress * 0.92));
+        enemyBanner.visible = flagProgress < 0.98;
+      }
+      if (victoryFlag) {
+        victoryFlag.visible = flagProgress > 0;
+        victoryFlag.position.y = 3.05 + flagEased * 0.78;
+        victoryFlag.scale.set(1, Math.max(0.01, flagEased), 1);
+        victoryFlag.rotation.z = Math.sin(this.lastTime * 7) * 0.035 * flagEased;
+      }
+      if (flagBanner) {
+        flagBanner.scale.x = 0.35 + flagEased * 0.65;
+        flagBanner.rotation.z = Math.sin(this.lastTime * 9) * 0.04 * flagEased;
+      }
     }
 
     this.bossGroup.rotation.y = Math.sin(this.lastTime * 24) * (1 - progress) * 0.025;
     this.bossGroup.position.x = Math.sin(this.lastTime * 31) * (1 - progress) * 0.04;
     this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
 
-    if (this.bossVictoryTimer >= 2.35) {
+    if (this.bossVictoryTimer >= 3.65) {
       this.finishLevel(true, false);
     }
   }
@@ -2511,10 +2634,16 @@ export class Game {
       } else if (this.mode === "boss" || this.mode === "bossVictory") {
         const attackWave = Math.max(0, Math.sin(time * 5.8 - row * 0.85));
         const victoryPush = this.mode === "bossVictory" ? clamp(this.bossVictoryTimer / 1.3, 0, 1) : 0;
+        const gateRush = this.mode === "bossVictory" ? clamp((this.bossVictoryTimer - 0.72) / 1.65, 0, 1) : 0;
         x = this.centerX + offsetX + Math.sin(time * 9 + index) * 0.07;
-        z = this.distance + offsetZ + attackWave * (row < 5 ? 0.78 : 0.32) + victoryPush * (1.65 + row * 0.035);
-        y = 0.55 + bob + attackWave * 0.07 + Math.sin(time * 13 + index) * 0.05 * victoryPush;
-        yaw = Math.sin(time * 8 + index * 0.5) * (0.16 + victoryPush * 0.08);
+        z =
+          this.distance +
+          offsetZ +
+          attackWave * (row < 5 ? 0.78 : 0.32) +
+          victoryPush * (1.65 + row * 0.035) +
+          gateRush * (2.15 + row * 0.05);
+        y = 0.55 + bob + attackWave * 0.07 + Math.sin(time * 13 + index) * 0.05 * victoryPush + Math.sin(time * 14 + index * 0.7) * 0.1 * gateRush;
+        yaw = Math.sin(time * 8 + index * 0.5) * (0.16 + victoryPush * 0.08 + gateRush * 0.12);
       }
 
       this.tmpQuaternion.setFromEuler(new THREE.Euler(0, yaw, 0));
@@ -2544,12 +2673,15 @@ export class Game {
 
   private updateCamera(dt: number): void {
     const isBossScene = this.mode === "boss" || this.mode === "bossVictory";
+    const isBossVictory = this.mode === "bossVictory";
     const isStairFinale = this.mode === "stairs" && this.stairFinaleStarted;
     const isBattleScene = this.mode === "battle";
     const targetZ =
       this.mode === "roulette"
         ? this.level.length + 18
-        : isBossScene
+        : isBossVictory
+          ? this.level.length + 19
+          : isBossScene
           ? this.level.length + 15.5
           : isBattleScene
             ? this.battleZ + 2.8
@@ -2558,11 +2690,13 @@ export class Game {
           : this.mode === "stairs"
             ? this.level.length + 18.2
             : this.distance + 8;
-    const targetY = this.mode === "roulette" ? 5.4 : isBossScene ? 7.5 : isBattleScene ? 5.9 : isStairFinale ? 6.9 : this.mode === "stairs" ? 6.15 : 8.5;
+    const targetY = this.mode === "roulette" ? 5.4 : isBossVictory ? 7.9 : isBossScene ? 7.5 : isBattleScene ? 5.9 : isStairFinale ? 6.9 : this.mode === "stairs" ? 6.15 : 8.5;
     const cameraZ =
       this.mode === "roulette"
         ? this.level.length + 9
-        : isBossScene
+        : isBossVictory
+          ? this.distance - 8.2
+          : isBossScene
           ? this.distance - 9.5
           : isBattleScene
             ? this.battleZ - 6.2
@@ -2572,7 +2706,7 @@ export class Game {
             ? this.level.length + 5.8
             : this.distance - 10.5;
     const shake = this.cameraShake > 0 ? (Math.random() - 0.5) * this.cameraShake * 0.6 : 0;
-    const lookY = isStairFinale ? 3.1 : this.mode === "stairs" ? 1.35 : 0.75;
+    const lookY = isBossVictory ? 1.9 : isStairFinale ? 3.1 : this.mode === "stairs" ? 1.35 : 0.75;
     const lookX = isBattleScene ? this.battleX * 0.35 : this.centerX * 0.35;
     this.camera.position.x = damp(this.camera.position.x, (isBattleScene ? this.battleX : this.centerX) * 0.42 + shake, 5, dt);
     this.camera.position.y = damp(this.camera.position.y, targetY + Math.abs(shake), 4.5, dt);

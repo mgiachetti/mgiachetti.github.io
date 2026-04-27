@@ -111,3 +111,14 @@ The requested game should be more complete than a straight first-pass clone:
 - Platform/hazard timing should be data-driven.
 - Economy must be delayed until core run and finale are playable.
 - Save system needs versioning because this game has more progression than Pancake Stack Run.
+
+## Visual Polish Findings From Original-Like References
+
+- The end of a boss/castle level should read as a takeover, not only a reward trigger: gate opening, flag change, boss defeat pose, crowd push-in, confetti, and delayed reward.
+- The meta layer should show a city/base/castle being built over time. Progress needs to be visible from the home loop, not hidden in currency totals.
+- The track feels closer when it has more readable world dressing: side buildings, towers, banners, castle doors, warning decals, and chunkier gate posts.
+- Gates benefit from extra "juice": brighter glass, glow, posts, number badges, impact particles, and clear positive/negative color language.
+- Traps should have stronger identity: sparks on saw/laser areas, smoke or dust on crushers/hammers, warning stripes, and active telegraphs.
+- Boss arenas can look less repetitive by giving each boss a distinct arena dressing, door, weapon silhouette, and victory banner.
+- Reward moments should be theatrical: chests, gem piles, ticket cards, roulette spotlight, longer prize reveal, and larger prize typography.
+- Cosmetics should be more visible during play: hats/helmets, trails, backpacks, and victory poses are stronger than tiny palette changes.

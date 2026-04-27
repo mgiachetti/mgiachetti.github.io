@@ -1,6 +1,20 @@
 import type { CosmeticItem, CosmeticSlot, RewardData, RunStats, SaveData, UpgradeKey } from "./types";
 
 const storageKey = "crew-count-clash-save-v1";
+const saveVersion = 2;
+
+const castleThresholds = [0, 6, 16, 31, 52, 80, 116, 160, 212];
+const castleStages = [
+  "Landing Pad",
+  "Gate Frame",
+  "Outer Walls",
+  "Twin Towers",
+  "Banner Hall",
+  "Coin Vault",
+  "Sky Bridge",
+  "Royal Keep",
+  "Victory City"
+];
 
 export const upgradeCosts = [220, 620, 1350, 2600, 4600];
 
@@ -26,12 +40,14 @@ const defaultCosmetics = ["cyan-body", "blue-visor", "standard-pack", "plain-tra
 
 export function createDefaultSave(): SaveData {
   return {
+    saveVersion,
     currentLevel: 1,
     coins: 0,
     gems: 0,
     stars: 0,
     medals: 0,
     tickets: 1,
+    castleXP: 0,
     highScores: {},
     bestCounts: {},
     bestStairs: {},
@@ -70,6 +86,8 @@ export function loadSave(): SaveData {
     return {
       ...fallback,
       ...parsed,
+      saveVersion,
+      castleXP: Number.isFinite(parsed.castleXP) ? Math.max(0, Math.floor(parsed.castleXP ?? 0)) : fallback.castleXP,
       highScores: parsed.highScores ?? fallback.highScores,
       bestCounts: parsed.bestCounts ?? fallback.bestCounts,
       bestStairs: parsed.bestStairs ?? fallback.bestStairs,
@@ -134,6 +152,48 @@ export function getEquippedCosmetic(save: SaveData, slot: CosmeticSlot): Cosmeti
   );
 }
 
+export function getCastleProgress(save: SaveData): {
+  tier: number;
+  maxTier: number;
+  xp: number;
+  currentXP: number;
+  nextXP: number;
+  neededXP: number;
+  percent: number;
+  stage: string;
+  nextStage: string;
+  milestones: Array<{ tier: number; label: string; xp: number; unlocked: boolean }>;
+} {
+  const xp = Math.max(0, Math.floor(save.castleXP));
+  let tier = 0;
+  for (let index = 0; index < castleThresholds.length; index += 1) {
+    if (xp >= castleThresholds[index]) {
+      tier = index;
+    }
+  }
+  const maxTier = castleThresholds.length - 1;
+  const currentXP = castleThresholds[tier];
+  const nextXP = castleThresholds[Math.min(maxTier, tier + 1)];
+  const span = Math.max(1, nextXP - currentXP);
+  return {
+    tier,
+    maxTier,
+    xp,
+    currentXP,
+    nextXP,
+    neededXP: Math.max(0, nextXP - xp),
+    percent: tier >= maxTier ? 1 : Math.min(1, (xp - currentXP) / span),
+    stage: castleStages[tier] ?? castleStages[0],
+    nextStage: castleStages[Math.min(maxTier, tier + 1)] ?? castleStages[maxTier],
+    milestones: castleStages.map((label, index) => ({
+      tier: index,
+      label,
+      xp: castleThresholds[index],
+      unlocked: xp >= castleThresholds[index]
+    }))
+  };
+}
+
 export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats, targetScore: number, targetStair: number): RewardData {
   const levelKey = String(levelId);
   const previousStars = save.levelStars[levelKey] ?? 0;
@@ -155,6 +215,11 @@ export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats
     save.medals += 1;
     save.tickets += 1;
   }
+  save.castleXP +=
+    Math.max(1, stars) +
+    Math.floor(Math.max(0, stats.finalStair) / 4) +
+    (stats.bossDefeated ? 8 : 0) +
+    (stats.rouletteLabel ? 2 : 0);
 
   save.highScores[levelKey] = Math.max(save.highScores[levelKey] ?? 0, stats.score);
   save.bestCounts[levelKey] = Math.max(save.bestCounts[levelKey] ?? 0, stats.maxCount);

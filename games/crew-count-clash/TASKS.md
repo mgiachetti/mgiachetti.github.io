@@ -198,7 +198,7 @@ Status markers:
 - [x] Track best stats.
 - [x] Track cosmetics.
 - [x] Track upgrade levels.
-- [ ] Track base/castle build progress.
+- [x] Track base/castle build progress.
 - [ ] Add save migration/versioning.
 - [ ] Add dev reset/debug tools.
 
@@ -216,7 +216,7 @@ Status markers:
 - [~] Implement body/visor/backpack/hat/trail cosmetics.
 - [x] Implement equip/owned/locked states.
 - [x] Implement duplicate conversion.
-- [ ] Implement base/castle build screen.
+- [x] Implement base/castle build screen.
 
 ## Phase 17 - Audio
 
@@ -265,6 +265,18 @@ Status markers:
 - [x] Add themed track biomes.
 - [x] Add loading screen.
 - [x] Add app icon/preview image.
+
+### Original-Like Visual Polish Backlog
+
+- [x] Add visible city/castle/base progression to the main loop.
+- [x] Make boss victory read as a castle takeover with gate animation, flag change, crowd push-in, and delayed reward.
+- [ ] Add denser track set dressing: buildings, towers, walls, banners, and route signs.
+- [ ] Give gates stronger glow, post silhouettes, number badges, and pass-through impact particles.
+- [ ] Add trap-specific visual identity: sparks, smoke, dust, warning stripes, and stronger telegraphs.
+- [ ] Add distinct boss arena dressing per boss archetype.
+- [ ] Add more visible cosmetics: hats/helmets, stronger trails, backpack silhouettes, and victory poses.
+- [ ] Add reward set pieces: gem piles, ticket cards, jackpot spotlight, and chest variants.
+- [ ] Add level-end castle/city build celebration after major milestones.
 
 ## Phase 20 - QA And Shipping
 

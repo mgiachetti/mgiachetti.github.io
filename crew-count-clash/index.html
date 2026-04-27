@@ -12,8 +12,8 @@
     <meta property="og:image" content="/crew-count-clash/preview.svg" />
     <link rel="icon" href="/crew-count-clash/icon.svg" type="image/svg+xml" />
     <title>Crew Count Clash</title>
-    <script type="module" crossorigin src="/crew-count-clash/assets/index-BYvLdcxe.js"></script>
-    <link rel="stylesheet" crossorigin href="/crew-count-clash/assets/index-BrLlEqJ5.css">
+    <script type="module" crossorigin src="/crew-count-clash/assets/index-Cm6AuPbS.js"></script>
+    <link rel="stylesheet" crossorigin href="/crew-count-clash/assets/index-DAY9DEeV.css">
   </head>
   <body>
     <div id="loading-screen" class="loading-screen" aria-hidden="true">
@@ -80,6 +80,7 @@
       <div class="actions">
         <button class="primary" type="button" data-start>Start Run</button>
         <button type="button" data-open-map>Map</button>
+        <button type="button" data-open-base>Castle</button>
         <button type="button" data-open-shop>Shop</button>
         <button type="button" data-mute>Sound</button>
       </div>
@@ -105,6 +106,7 @@
       <div class="actions">
         <button class="primary" type="button" data-next>Next</button>
         <button type="button" data-extra-spin>Extra Spin</button>
+        <button type="button" data-open-base>Castle</button>
         <button type="button" data-open-shop>Shop</button>
         <button type="button" data-retry>Replay</button>
       </div>
@@ -142,6 +144,42 @@
         <button class="icon-button" type="button" data-close-map aria-label="Close map">X</button>
       </div>
       <div class="level-map" data-level-map></div>
+    </section>
+
+    <section id="base-screen" class="panel base is-hidden">
+      <div class="shop-header">
+        <div>
+          <p class="kicker">Command Post</p>
+          <h2>Castle</h2>
+        </div>
+        <button class="icon-button" type="button" data-close-base aria-label="Close castle">X</button>
+      </div>
+      <div class="base-topline">
+        <div><span>Build Level</span><b data-base-tier>0</b></div>
+        <div><span>Stage</span><b data-base-stage>Landing Pad</b></div>
+        <div><span>Build XP</span><b data-base-xp>0</b></div>
+      </div>
+      <div class="base-progress" aria-hidden="true">
+        <span data-base-progress></span>
+      </div>
+      <div class="castle-scene" aria-hidden="true">
+        <span class="castle-road"></span>
+        <span class="castle-foundation" data-castle-piece="1"></span>
+        <span class="castle-wall left" data-castle-piece="2"></span>
+        <span class="castle-wall right" data-castle-piece="2"></span>
+        <span class="castle-tower left" data-castle-piece="3"></span>
+        <span class="castle-tower right" data-castle-piece="3"></span>
+        <span class="castle-keep" data-castle-piece="4"></span>
+        <span class="castle-banner" data-castle-piece="5"></span>
+        <span class="castle-vault" data-castle-piece="6"></span>
+        <span class="castle-bridge" data-castle-piece="7"></span>
+        <span class="castle-crown" data-castle-piece="8"></span>
+      </div>
+      <div class="base-milestones" data-base-milestones></div>
+      <div class="actions">
+        <button class="primary" type="button" data-start>Start Run</button>
+        <button type="button" data-open-shop>Shop</button>
+      </div>
     </section>
 
     <section id="shop-screen" class="panel shop is-hidden">

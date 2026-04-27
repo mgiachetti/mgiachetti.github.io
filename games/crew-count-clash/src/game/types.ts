@@ -1,4 +1,4 @@
-export type GameMode = "title" | "run" | "battle" | "stairs" | "boss" | "bossVictory" | "roulette" | "reward" | "fail" | "shop" | "map" | "pause";
+export type GameMode = "title" | "run" | "battle" | "stairs" | "boss" | "bossVictory" | "roulette" | "reward" | "fail" | "shop" | "map" | "base" | "pause";
 
 export type LevelKind = "normal" | "challenge" | "bonus" | "boss";
 
@@ -115,12 +115,14 @@ export type CosmeticItem = {
 };
 
 export type SaveData = {
+  saveVersion: number;
   currentLevel: number;
   coins: number;
   gems: number;
   stars: number;
   medals: number;
   tickets: number;
+  castleXP: number;
   highScores: Record<string, number>;
   bestCounts: Record<string, number>;
   bestStairs: Record<string, number>;

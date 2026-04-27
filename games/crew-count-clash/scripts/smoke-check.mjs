@@ -102,6 +102,26 @@ try {
   assert(map.unlocked >= 1, `Expected at least one unlocked map node, got ${map.unlocked}.`);
   assert(map.withinViewport, "Map should fit desktop viewport.");
   await desktop.screenshot(join(screenshotDir, "crew-count-clash-smoke-map.png"));
+  await desktop.send("Runtime.evaluate", { expression: "document.querySelector('[data-close-map]').click(); document.querySelector('[data-open-base]').click()" });
+  await sleep(300);
+  const base = await desktop.eval(`(() => {
+    const pieces = [...document.querySelectorAll("[data-castle-piece]")];
+    const milestones = [...document.querySelectorAll("[data-base-milestones] .base-milestone")];
+    const panel = document.querySelector("#base-screen").getBoundingClientRect();
+    return {
+      pieces: pieces.length,
+      milestones: milestones.length,
+      tier: document.querySelector("[data-base-tier]").textContent,
+      visible: !document.querySelector("#base-screen").classList.contains("is-hidden"),
+      withinViewport: panel.bottom <= innerHeight && panel.right <= innerWidth
+    };
+  })()`);
+  assert(base.visible, "Castle/base screen should be visible.");
+  assert(base.pieces >= 9, `Expected castle pieces, got ${base.pieces}.`);
+  assert(base.milestones >= 8, `Expected castle milestones, got ${base.milestones}.`);
+  assert(base.tier.includes("/"), `Expected castle tier text, got ${base.tier}.`);
+  assert(base.withinViewport, "Castle/base screen should fit desktop viewport.");
+  await desktop.screenshot(join(screenshotDir, "crew-count-clash-smoke-base.png"));
   await desktop.close();
 
   const mobile = await openPage();
@@ -311,7 +331,12 @@ try {
   assert(!bossVictoryMid.rewardVisible, "Boss victory should not jump straight to the reward panel.");
   assert(bossVictoryMid.sample.some((value) => value > 0), `Boss victory canvas should be nonblank, got ${bossVictoryMid.sample.join(",")}.`);
   await bossVictory.screenshot(join(screenshotDir, "crew-count-clash-smoke-boss-victory.png"));
-  await sleep(5200);
+  await waitForEval(
+    bossVictory,
+    `!document.querySelector("#reward-screen").classList.contains("is-hidden")`,
+    14000,
+    "Boss victory should finish on the reward panel."
+  );
   const bossVictoryDone = await bossVictory.eval(`(() => ({
     rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden"),
     title: document.querySelector("[data-result-title]").textContent,
