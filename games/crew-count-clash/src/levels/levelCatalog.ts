@@ -69,6 +69,15 @@ function gatePair(prefix: string, z: number, left: [string, number], right: [str
   ];
 }
 
+function movingGatePair(prefix: string, z: number, left: [string, number], right: [string, number], range = 0.55, speed = 1.35): LevelEntity[] {
+  return gatePair(prefix, z, left, right).map((gate, index) => ({
+    ...gate,
+    range,
+    speed,
+    phase: index === 0 ? 0 : Math.PI
+  }));
+}
+
 function timedGatePair(prefix: string, z: number, left: [string, number, string, number], right: [string, number, string, number]): LevelEntity[] {
   return [
     {
@@ -294,7 +303,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l8-coral-pad", kind: "colorPad", x: 2.35, z: 28, color: "coral" },
       ...colorPair("l8-cg1", 44, "lime", "coral"),
       { id: "l8-axe-a", kind: "swingingAxe", x: 0, z: 62, width: 1.4, depth: 2.2, range: 2.7, speed: 2.1 },
-      ...gatePair("l8-g1", 82, ["add", 18], ["multiply", 2]),
+      ...movingGatePair("l8-g1", 82, ["add", 18], ["multiply", 2], 0.55, 1.35),
       { id: "l8-cyan-pad", kind: "colorPad", x: 0, z: 98, color: "cyan" },
       ...colorPair("l8-cg2", 116, "cyan", "violet"),
       { id: "l8-cannon-a", kind: "cannon", x: 3.2, z: 134, width: 1.3, depth: 3.1, range: 3, speed: 3.2 },
@@ -462,7 +471,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l14-hole-b", kind: "hole", x: 1.9, z: 88, width: 1.9, depth: 3.3 },
       { id: "l14-crusher-a", kind: "crusher", x: -1.9, z: 108, width: 2, depth: 2, speed: 3.1 },
       { id: "l14-crusher-b", kind: "crusher", x: 1.9, z: 122, width: 2, depth: 2, speed: 3.3, phase: 1.1 },
-      ...gatePair("l14-g2", 146, ["multiply", 2], ["percent", 90]),
+      ...movingGatePair("l14-g2", 146, ["multiply", 2], ["percent", 90], 0.65, 1.5),
       { id: "l14-roller-a", kind: "spikeRoller", x: 0, z: 166, width: 1.9, depth: 2.4, range: 2.6, speed: 3.7 },
       { id: "l14-shield", kind: "shield", x: -2.3, z: 184 },
       { id: "l14-enemy-a", kind: "enemy", x: 0, z: 204, count: 58, strength: 2, width: 4.8, range: 1.2, speed: 1.9 },
@@ -604,7 +613,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l19-axe-a", kind: "swingingAxe", x: 0, z: 96, width: 1.5, depth: 2.4, range: 3, speed: 3 },
       { id: "l19-crusher-a", kind: "crusher", x: -2.1, z: 120, width: 2, depth: 2.2, speed: 3.4 },
       { id: "l19-crusher-b", kind: "crusher", x: 2.1, z: 134, width: 2, depth: 2.2, speed: 3.55, phase: 1.2 },
-      ...gatePair("l19-g2", 154, ["add", 60], ["multiply", 2]),
+      ...movingGatePair("l19-g2", 154, ["add", 60], ["multiply", 2], 0.72, 1.65),
       { id: "l19-roller-a", kind: "spikeRoller", x: 0, z: 178, width: 1.9, depth: 2.4, range: 2.9, speed: 4.2 },
       { id: "l19-cannon-a", kind: "cannon", x: -3.2, z: 198, width: 1.3, depth: 3.5, range: 3.4, speed: 4.2 },
       { id: "l19-enemy-a", kind: "enemy", x: -1.8, z: 222, count: 54, strength: 2, width: 3.2, range: 1.05, speed: 2.4 },

@@ -68,7 +68,7 @@ Status markers:
 - [x] Implement `/N` gates.
 - [x] Implement percent gates.
 - [x] Implement timed value gates.
-- [ ] Implement rotating/moving gates.
+- [x] Implement rotating/moving gates.
 - [ ] Implement split-path gates.
 - [x] Implement color/team gates and switch pads.
 - [x] Add gate text/signage and preview feedback.

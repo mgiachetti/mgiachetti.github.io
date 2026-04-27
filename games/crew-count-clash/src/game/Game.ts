@@ -1825,7 +1825,7 @@ export class Game {
       }
       entity.cooldown = Math.max(0, entity.cooldown - dt);
       const dz = Math.abs(this.distance - entity.data.z);
-      if (dz > 8 && entity.data.kind !== "gate") {
+      if (dz > 8 && entity.data.kind !== "gate" && entity.data.kind !== "colorGate") {
         continue;
       }
       if (this.isCollectable(entity.data.kind)) {
@@ -1834,7 +1834,8 @@ export class Game {
           this.collectEntity(entity);
         }
       } else if (entity.data.kind === "gate" || entity.data.kind === "colorGate") {
-        if (dz < 1.1 && Math.abs(this.centerX - entity.data.x) < (entity.data.width ?? 2.4) / 2) {
+        const gateX = this.getGateX(entity.data, time);
+        if (dz < 1.1 && Math.abs(this.centerX - gateX) < (entity.data.width ?? 2.4) / 2) {
           this.applyGate(entity.data);
           this.consumeGateRow(entity.data.z);
           break;
@@ -2179,6 +2180,13 @@ export class Game {
   private getHazardX(data: LevelEntity, time: number): number {
     if (data.kind === "spikeRoller" || data.kind === "cannon" || data.kind === "swingingAxe") {
       return data.x + Math.sin(time * (data.speed ?? 2.1) + (data.phase ?? 0)) * (data.range ?? 2.3);
+    }
+    return data.x;
+  }
+
+  private getGateX(data: LevelEntity, time: number): number {
+    if ((data.kind === "gate" || data.kind === "colorGate") && data.range && data.speed) {
+      return data.x + Math.sin(time * data.speed + (data.phase ?? 0)) * data.range;
     }
     return data.x;
   }
@@ -2824,7 +2832,12 @@ export class Game {
         this.updateTimedGateLabel(entity);
       }
       this.animateTaggedObject(entity.mesh, time, dt);
-      if (entity.data.kind === "coin" || entity.data.kind === "gem") {
+      if (entity.data.kind === "gate" || entity.data.kind === "colorGate") {
+        entity.mesh.position.x = this.getGateX(entity.data, time);
+        if (entity.data.range && entity.data.speed) {
+          entity.mesh.rotation.y = Math.sin(time * entity.data.speed + (entity.data.phase ?? 0)) * 0.14;
+        }
+      } else if (entity.data.kind === "coin" || entity.data.kind === "gem") {
         entity.mesh.rotation.y += dt * 4;
         entity.mesh.position.y = 0.68 + Math.sin(time * 4 + entity.data.z) * 0.08;
       } else if (this.isCollectable(entity.data.kind)) {
