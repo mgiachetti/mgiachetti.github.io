@@ -141,6 +141,8 @@ export class Game {
   private magnetTimer = 0;
   private frenzyTimer = 0;
   private commanderTimer = 0;
+  private jumpTimer = 0;
+  private readonly jumpDuration = 0.86;
   private gooTimer = 0;
   private cameraShake = 0;
   private crowdImpactPulse = 0;
@@ -609,6 +611,7 @@ export class Game {
     this.magnetTimer = 0;
     this.frenzyTimer = 0;
     this.commanderTimer = 0;
+    this.jumpTimer = 0;
     this.gooTimer = 0;
     this.activeTeamColor = "cyan";
     this.materials.body.color.setHex(this.teamColors.cyan);
@@ -956,6 +959,7 @@ export class Game {
       entity.kind === "commander" ||
       entity.kind === "ticket" ||
       entity.kind === "bossBomb" ||
+      entity.kind === "jumpPad" ||
       entity.kind === "colorPad"
     ) {
       return this.createPowerupMesh(entity);
@@ -1210,6 +1214,25 @@ export class Game {
   private createPowerupMesh(entity: LevelEntity): THREE.Object3D {
     const group = new THREE.Group();
     group.position.set(entity.x, 0.72, entity.z);
+    if (entity.kind === "jumpPad") {
+      group.position.y = 0.18;
+      const base = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.16, 0.9), this.materials.warning);
+      base.castShadow = true;
+      group.add(base);
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(1.08, 0.08, 0.16), this.materials.gatePost);
+      lip.position.set(0, 0.13, -0.32);
+      lip.castShadow = true;
+      group.add(lip);
+      const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.5, 3), this.materials.trackDark);
+      arrow.rotation.x = Math.PI / 2;
+      arrow.position.set(0, 0.13, 0.08);
+      group.add(arrow);
+      const label = this.makeTextSprite("JUMP", "#ffca3a", "#102033");
+      label.position.y = 0.82;
+      label.scale.set(0.88, 0.3, 1);
+      group.add(label);
+      return group;
+    }
     const materialByKind = {
       shield: this.materials.shield,
       magnet: this.materials.magnet,
@@ -1987,6 +2010,7 @@ export class Game {
     this.magnetTimer = Math.max(0, this.magnetTimer - dt);
     this.frenzyTimer = Math.max(0, this.frenzyTimer - dt);
     this.commanderTimer = Math.max(0, this.commanderTimer - dt);
+    this.jumpTimer = Math.max(0, this.jumpTimer - dt);
     this.gooTimer = Math.max(0, this.gooTimer - dt);
     this.cameraShake = Math.max(0, this.cameraShake - dt * 2.5);
 
@@ -2130,7 +2154,7 @@ export class Game {
   }
 
   private isCollectable(kind: string): boolean {
-    return ["crew", "crewCapsule", "coin", "gem", "shield", "magnet", "frenzy", "commander", "ticket", "bossBomb", "colorPad"].includes(kind);
+    return ["crew", "crewCapsule", "coin", "gem", "shield", "magnet", "frenzy", "commander", "ticket", "bossBomb", "jumpPad", "colorPad"].includes(kind);
   }
 
   private collectEntity(entity: RuntimeEntity): void {
@@ -2177,6 +2201,11 @@ export class Game {
     } else if (entity.data.kind === "bossBomb") {
       this.bossBombs += 1;
       this.hud.popText("Boss Bomb", "boss");
+      this.audio.collect();
+    } else if (entity.data.kind === "jumpPad") {
+      this.jumpTimer = this.jumpDuration;
+      this.stats.score += 90;
+      this.hud.popText("Jump", "good");
       this.audio.collect();
     } else if (entity.data.kind === "colorPad") {
       this.activeTeamColor = entity.data.color ?? "cyan";
@@ -2426,6 +2455,9 @@ export class Game {
     const inX = Math.abs(this.centerX - hazardX) < hitbox.halfWidth + this.formationRadius() * hitbox.formationPadding;
     const inZ = dz < hitbox.halfDepth + hitbox.zPadding;
     if (!inX || !inZ) {
+      return;
+    }
+    if (this.getJumpHeight() > 0.38 && ["hole", "bumper", "sawLane", "spikeRoller"].includes(data.kind)) {
       return;
     }
 
@@ -3246,6 +3278,8 @@ export class Game {
       } else if (entity.data.kind === "coin" || entity.data.kind === "gem") {
         entity.mesh.rotation.y += dt * 4;
         entity.mesh.position.y = 0.68 + Math.sin(time * 4 + entity.data.z) * 0.08;
+      } else if (entity.data.kind === "jumpPad") {
+        entity.mesh.position.y = 0.18 + Math.sin(time * 6 + entity.data.z) * 0.018;
       } else if (this.isCollectable(entity.data.kind)) {
         entity.mesh.rotation.y += dt * 2.2;
         entity.mesh.position.y = 0.7 + Math.sin(time * 3 + entity.data.z) * 0.08;
@@ -3357,6 +3391,7 @@ export class Game {
     const trackWidth = track?.data.width ?? 7;
     const maxRowWidth = Math.max(3, Math.floor(trackWidth / spacing) - 1);
     const rowLimit = Math.min(perRow, maxRowWidth);
+    const jumpHeight = this.mode === "run" ? this.getJumpHeight() : 0;
 
     for (let index = 0; index < this.maxVisibleCrew; index += 1) {
       if (index >= visible) {
@@ -3375,7 +3410,7 @@ export class Game {
       const offsetX = (col - (rowCount - 1) / 2) * spacing;
       const offsetZ = -row * 0.43 + Math.sin(index * 1.7) * 0.035;
       let bob = Math.sin(time * 9 + index * 0.9) * 0.045;
-      let y = 0.55 + bob;
+      let y = 0.55 + bob + jumpHeight;
       let z = this.distance + offsetZ;
       let x = this.centerX + offsetX + Math.sin(time * 5 + index) * 0.035;
       let yaw = Math.sin(time * 4 + index) * 0.05;
@@ -3535,6 +3570,14 @@ export class Game {
   private formationRadius(): number {
     const commanderBoost = this.commanderTimer > 0 ? 0.32 : 0;
     return clamp(0.45 + Math.sqrt(Math.max(1, this.count)) * 0.11 - this.save.upgrades.formation * 0.04 - commanderBoost, 0.38, 2.3);
+  }
+
+  private getJumpHeight(): number {
+    if (this.jumpTimer <= 0) {
+      return 0;
+    }
+    const progress = 1 - this.jumpTimer / this.jumpDuration;
+    return Math.sin(clamp(progress, 0, 1) * Math.PI) * 0.92;
   }
 
   private spawnBurst(x: number, z: number, color: number): void {

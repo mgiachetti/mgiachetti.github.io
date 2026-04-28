@@ -45,7 +45,7 @@ Status markers:
 - [x] Smooth crowd center movement.
 - [x] Clamp crowd center to track width.
 - [x] Add edge/fall detection.
-- [ ] Add optional jump hook for specific levels.
+- [x] Add optional jump hook for specific levels.
 - [x] Tune speeds for desktop and mobile.
 
 ## Phase 4 - Crew Model And Crowd Simulation

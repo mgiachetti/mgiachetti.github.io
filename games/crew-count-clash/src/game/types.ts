@@ -18,6 +18,7 @@ export type EntityKind =
   | "commander"
   | "ticket"
   | "bossBomb"
+  | "jumpPad"
   | "weakPointGate"
   | "enemyGate"
   | "enemy"
