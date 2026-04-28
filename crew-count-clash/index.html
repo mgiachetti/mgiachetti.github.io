@@ -2,7 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#146ef5" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Crew Clash" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
     <meta
       name="description"
       content="Crew Count Clash is a 3D crowd runner with math gates, crew swarms, traps, bosses, roulette rewards, final stairs, and upgrades."
@@ -11,9 +17,11 @@
     <meta property="og:description" content="3D crowd runner with gates, bosses, roulette rewards, final stairs, and shop upgrades." />
     <meta property="og:image" content="/crew-count-clash/preview.svg" />
     <link rel="icon" href="/crew-count-clash/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/crew-count-clash/icon-192.png" />
+    <link rel="manifest" href="/crew-count-clash/manifest.webmanifest" />
     <title>Crew Count Clash</title>
-    <script type="module" crossorigin src="/crew-count-clash/assets/index-DiG3qvxt.js"></script>
-    <link rel="stylesheet" crossorigin href="/crew-count-clash/assets/index-4UaTsJsr.css">
+    <script type="module" crossorigin src="/crew-count-clash/assets/index-D-GLfyqf.js"></script>
+    <link rel="stylesheet" crossorigin href="/crew-count-clash/assets/index-DhzF0Iav.css">
   </head>
   <body>
     <div id="loading-screen" class="loading-screen" aria-hidden="true">
@@ -80,6 +88,7 @@
       </div>
       <div class="actions">
         <button class="primary" type="button" data-start>Start Run</button>
+        <button type="button" data-install class="is-hidden">Install</button>
         <button type="button" data-open-map>Map</button>
         <button type="button" data-open-base>Castle</button>
         <button type="button" data-open-shop>Shop</button>

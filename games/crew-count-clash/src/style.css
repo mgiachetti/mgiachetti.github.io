@@ -20,6 +20,10 @@ body,
   height: 100%;
 }
 
+html {
+  overscroll-behavior: none;
+}
+
 body {
   min-width: 320px;
   margin: 0;
@@ -27,6 +31,20 @@ body {
   background:
     radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.55), transparent 22rem),
     linear-gradient(180deg, #aee8ff 0%, #79d5f2 42%, #54bdd8 100%);
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (height: 100dvh) {
+  html,
+  body,
+  #game-canvas,
+  .hud {
+    height: 100dvh;
+  }
+
+  .panel {
+    max-height: calc(100dvh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
 }
 
 button {
@@ -108,19 +126,19 @@ button.is-active {
 
 .hud-row {
   position: absolute;
-  left: clamp(12px, 3vw, 28px);
-  right: clamp(12px, 3vw, 28px);
+  left: max(clamp(12px, 3vw, 28px), calc(env(safe-area-inset-left) + 10px));
+  right: max(clamp(12px, 3vw, 28px), calc(env(safe-area-inset-right) + 10px));
   display: flex;
   align-items: center;
   gap: 0.65rem;
 }
 
 .hud-row.top {
-  top: clamp(12px, 2vw, 22px);
+  top: max(clamp(12px, 2vw, 22px), calc(env(safe-area-inset-top) + 10px));
 }
 
 .hud-row.bottom {
-  bottom: clamp(14px, 3vw, 26px);
+  bottom: max(clamp(14px, 3vw, 26px), calc(env(safe-area-inset-bottom) + 12px));
   justify-content: center;
 }
 
@@ -175,7 +193,7 @@ button.is-active {
 
 .progress-shell {
   position: absolute;
-  top: clamp(78px, 10vh, 92px);
+  top: max(clamp(78px, 10vh, 92px), calc(env(safe-area-inset-top) + 72px));
   left: 50%;
   width: min(560px, 72vw);
   height: 10px;
@@ -201,7 +219,7 @@ button.is-active {
 .roulette-prize {
   position: absolute;
   left: 50%;
-  bottom: clamp(96px, 15vh, 132px);
+  bottom: max(clamp(96px, 15vh, 132px), calc(env(safe-area-inset-bottom) + 92px));
   min-width: min(300px, calc(100vw - 44px));
   padding: 0.7rem 0.9rem;
   border: 2px solid rgba(255, 255, 255, 0.8);
@@ -335,8 +353,9 @@ button.is-active {
   left: 50%;
   top: 50%;
   width: min(520px, calc(100vw - 28px));
-  max-height: calc(100vh - 28px);
+  max-height: calc(100vh - 28px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow: auto;
+  overscroll-behavior: contain;
   padding: clamp(1rem, 3vw, 1.35rem);
   border: 1px solid rgba(255, 255, 255, 0.66);
   border-radius: 8px;
@@ -344,6 +363,7 @@ button.is-active {
   box-shadow: 0 22px 60px rgba(13, 36, 61, 0.24);
   transform: translate(-50%, -50%);
   backdrop-filter: blur(16px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .panel.boss-reward {
@@ -369,7 +389,7 @@ button.is-active {
 
 .panel.home {
   top: auto;
-  bottom: clamp(18px, 4vw, 40px);
+  bottom: max(clamp(18px, 4vw, 40px), calc(env(safe-area-inset-bottom) + 12px));
   transform: translateX(-50%);
 }
 
@@ -1108,8 +1128,8 @@ h3 {
 
 @media (max-width: 640px) {
   .hud-row {
-    left: 10px;
-    right: 10px;
+    left: max(10px, calc(env(safe-area-inset-left) + 8px));
+    right: max(10px, calc(env(safe-area-inset-right) + 8px));
     gap: 0.42rem;
   }
 
@@ -1126,7 +1146,7 @@ h3 {
   }
 
   .progress-shell {
-    top: 76px;
+    top: max(76px, calc(env(safe-area-inset-top) + 72px));
     width: calc(100vw - 42px);
   }
 
@@ -1191,7 +1211,7 @@ h3 {
   }
 
   .panel.home {
-    bottom: 12px;
+    bottom: max(12px, calc(env(safe-area-inset-bottom) + 12px));
   }
 
   h1 {

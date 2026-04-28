@@ -248,6 +248,8 @@ Status markers:
 - [x] Build level map/progression screen.
 - [x] Build roulette reward screen.
 - [x] Add responsive mobile layout.
+- [x] Add installable PWA manifest and offline shell.
+- [x] Add mobile safe-area spacing for notch/home indicator.
 - [x] Add accessible button labels.
 - [x] Verify text never overlaps controls.
 
