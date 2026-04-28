@@ -234,7 +234,7 @@ Status markers:
 - [x] Add boss SFX.
 - [x] Add final stairs ticks.
 - [x] Add roulette SFX.
-- [ ] Mix levels for mobile speakers.
+- [x] Mix levels for mobile speakers.
 
 ## Phase 18 - UI And Menus
 

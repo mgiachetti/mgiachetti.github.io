@@ -2,9 +2,12 @@ export class AudioManager {
   private context: AudioContext | null = null;
   private master: GainNode | null = null;
   private musicGain: GainNode | null = null;
+  private sfxGain: GainNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   private muted = false;
   private loopTimer = 0;
   private musicMode: "run" | "boss" | "roulette" | "shop" = "run";
+  private readonly masterVolume = 0.5;
 
   constructor(initialMuted: boolean) {
     this.muted = initialMuted;
@@ -14,11 +17,21 @@ export class AudioManager {
     if (!this.context) {
       this.context = new AudioContext();
       this.master = this.context.createGain();
-      this.master.gain.value = this.muted ? 0 : 0.58;
+      this.master.gain.value = this.muted ? 0 : this.masterVolume;
       this.master.connect(this.context.destination);
+      this.compressor = this.context.createDynamicsCompressor();
+      this.compressor.threshold.value = -18;
+      this.compressor.knee.value = 18;
+      this.compressor.ratio.value = 7;
+      this.compressor.attack.value = 0.004;
+      this.compressor.release.value = 0.18;
+      this.compressor.connect(this.master);
       this.musicGain = this.context.createGain();
-      this.musicGain.gain.value = 0.13;
-      this.musicGain.connect(this.master);
+      this.musicGain.gain.value = 0.09;
+      this.musicGain.connect(this.compressor);
+      this.sfxGain = this.context.createGain();
+      this.sfxGain.gain.value = 0.78;
+      this.sfxGain.connect(this.compressor);
     }
     if (this.context.state === "suspended") {
       await this.context.resume();
@@ -28,7 +41,7 @@ export class AudioManager {
   setMuted(muted: boolean): void {
     this.muted = muted;
     if (this.master) {
-      this.master.gain.value = muted ? 0 : 0.58;
+      this.master.gain.value = muted ? 0 : this.masterVolume;
     }
   }
 
@@ -92,8 +105,8 @@ export class AudioManager {
   }
 
   hit(): void {
-    this.tone(120, 0.11, "sawtooth", 0.2);
-    this.noise(0.1, 0.2);
+    this.tone(130, 0.1, "sawtooth", 0.16);
+    this.noise(0.08, 0.14);
   }
 
   battle(): void {
@@ -103,8 +116,8 @@ export class AudioManager {
   }
 
   stomp(): void {
-    this.tone(90, 0.16, "sawtooth", 0.24);
-    this.noise(0.16, 0.22);
+    this.tone(110, 0.15, "sawtooth", 0.2);
+    this.noise(0.13, 0.16);
   }
 
   reward(): void {
@@ -127,7 +140,7 @@ export class AudioManager {
     duration: number,
     type: OscillatorType,
     volume: number,
-    destination = this.master,
+    destination = this.sfxGain ?? this.master,
     delay = 0
   ): void {
     if (!this.context || !destination) {
@@ -148,7 +161,7 @@ export class AudioManager {
   }
 
   private noise(duration: number, volume: number): void {
-    if (!this.context || !this.master) {
+    if (!this.context || !this.sfxGain) {
       return;
     }
     const sampleRate = this.context.sampleRate;
@@ -162,7 +175,7 @@ export class AudioManager {
     gain.gain.value = volume;
     source.buffer = buffer;
     source.connect(gain);
-    gain.connect(this.master);
+    gain.connect(this.sfxGain);
     source.start();
   }
 }
