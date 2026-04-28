@@ -283,10 +283,10 @@ Status markers:
 - [x] Add automated smoke checks.
 - [x] Verify desktop screenshot: canvas nonblank and framed.
 - [x] Verify mobile screenshot: canvas nonblank and HUD readable.
-- [ ] Test all game states.
+- [x] Test all game states.
 - [x] Test all gate math.
 - [x] Test boss and roulette flows.
-- [ ] Test save reset/dev tools.
+- [x] Test save reset/dev tools.
 - [x] Test production build locally.
 - [ ] Fix performance hotspots.
 - [~] Deploy to GitHub Pages path.

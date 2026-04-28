@@ -185,6 +185,29 @@ try {
   await advanced.screenshot(join(screenshotDir, "crew-count-clash-smoke-level16.png"));
   await advanced.close();
 
+  const pause = await openPage();
+  await pause.send("Page.enable");
+  await pause.send("Runtime.enable");
+  await pause.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await pause.send("Page.navigate", { url: `${origin}?autostart=1&level=1&pixel=1` });
+  await sleep(700);
+  await pause.send("Runtime.evaluate", { expression: "document.querySelector('[data-pause]').click()" });
+  await sleep(250);
+  const pauseState = await pause.eval(`(() => ({
+    pauseVisible: !document.querySelector("#pause-screen").classList.contains("is-hidden"),
+    hudVisible: !document.querySelector("#hud").classList.contains("is-hidden")
+  }))()`);
+  assert(pauseState.pauseVisible, "Pause panel should open during a run.");
+  assert(pauseState.hudVisible, "Pause state should keep HUD visible.");
+  await pause.send("Runtime.evaluate", { expression: "document.querySelector('[data-resume]').click()" });
+  await sleep(250);
+  const resumeState = await pause.eval(`(() => ({
+    pauseVisible: !document.querySelector("#pause-screen").classList.contains("is-hidden"),
+    hudVisible: !document.querySelector("#hud").classList.contains("is-hidden")
+  }))()`);
+  assert(!resumeState.pauseVisible && resumeState.hudVisible, "Resume should return to the run HUD.");
+  await pause.close();
+
   const battle = await openPage();
   await battle.send("Page.enable");
   await battle.send("Runtime.enable");
@@ -224,6 +247,27 @@ try {
   assert(battleGame.enemyPixels > 0, "Battle QA should keep enemy pixels visible during clash.");
   await battle.screenshot(join(screenshotDir, "crew-count-clash-smoke-battle.png"));
   await battle.close();
+
+  const fail = await openPage();
+  await fail.send("Page.enable");
+  await fail.send("Runtime.enable");
+  await fail.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await fail.send("Page.navigate", { url: `${origin}?autostart=1&level=2&battle=1&count=1&pixel=1` });
+  await waitForEval(
+    fail,
+    `!document.querySelector("#fail-screen").classList.contains("is-hidden")`,
+    5000,
+    "Fail QA should show the fail panel after losing an underpowered battle."
+  );
+  const failState = await fail.eval(`(() => ({
+    failVisible: !document.querySelector("#fail-screen").classList.contains("is-hidden"),
+    hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+    rewardVisible: !document.querySelector("#reward-screen").classList.contains("is-hidden")
+  }))()`);
+  assert(failState.failVisible, "Fail panel should be visible after a lost battle.");
+  assert(!failState.hudVisible, "Fail panel should hide the HUD.");
+  assert(!failState.rewardVisible, "Lost battle should not show reward.");
+  await fail.close();
 
   const roulette = await openPage();
   await roulette.send("Page.enable");
