@@ -38,7 +38,14 @@ export const cosmeticCatalog: CosmeticItem[] = [
   { key: "plain-trail", label: "Plain Trail", slot: "trail", primary: 0xffffff, cost: 0 },
   { key: "spark-trail", label: "Spark Trail", slot: "trail", primary: 0xffd166, cost: 620 },
   { key: "neon-trail", label: "Neon Trail", slot: "trail", primary: 0x00f5d4, cost: 960 },
-  { key: "medal-trail", label: "Medal Trail", slot: "trail", primary: 0xff9f1c, cost: 1400 }
+  { key: "medal-trail", label: "Medal Trail", slot: "trail", primary: 0xff9f1c, cost: 1400 },
+  { key: "midnight-body", label: "Midnight Suit", slot: "body", primary: 0x243b53, secondary: 0x7dd3fc, cost: 1450 },
+  { key: "ruby-body", label: "Ruby Suit", slot: "body", primary: 0xe11d48, secondary: 0x7f1d1d, cost: 1650 },
+  { key: "rocket-pack", label: "Rocket Pack", slot: "backpack", primary: 0x334155, secondary: 0xff7a1a, cost: 1500 },
+  { key: "vault-pack", label: "Vault Pack", slot: "backpack", primary: 0xffc857, secondary: 0x7c3aed, cost: 1750 },
+  { key: "knight-helmet", label: "Knight Helmet", slot: "hat", primary: 0xcbd5e1, secondary: 0x64748b, cost: 1500 },
+  { key: "comet-trail", label: "Comet Trail", slot: "trail", primary: 0x38bdf8, secondary: 0xffffff, cost: 1600 },
+  { key: "royal-trail", label: "Royal Trail", slot: "trail", primary: 0xa855f7, secondary: 0xffd166, cost: 1850 }
 ];
 
 const defaultCosmetics = ["cyan-body", "blue-visor", "standard-pack", "no-hat", "crew-cap", "plain-trail"];

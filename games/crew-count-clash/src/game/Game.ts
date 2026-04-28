@@ -150,6 +150,20 @@ export class Game {
   private activeTeamColor: "cyan" | "lime" | "coral" | "violet" = "cyan";
   private hatEquipped = false;
   private trailEquipped = false;
+  private packOffsetY = 0.01;
+  private packOffsetZ = -0.33;
+  private packScaleX = 1;
+  private packScaleY = 1;
+  private packScaleZ = 1;
+  private hatOffsetY = 0.7;
+  private hatOffsetZ = 0.03;
+  private hatScaleX = 0.78;
+  private hatScaleY = 0.72;
+  private hatScaleZ = 0.78;
+  private trailOffsetY = 0.105;
+  private trailOffsetZ = -0.74;
+  private trailWidthScale = 1;
+  private trailLengthScale = 1;
 
   private stats: RunStats = this.createStats();
 
@@ -256,7 +270,13 @@ export class Game {
     body: new THREE.CapsuleGeometry(0.3, 0.54, 8, 18),
     visor: new THREE.BoxGeometry(0.46, 0.22, 0.08),
     pack: new THREE.BoxGeometry(0.24, 0.48, 0.16),
+    packJet: new THREE.CylinderGeometry(0.16, 0.2, 0.56, 14),
+    packVault: new THREE.TorusGeometry(0.21, 0.055, 8, 20),
     hat: new THREE.CylinderGeometry(0.2, 0.24, 0.13, 10),
+    hatCrown: new THREE.ConeGeometry(0.3, 0.38, 5),
+    hatAntenna: new THREE.CylinderGeometry(0.065, 0.105, 0.48, 8),
+    hatHelmet: new THREE.SphereGeometry(0.33, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.62),
+    hatParty: new THREE.ConeGeometry(0.28, 0.54, 16),
     trail: new THREE.BoxGeometry(0.26, 0.035, 0.66),
     leg: new THREE.CapsuleGeometry(0.1, 0.18, 6, 10),
     cube: new THREE.BoxGeometry(1, 1, 1),
@@ -3350,14 +3370,15 @@ export class Game {
       this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.visorInstances.setMatrixAt(index, this.tmpMatrix);
 
-      this.tmpPosition.set(x, y + 0.01, z - 0.33);
+      this.tmpScale.set((1 + impact * 0.18) * this.packScaleX, (1 - impact * 0.16) * this.packScaleY, (1 + impact * 0.12) * this.packScaleZ);
+      this.tmpPosition.set(x, y + this.packOffsetY, z + this.packOffsetZ);
       this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.packInstances.setMatrixAt(index, this.tmpMatrix);
 
       if (this.hatEquipped) {
         const hatBob = Math.sin(time * 8 + index * 0.73) * 0.018;
-        this.tmpScale.set(0.78 + impact * 0.08, 0.72 + impact * 0.06, 0.78 + impact * 0.08);
-        this.tmpPosition.set(x, y + 0.7 + hatBob, z + 0.03);
+        this.tmpScale.set(this.hatScaleX + impact * 0.08, this.hatScaleY + impact * 0.06, this.hatScaleZ + impact * 0.08);
+        this.tmpPosition.set(x, y + this.hatOffsetY + hatBob, z + this.hatOffsetZ);
         this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
         this.hatInstances.setMatrixAt(index, this.tmpMatrix);
       } else {
@@ -3366,8 +3387,8 @@ export class Game {
 
       if (this.trailEquipped) {
         const trailScale = clamp(0.75 + Math.abs(bob) * 4 + (this.frenzyTimer > 0 ? 0.35 : 0), 0.72, 1.24);
-        this.tmpScale.set(0.65 + impact * 0.08, 1, trailScale);
-        this.tmpPosition.set(x, 0.105, z - 0.74);
+        this.tmpScale.set((0.65 + impact * 0.08) * this.trailWidthScale, 1, trailScale * this.trailLengthScale);
+        this.tmpPosition.set(x, this.trailOffsetY, z + this.trailOffsetZ);
         this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
         this.trailInstances.setMatrixAt(index, this.tmpMatrix);
       } else {
@@ -3608,12 +3629,72 @@ export class Game {
     const trail = getEquippedCosmetic(this.save, "trail");
     this.materials.body.color.setHex(body.primary);
     this.materials.pack.color.setHex(pack.primary);
+    this.materials.pack.emissive.setHex(pack.secondary ?? 0x000000);
+    this.materials.pack.emissiveIntensity = pack.secondary ? 0.12 : 0.02;
     this.materials.visor.color.setHex(visor.primary);
     this.materials.hat.color.setHex(hat.primary);
+    this.materials.hat.emissive.setHex(hat.secondary ?? 0x000000);
+    this.materials.hat.emissiveIntensity = hat.secondary ? 0.08 : 0;
     this.hatEquipped = hat.key !== "no-hat";
     this.materials.trail.color.setHex(trail.primary);
-    this.materials.trail.emissive.setHex(trail.primary);
+    this.materials.trail.emissive.setHex(trail.secondary ?? trail.primary);
     this.trailEquipped = trail.key !== "plain-trail";
+    this.materials.trail.opacity = this.trailEquipped ? 0.64 : 0.5;
+    this.materials.trail.emissiveIntensity = this.trailEquipped ? 0.35 : 0.1;
+
+    this.packInstances.geometry =
+      pack.key === "jet-pack" || pack.key === "rocket-pack"
+        ? this.geometries.packJet
+        : pack.key === "star-pack" || pack.key === "vault-pack"
+          ? this.geometries.packVault
+          : this.geometries.pack;
+    this.packOffsetY = pack.key === "star-pack" || pack.key === "vault-pack" ? 0.05 : pack.key === "jet-pack" || pack.key === "rocket-pack" ? 0.02 : 0.01;
+    this.packOffsetZ = pack.key === "star-pack" || pack.key === "vault-pack" ? -0.35 : -0.33;
+    this.packScaleX = pack.key === "star-pack" || pack.key === "vault-pack" ? 1.16 : pack.key === "jet-pack" || pack.key === "rocket-pack" ? 0.9 : 1;
+    this.packScaleY = pack.key === "jet-pack" || pack.key === "rocket-pack" ? 1.08 : 1;
+    this.packScaleZ = pack.key === "star-pack" || pack.key === "vault-pack" ? 0.78 : 1;
+
+    if (hat.key === "crown-hat") {
+      this.hatInstances.geometry = this.geometries.hatCrown;
+      this.hatOffsetY = 0.82;
+      this.hatOffsetZ = 0.02;
+      this.hatScaleX = 0.92;
+      this.hatScaleY = 0.88;
+      this.hatScaleZ = 0.92;
+    } else if (hat.key === "antenna-hat") {
+      this.hatInstances.geometry = this.geometries.hatAntenna;
+      this.hatOffsetY = 0.92;
+      this.hatOffsetZ = 0.02;
+      this.hatScaleX = 0.64;
+      this.hatScaleY = 1.1;
+      this.hatScaleZ = 0.64;
+    } else if (hat.key === "party-hat") {
+      this.hatInstances.geometry = this.geometries.hatParty;
+      this.hatOffsetY = 0.86;
+      this.hatOffsetZ = 0.02;
+      this.hatScaleX = 0.9;
+      this.hatScaleY = 0.95;
+      this.hatScaleZ = 0.9;
+    } else if (hat.key === "knight-helmet") {
+      this.hatInstances.geometry = this.geometries.hatHelmet;
+      this.hatOffsetY = 0.72;
+      this.hatOffsetZ = 0.01;
+      this.hatScaleX = 1.04;
+      this.hatScaleY = 0.74;
+      this.hatScaleZ = 1.04;
+    } else {
+      this.hatInstances.geometry = this.geometries.hat;
+      this.hatOffsetY = 0.7;
+      this.hatOffsetZ = 0.03;
+      this.hatScaleX = 0.78;
+      this.hatScaleY = 0.72;
+      this.hatScaleZ = 0.78;
+    }
+
+    this.trailWidthScale = trail.key === "comet-trail" || trail.key === "royal-trail" ? 1.22 : trail.key === "medal-trail" ? 1.1 : 1;
+    this.trailLengthScale = trail.key === "comet-trail" || trail.key === "royal-trail" ? 1.42 : trail.key === "neon-trail" ? 1.25 : 1;
+    this.trailOffsetY = trail.key === "medal-trail" || trail.key === "royal-trail" ? 0.13 : 0.105;
+    this.trailOffsetZ = trail.key === "comet-trail" || trail.key === "royal-trail" ? -0.82 : -0.74;
   }
 
   private createStats(): RunStats {

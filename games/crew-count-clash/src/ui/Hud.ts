@@ -275,6 +275,7 @@ export class Hud {
       button.type = "button";
       button.className = `cosmetic ${owned ? "owned" : "locked"} ${equipped ? "equipped" : ""}`;
       button.dataset.cosmetic = item.key;
+      button.dataset.slot = item.slot;
       button.disabled = equipped;
       button.setAttribute("aria-label", owned ? `Equip ${item.label}` : `Buy ${item.label}`);
       button.innerHTML = `

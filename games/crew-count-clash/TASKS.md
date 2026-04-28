@@ -274,7 +274,7 @@ Status markers:
 - [x] Give gates stronger glow, post silhouettes, number badges, and pass-through impact particles.
 - [x] Add trap-specific visual identity: sparks, smoke, dust, warning stripes, and stronger telegraphs.
 - [x] Add distinct boss arena dressing per boss archetype.
-- [~] Add more visible cosmetics: hats/helmets, stronger trails, backpack silhouettes, and victory poses.
+- [x] Add more visible cosmetics: hats/helmets, stronger trails, backpack silhouettes, and victory poses.
 - [x] Add reward set pieces: gem piles, ticket cards, jackpot spotlight, and chest variants.
 - [x] Add level-end castle/city build celebration after major milestones.
 
