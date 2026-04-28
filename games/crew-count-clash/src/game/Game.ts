@@ -362,6 +362,10 @@ export class Game {
         this.centerX = enemy.x;
         this.distance = enemy.z - 1.2;
       }
+    } else if (params.has("count")) {
+      const count = Number(params.get("count") ?? String(this.count));
+      this.count = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : this.count;
+      this.stats.maxCount = Math.max(this.stats.maxCount, this.count);
     }
   }
 

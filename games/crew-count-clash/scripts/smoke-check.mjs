@@ -166,7 +166,7 @@ try {
   await advanced.send("Page.enable");
   await advanced.send("Runtime.enable");
   await advanced.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
-  await advanced.send("Page.navigate", { url: `${origin}?autostart=1&level=16&pixel=1` });
+  await advanced.send("Page.navigate", { url: `${origin}?autostart=1&level=16&count=140&pixel=1` });
   await sleep(7800);
   const advancedGame = await advanced.eval(`(() => {
     const canvas = document.querySelector("canvas");
@@ -176,11 +176,13 @@ try {
     return {
       sample: Array.from(pixel),
       hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
-      level: document.querySelector("[data-level]").textContent
+      level: document.querySelector("[data-level]").textContent,
+      count: Number(document.querySelector("[data-count]").textContent.replace(/,/g, ""))
     };
   })()`);
   assert(advancedGame.hudVisible, "HUD should be visible on advanced level autostart.");
   assert(advancedGame.level === "16", `Expected level 16 HUD, got ${advancedGame.level}.`);
+  assert(advancedGame.count >= 100, `Advanced level large-crowd QA should keep a large crowd, got ${advancedGame.count}.`);
   assert(advancedGame.sample.some((value) => value > 0), `Advanced level canvas sample should be nonblank, got ${advancedGame.sample.join(",")}.`);
   await advanced.screenshot(join(screenshotDir, "crew-count-clash-smoke-level16.png"));
   await advanced.close();

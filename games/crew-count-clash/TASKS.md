@@ -117,7 +117,7 @@ Status markers:
 - [x] Implement conveyor platform.
 - [x] Implement collapsing tiles.
 - [x] Implement split-path moving islands.
-- [~] Verify large crowds remain playable on platform segments.
+- [x] Verify large crowds remain playable on platform segments.
 
 ## Phase 9 - Enemy Squads And Battles
 
