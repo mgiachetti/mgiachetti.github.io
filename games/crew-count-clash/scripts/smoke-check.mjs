@@ -561,9 +561,23 @@ async function openPage() {
     },
     close: async () => {
       ws.close();
-      await fetch(`http://127.0.0.1:${debugPort}/json/close/${target.id}`);
+      try {
+        await fetchWithTimeout(`http://127.0.0.1:${debugPort}/json/close/${target.id}`, {}, 1800);
+      } catch {
+        // Chrome can occasionally leave a DevTools close request hanging in headless mode.
+      }
     }
   };
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 3000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function waitForHttp(url, timeoutMs, message) {

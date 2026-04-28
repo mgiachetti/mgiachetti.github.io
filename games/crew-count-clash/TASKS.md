@@ -183,12 +183,12 @@ Status markers:
 
 - [x] Implement run score.
 - [x] Implement coins formula.
-- [~] Implement gems/medals/shards.
+- [x] Implement gems/medals/shards.
 - [x] Implement stars.
 - [x] Track best score/count/stair per level.
 - [x] Add no-hit/combo rewards.
-- [ ] Balance upgrade costs.
-- [ ] Balance roulette odds and boss rewards.
+- [x] Balance upgrade costs.
+- [x] Balance roulette odds and boss rewards.
 
 ## Phase 15 - Progression And Save Data
 

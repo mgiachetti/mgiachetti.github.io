@@ -122,6 +122,7 @@ export type SaveData = {
   currentLevel: number;
   coins: number;
   gems: number;
+  shards: number;
   stars: number;
   medals: number;
   tickets: number;
@@ -140,6 +141,8 @@ export type RunStats = {
   score: number;
   coins: number;
   gems: number;
+  shards: number;
+  medals: number;
   maxCount: number;
   losses: number;
   gates: number;
@@ -157,6 +160,8 @@ export type RewardData = {
   score: number;
   coins: number;
   gems: number;
+  shards: number;
+  medals: number;
   stars: number;
   castleXP: number;
   castleLeveledUp: boolean;

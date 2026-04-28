@@ -27,7 +27,7 @@ type FloatingItem = {
 };
 
 type RouletteReward = {
-  kind: "coins" | "gems" | "ticket" | "skin" | "upgrade";
+  kind: "coins" | "gems" | "shards" | "ticket" | "skin" | "upgrade";
   label: string;
   shortLabel: string;
   amount: number;
@@ -170,15 +170,16 @@ export class Game {
 
   private readonly maxVisibleCrew = 150;
   private readonly rouletteRewards: RouletteReward[] = [
-    { kind: "coins", label: "Coins +150", shortLabel: "+150", amount: 150, color: 0xffd166, tone: "coin", weight: 1.8 },
-    { kind: "gems", label: "Gems +3", shortLabel: "+3G", amount: 3, color: 0x7bdff2, tone: "good", weight: 1.25 },
+    { kind: "coins", label: "Coins +150", shortLabel: "+150", amount: 150, color: 0xffd166, tone: "coin", weight: 1.55 },
+    { kind: "gems", label: "Gems +3", shortLabel: "+3G", amount: 3, color: 0x7bdff2, tone: "good", weight: 1.15 },
     { kind: "coins", label: "Coins +300", shortLabel: "+300", amount: 300, color: 0xff9f1c, tone: "coin", weight: 1.05 },
-    { kind: "ticket", label: "Ticket +1", shortLabel: "TK", amount: 1, color: 0x9b5de5, tone: "boss", weight: 0.78 },
-    { kind: "coins", label: "Coins +500", shortLabel: "+500", amount: 500, color: 0xffca3a, tone: "coin", weight: 0.55 },
-    { kind: "upgrade", label: "Free Upgrade", shortLabel: "UP", amount: 1, color: 0x58f29a, tone: "good", weight: 0.34 },
-    { kind: "gems", label: "Gems +8", shortLabel: "+8G", amount: 8, color: 0x00f5d4, tone: "good", weight: 0.45 },
-    { kind: "skin", label: "Jackpot Skin", shortLabel: "SKIN", amount: 1, color: 0xef476f, tone: "boss", weight: 0.18 },
-    { kind: "gems", label: "Gems +12", shortLabel: "+12G", amount: 12, color: 0x5eead4, tone: "good", weight: 0.22 }
+    { kind: "ticket", label: "Ticket +1", shortLabel: "TK", amount: 1, color: 0x9b5de5, tone: "boss", weight: 0.74 },
+    { kind: "shards", label: "Shards +4", shortLabel: "+4S", amount: 4, color: 0x38bdf8, tone: "good", weight: 0.72 },
+    { kind: "coins", label: "Coins +500", shortLabel: "+500", amount: 500, color: 0xffca3a, tone: "coin", weight: 0.62 },
+    { kind: "upgrade", label: "Free Upgrade", shortLabel: "UP", amount: 1, color: 0x58f29a, tone: "good", weight: 0.42 },
+    { kind: "gems", label: "Gems +8", shortLabel: "+8G", amount: 8, color: 0x00f5d4, tone: "good", weight: 0.4 },
+    { kind: "skin", label: "Jackpot Skin", shortLabel: "SKIN", amount: 1, color: 0xef476f, tone: "boss", weight: 0.2 },
+    { kind: "gems", label: "Gems +12", shortLabel: "+12G", amount: 12, color: 0x5eead4, tone: "good", weight: 0.24 }
   ];
   private readonly levelThemes: LevelTheme[] = [
     {
@@ -2805,6 +2806,7 @@ export class Game {
     this.bossVictoryTimer = 0;
     this.stats.bossDefeated = true;
     this.stats.gems += this.level.boss?.gemReward ?? 4;
+    this.stats.medals += this.level.boss?.medalReward ?? 1;
     this.stats.score += 1000;
     if (this.bossTelegraph) {
       this.bossTelegraph.visible = false;
@@ -2996,6 +2998,7 @@ export class Game {
         reward.weight +
         (reward.kind === "skin" ? luck * 0.09 : 0) +
         (reward.kind === "upgrade" ? luck * 0.06 : 0) +
+        (reward.kind === "shards" ? luck * 0.05 : 0) +
         (reward.kind === "gems" && reward.amount >= 8 ? luck * 0.055 : 0) +
         (reward.kind === "coins" && reward.amount >= 500 ? luck * 0.045 : 0)
     }));
@@ -3068,6 +3071,11 @@ export class Game {
       this.stats.rouletteLabel = reward.amount >= 8 ? `Jackpot: gems +${reward.amount}` : `Wheel: gems +${reward.amount}`;
       return `Gems +${reward.amount}`;
     }
+    if (reward.kind === "shards") {
+      this.stats.shards += reward.amount;
+      this.stats.rouletteLabel = `Wheel: shards +${reward.amount}`;
+      return `Shards +${reward.amount}`;
+    }
     if (reward.kind === "ticket") {
       this.save.tickets += reward.amount;
       saveGame(this.save);
@@ -3080,9 +3088,9 @@ export class Game {
         this.stats.rouletteLabel = `Wheel upgrade: ${label}`;
         return label;
       }
-      this.stats.gems += 10;
-      this.stats.rouletteLabel = "Upgrade converted: gems +10";
-      return "Gems +10";
+      this.stats.shards += 4;
+      this.stats.rouletteLabel = "Upgrade converted: shards +4";
+      return "Shards +4";
     }
 
     const skin = cosmeticCatalog.find((item) => item.cost > 0 && !this.save.ownedCosmetics.includes(item.key));
@@ -3094,15 +3102,16 @@ export class Game {
       this.stats.rouletteLabel = `Jackpot skin: ${skin.label}`;
       return skin.label;
     }
-    this.stats.gems += 10;
-    this.stats.rouletteLabel = "Jackpot converted: gems +10";
-    return "Gems +10";
+    this.stats.shards += 6;
+    this.stats.rouletteLabel = "Jackpot converted: shards +6";
+    return "Shards +6";
   }
 
   private applyDirectRouletteReward(reward: RouletteReward): string {
     let prizeLabel = "";
     let coins = 0;
     let gems = 0;
+    let shards = 0;
     if (reward.kind === "coins") {
       coins = reward.amount;
       this.save.coins += coins;
@@ -3111,6 +3120,10 @@ export class Game {
       gems = reward.amount;
       this.save.gems += gems;
       prizeLabel = `Gems +${gems}`;
+    } else if (reward.kind === "shards") {
+      shards = reward.amount;
+      this.save.shards += shards;
+      prizeLabel = `Shards +${shards}`;
     } else if (reward.kind === "ticket") {
       this.save.tickets += reward.amount;
       prizeLabel = `Ticket +${reward.amount}`;
@@ -3119,9 +3132,9 @@ export class Game {
       if (label) {
         prizeLabel = label;
       } else {
-        gems = 10;
-        this.save.gems += gems;
-        prizeLabel = "Gems +10";
+        shards = 4;
+        this.save.shards += shards;
+        prizeLabel = `Shards +${shards}`;
       }
     } else {
       const skin = cosmeticCatalog.find((item) => item.cost > 0 && !this.save.ownedCosmetics.includes(item.key));
@@ -3131,9 +3144,9 @@ export class Game {
         this.applyCosmetics();
         prizeLabel = skin.label;
       } else {
-        gems = 10;
-        this.save.gems += gems;
-        prizeLabel = "Gems +10";
+        shards = 6;
+        this.save.shards += shards;
+        prizeLabel = `Shards +${shards}`;
       }
     }
     saveGame(this.save);
@@ -3143,6 +3156,8 @@ export class Game {
       score: 0,
       coins,
       gems,
+      shards,
+      medals: 0,
       stars: 0,
       castleXP: 0,
       castleLeveledUp: false,
@@ -3753,6 +3768,8 @@ export class Game {
       score: 0,
       coins: 0,
       gems: 0,
+      shards: 0,
+      medals: 0,
       maxCount: 0,
       losses: 0,
       gates: 0,

@@ -120,6 +120,7 @@ export class Hud {
     this.set("[data-home-level]", String(save.currentLevel));
     this.set("[data-home-coins]", formatNumber(save.coins));
     this.set("[data-home-gems]", formatNumber(save.gems));
+    this.set("[data-home-shards]", formatNumber(save.shards));
     this.set("[data-home-medals]", formatNumber(save.medals));
   }
 
@@ -156,6 +157,8 @@ export class Hud {
     this.countTo("[data-result-score]", data.score, "");
     this.countTo("[data-result-coins]", data.coins, "+");
     this.countTo("[data-result-gems]", data.gems, "+");
+    this.countTo("[data-result-shards]", data.shards, "+");
+    this.countTo("[data-result-medals]", data.medals, "+");
     this.set("[data-result-stars]", "★".repeat(data.stars));
     this.set("[data-result-extra]", data.extra);
     this.rewardCastle.classList.toggle("is-hidden", data.castleXP <= 0);
@@ -214,6 +217,7 @@ export class Hud {
   updateShop(save: SaveData): void {
     this.set("[data-shop-coins]", formatNumber(save.coins));
     this.set("[data-shop-gems]", formatNumber(save.gems));
+    this.set("[data-shop-shards]", formatNumber(save.shards));
     this.set("[data-shop-tickets]", formatNumber(save.tickets));
     this.set("[data-shop-stars]", formatNumber(save.stars));
     Object.entries(save.upgrades).forEach(([key, tier]) => {

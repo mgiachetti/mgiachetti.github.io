@@ -1,7 +1,7 @@
 import type { CosmeticItem, CosmeticSlot, RewardData, RunStats, SaveData, UpgradeKey } from "./types";
 
 const storageKey = "crew-count-clash-save-v1";
-const saveVersion = 3;
+const saveVersion = 4;
 
 const castleThresholds = [0, 6, 16, 31, 52, 80, 116, 160, 212];
 const castleStages = [
@@ -16,7 +16,8 @@ const castleStages = [
   "Victory City"
 ];
 
-export const upgradeCosts = [220, 620, 1350, 2600, 4600];
+export const upgradeCosts = [180, 480, 980, 1850, 3200];
+const shardUnlockCost = 12;
 
 export const cosmeticCatalog: CosmeticItem[] = [
   { key: "cyan-body", label: "Cyan Suit", slot: "body", primary: 0x36c9f6, secondary: 0x1686b4, cost: 0 },
@@ -58,6 +59,7 @@ export function createDefaultSave(): SaveData {
     currentLevel: 1,
     coins: 0,
     gems: 0,
+    shards: 0,
     stars: 0,
     medals: 0,
     tickets: 1,
@@ -131,6 +133,7 @@ export function migrateSave(parsed: Partial<SaveData>): SaveData {
     currentLevel: readInt(parsed.currentLevel, fallback.currentLevel, 1, 999),
     coins: readInt(parsed.coins, fallback.coins),
     gems: readInt(parsed.gems, fallback.gems),
+    shards: readInt(parsed.shards, fallback.shards),
     stars: readInt(parsed.stars, fallback.stars),
     medals: readInt(parsed.medals, fallback.medals),
     tickets: readInt(parsed.tickets, fallback.tickets),
@@ -258,6 +261,20 @@ export function getCastleProgress(save: SaveData): {
   };
 }
 
+function unlockCosmeticWithShards(save: SaveData): string | null {
+  if (save.shards < shardUnlockCost) {
+    return null;
+  }
+  const item = cosmeticCatalog.find((candidate) => candidate.cost > 0 && !save.ownedCosmetics.includes(candidate.key));
+  if (!item) {
+    return null;
+  }
+  save.shards -= shardUnlockCost;
+  save.ownedCosmetics.push(item.key);
+  save.equippedCosmetics[item.slot] = item.key;
+  return item.label;
+}
+
 export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats, targetScore: number, targetStair: number): RewardData {
   const levelKey = String(levelId);
   const previousStars = save.levelStars[levelKey] ?? 0;
@@ -271,19 +288,23 @@ export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats
 
   const coinUpgrade = save.upgrades.coinValue;
   const earnedCoins = Math.max(0, stats.coins + Math.floor(stats.score / 130) + stats.finalStair * (4 + coinUpgrade));
-  const earnedGems = Math.max(0, stats.gems + (stats.bossDefeated ? 4 : 0));
+  const earnedGems = Math.max(0, stats.gems);
+  const earnedMedals = Math.max(0, stats.medals);
+  const earnedShards = Math.max(0, stats.shards + (stats.bossDefeated ? 3 : 0) + (stars >= 3 ? 1 : 0));
   save.coins += earnedCoins;
   save.gems += earnedGems;
+  save.medals += earnedMedals;
+  save.shards += earnedShards;
+  const shardUnlock = unlockCosmeticWithShards(save);
 
   if (stats.bossDefeated) {
-    save.medals += 1;
     save.tickets += 1;
   }
   const oldCastleTier = getCastleProgress(save).tier;
   const castleXP =
     Math.max(1, stars) +
     Math.floor(Math.max(0, stats.finalStair) / 4) +
-    (stats.bossDefeated ? 8 : 0) +
+    (stats.bossDefeated ? 7 + earnedMedals : 0) +
     (stats.rouletteLabel ? 2 : 0);
   save.castleXP += castleXP;
   const castleProgress = getCastleProgress(save);
@@ -300,10 +321,16 @@ export function grantRunRewards(save: SaveData, levelId: number, stats: RunStats
     score: stats.score,
     coins: earnedCoins,
     gems: earnedGems,
+    shards: earnedShards,
+    medals: earnedMedals,
     stars,
     castleXP,
     castleLeveledUp: castleProgress.tier > oldCastleTier,
     castleStage: castleProgress.stage,
-    extra: stats.rouletteLabel || (stats.bossDefeated ? "Boss medal earned. Roulette ticket added." : `Reached stair ${stats.finalStair}.`)
+    extra: [
+      stats.rouletteLabel || (stats.bossDefeated ? `Boss medals +${earnedMedals}. Ticket +1.` : `Reached stair ${stats.finalStair}.`),
+      earnedShards > 0 ? `Shards +${earnedShards}` : "",
+      shardUnlock ? `Shard unlock: ${shardUnlock}` : ""
+    ].filter(Boolean).join(" ")
   };
 }
