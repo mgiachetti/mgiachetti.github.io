@@ -3,7 +3,7 @@ import { AudioManager } from "../audio/AudioManager";
 import { getLevel } from "../levels/levelCatalog";
 import { Hud } from "../ui/Hud";
 import { clamp, damp, seededRandom } from "../utils/math";
-import { buyOrEquipCosmetic, buyUpgrade, cosmeticCatalog, getEquippedCosmetic, grantRunRewards, loadSave, resetSave, saveGame } from "./saveData";
+import { buyOrEquipCosmetic, buyUpgrade, cosmeticCatalog, getEquippedCosmetic, grantRunRewards, loadSave, resetSave, saveGame, upgradeCosts } from "./saveData";
 import type { GameMode, LevelData, LevelEntity, RewardData, RunStats, SaveData, TrackSegment } from "./types";
 
 type RuntimeEntity = {
@@ -264,6 +264,7 @@ export class Game {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.audio = new AudioManager(this.save.muted);
+    this.applyDebugSaveParams();
     const params = new URLSearchParams(window.location.search);
     this.renderer = new THREE.WebGLRenderer({
       canvas,
@@ -305,6 +306,32 @@ export class Game {
   start(): void {
     window.addEventListener("resize", () => this.resize());
     this.renderer.setAnimationLoop((time: number) => this.tick(time));
+  }
+
+  private applyDebugSaveParams(): void {
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+    if (params.has("reset")) {
+      this.save = resetSave();
+      changed = true;
+    }
+    if (params.has("unlock")) {
+      this.save.currentLevel = Math.max(this.save.currentLevel, 20);
+      this.save.coins = Math.max(this.save.coins, 25000);
+      this.save.gems = Math.max(this.save.gems, 500);
+      this.save.tickets = Math.max(this.save.tickets, 12);
+      this.save.medals = Math.max(this.save.medals, 12);
+      this.save.castleXP = Math.max(this.save.castleXP, 212);
+      this.save.ownedCosmetics = Array.from(new Set([...this.save.ownedCosmetics, ...cosmeticCatalog.map((item) => item.key)]));
+      (Object.keys(this.save.upgrades) as Array<keyof typeof this.save.upgrades>).forEach((key) => {
+        this.save.upgrades[key] = upgradeCosts.length;
+      });
+      changed = true;
+    }
+    if (changed) {
+      saveGame(this.save);
+      this.audio.setMuted(this.save.muted);
+    }
   }
 
   async quickStart(levelNumber = this.save.currentLevel): Promise<void> {

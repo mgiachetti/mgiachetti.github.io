@@ -199,8 +199,8 @@ Status markers:
 - [x] Track cosmetics.
 - [x] Track upgrade levels.
 - [x] Track base/castle build progress.
-- [ ] Add save migration/versioning.
-- [ ] Add dev reset/debug tools.
+- [x] Add save migration/versioning.
+- [x] Add dev reset/debug tools.
 
 ## Phase 16 - Shop And Meta
 

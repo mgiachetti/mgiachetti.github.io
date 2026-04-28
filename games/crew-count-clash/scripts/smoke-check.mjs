@@ -430,6 +430,22 @@ try {
   await stairFinale.screenshot(join(screenshotDir, "crew-count-clash-smoke-extra-spin.png"));
   await stairFinale.close();
 
+  const debugSave = await openPage();
+  await debugSave.send("Page.enable");
+  await debugSave.send("Runtime.enable");
+  await debugSave.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await debugSave.send("Page.navigate", { url: `${origin}?reset=1&unlock=1` });
+  await sleep(500);
+  const debugState = await debugSave.eval(`(() => ({
+    level: Number(document.querySelector("[data-home-level]").textContent),
+    coins: Number(document.querySelector("[data-home-coins]").textContent.replace(/,/g, "")),
+    titleVisible: !document.querySelector("#title-screen").classList.contains("is-hidden")
+  }))()`);
+  assert(debugState.titleVisible, "Debug save should land on the title screen.");
+  assert(debugState.level >= 20, `Debug unlock should expose level 20, got ${debugState.level}.`);
+  assert(debugState.coins >= 25000, `Debug unlock should grant test coins, got ${debugState.coins}.`);
+  await debugSave.close();
+
   console.log("Smoke check passed.");
 } finally {
   cleanup();

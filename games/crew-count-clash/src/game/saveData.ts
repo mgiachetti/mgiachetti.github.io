@@ -42,6 +42,8 @@ export const cosmeticCatalog: CosmeticItem[] = [
 ];
 
 const defaultCosmetics = ["cyan-body", "blue-visor", "standard-pack", "no-hat", "crew-cap", "plain-trail"];
+const catalogKeys = new Set(cosmeticCatalog.map((item) => item.key));
+const cosmeticSlots: CosmeticSlot[] = ["body", "visor", "backpack", "hat", "trail"];
 
 export function createDefaultSave(): SaveData {
   return {
@@ -80,31 +82,80 @@ export function createDefaultSave(): SaveData {
 }
 
 export function loadSave(): SaveData {
-  const fallback = createDefaultSave();
   const raw = window.localStorage.getItem(storageKey);
   if (!raw) {
-    return fallback;
+    return createDefaultSave();
   }
 
   try {
     const parsed = JSON.parse(raw) as Partial<SaveData>;
-    const ownedCosmetics = Array.from(new Set([...defaultCosmetics, ...(parsed.ownedCosmetics ?? [])]));
-    return {
-      ...fallback,
-      ...parsed,
-      saveVersion,
-      castleXP: Number.isFinite(parsed.castleXP) ? Math.max(0, Math.floor(parsed.castleXP ?? 0)) : fallback.castleXP,
-      highScores: parsed.highScores ?? fallback.highScores,
-      bestCounts: parsed.bestCounts ?? fallback.bestCounts,
-      bestStairs: parsed.bestStairs ?? fallback.bestStairs,
-      levelStars: parsed.levelStars ?? fallback.levelStars,
-      ownedCosmetics,
-      equippedCosmetics: { ...fallback.equippedCosmetics, ...(parsed.equippedCosmetics ?? {}) },
-      upgrades: { ...fallback.upgrades, ...(parsed.upgrades ?? {}) }
-    };
+    const migrated = migrateSave(parsed);
+    if (parsed.saveVersion !== saveVersion) {
+      saveGame(migrated);
+    }
+    return migrated;
   } catch {
+    return createDefaultSave();
+  }
+}
+
+export function migrateSave(parsed: Partial<SaveData>): SaveData {
+  const fallback = createDefaultSave();
+  const ownedCosmetics = Array.from(
+    new Set([...defaultCosmetics, ...((Array.isArray(parsed.ownedCosmetics) ? parsed.ownedCosmetics : []) as string[])].filter((key) => catalogKeys.has(key)))
+  );
+  const ownedSet = new Set(ownedCosmetics);
+  const equippedCosmetics = { ...fallback.equippedCosmetics, ...(parsed.equippedCosmetics ?? {}) };
+  cosmeticSlots.forEach((slot) => {
+    const equipped = cosmeticCatalog.find((item) => item.slot === slot && item.key === equippedCosmetics[slot]);
+    if (!equipped || !ownedSet.has(equipped.key)) {
+      equippedCosmetics[slot] = fallback.equippedCosmetics[slot];
+    }
+  });
+
+  const upgrades = { ...fallback.upgrades };
+  (Object.keys(upgrades) as UpgradeKey[]).forEach((key) => {
+    upgrades[key] = readInt(parsed.upgrades?.[key], fallback.upgrades[key], 0, upgradeCosts.length);
+  });
+
+  return {
+    ...fallback,
+    saveVersion,
+    currentLevel: readInt(parsed.currentLevel, fallback.currentLevel, 1, 999),
+    coins: readInt(parsed.coins, fallback.coins),
+    gems: readInt(parsed.gems, fallback.gems),
+    stars: readInt(parsed.stars, fallback.stars),
+    medals: readInt(parsed.medals, fallback.medals),
+    tickets: readInt(parsed.tickets, fallback.tickets),
+    castleXP: readInt(parsed.castleXP, fallback.castleXP),
+    highScores: cleanNumberRecord(parsed.highScores),
+    bestCounts: cleanNumberRecord(parsed.bestCounts),
+    bestStairs: cleanNumberRecord(parsed.bestStairs),
+    levelStars: cleanNumberRecord(parsed.levelStars),
+    ownedCosmetics,
+    equippedCosmetics,
+    upgrades,
+    muted: typeof parsed.muted === "boolean" ? parsed.muted : fallback.muted
+  };
+}
+
+function readInt(value: unknown, fallback: number, min = 0, max = Number.MAX_SAFE_INTEGER): number {
+  const number = Number(value);
+  if (!Number.isFinite(number)) {
     return fallback;
   }
+  return Math.min(max, Math.max(min, Math.floor(number)));
+}
+
+function cleanNumberRecord(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object") {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .map(([key, recordValue]) => [key, readInt(recordValue, 0)] as const)
+      .filter(([, recordValue]) => recordValue > 0)
+  );
 }
 
 export function saveGame(data: SaveData): void {
