@@ -142,7 +142,7 @@ Status markers:
 - [x] Build Levels 7-10 with timed gates, platforms, traps.
 - [x] Build Levels 11-15 with advanced hazards and second boss.
 - [x] Build Levels 16-20 with final boss and mixed gauntlets.
-- [~] Add procedural remix generator after level 20.
+- [x] Add procedural remix generator after level 20.
 - [x] Add safe-route validation checks.
 
 ## Phase 11 - Final Stairs

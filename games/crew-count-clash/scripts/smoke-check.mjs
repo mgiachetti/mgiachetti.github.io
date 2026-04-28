@@ -187,6 +187,31 @@ try {
   await advanced.screenshot(join(screenshotDir, "crew-count-clash-smoke-level16.png"));
   await advanced.close();
 
+  const remix = await openPage();
+  await remix.send("Page.enable");
+  await remix.send("Runtime.enable");
+  await remix.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
+  await remix.send("Page.navigate", { url: `${origin}?autostart=1&level=21&count=80&pixel=1` });
+  await sleep(1800);
+  const remixGame = await remix.eval(`(() => {
+    const canvas = document.querySelector("canvas");
+    const gl = canvas.getContext("webgl2") || canvas.getContext("webgl");
+    const pixel = new Uint8Array(4);
+    gl.readPixels(Math.floor(canvas.width * 0.5), Math.floor(canvas.height * 0.55), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    return {
+      sample: Array.from(pixel),
+      hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
+      level: document.querySelector("[data-level]").textContent,
+      count: Number(document.querySelector("[data-count]").textContent.replace(/,/g, ""))
+    };
+  })()`);
+  assert(remixGame.hudVisible, "Remix level should show the run HUD.");
+  assert(remixGame.level === "21", `Expected remix level 21 HUD, got ${remixGame.level}.`);
+  assert(remixGame.count >= 80, `Remix level should honor debug count, got ${remixGame.count}.`);
+  assert(remixGame.sample.some((value) => value > 0), `Remix level canvas sample should be nonblank, got ${remixGame.sample.join(",")}.`);
+  await remix.screenshot(join(screenshotDir, "crew-count-clash-smoke-level21-remix.png"));
+  await remix.close();
+
   const pause = await openPage();
   await pause.send("Page.enable");
   await pause.send("Runtime.enable");

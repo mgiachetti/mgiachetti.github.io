@@ -727,20 +727,85 @@ export function getLevel(levelNumber: number): LevelData {
     return base;
   }
   const loop = Math.floor((levelNumber - 1) / levelCatalog.length);
+  const remixSeed = levelNumber * 17 + loop * 41;
   return {
     ...base,
     id: levelNumber,
+    name: `${base.name} Remix`,
     targetScore: Math.round(base.targetScore * (1 + loop * 0.2)),
-    targetStair: base.targetStair + loop * 2,
+    targetStair: base.targetStair > 0 ? Math.min(24, base.targetStair + loop * 2) : 0,
     startCount: base.startCount + loop,
+    track: base.track.map((segment, index) => remixTrackSegment(segment, loop, remixSeed + index)),
+    entities: base.entities.map((entity, index) => remixEntity(entity, loop, remixSeed + index * 3)),
     boss: base.boss
       ? {
           ...base.boss,
           hp: Math.round(base.boss.hp * (1 + loop * 0.22)),
-          gemReward: base.boss.gemReward + loop
+          attackInterval: Math.max(0.88, base.boss.attackInterval - loop * 0.04),
+          gemReward: base.boss.gemReward + loop,
+          medalReward: base.boss.medalReward + Math.floor(loop / 3)
         }
       : undefined
   };
+}
+
+function remixTrackSegment(segment: TrackSegment, loop: number, seed: number): TrackSegment {
+  const speedBoost = loop * 0.1 + remixWave(seed) * 0.08;
+  const amplitudeBoost = remixWave(seed + 7) * Math.min(0.35, loop * 0.08);
+  return {
+    ...segment,
+    speed: segment.speed === undefined ? undefined : Math.max(0.55, segment.speed + speedBoost),
+    amplitude: segment.amplitude === undefined ? undefined : Math.max(0.25, segment.amplitude + amplitudeBoost)
+  };
+}
+
+function remixEntity(entity: LevelEntity, loop: number, seed: number): LevelEntity {
+  const speedBoost = loop * 0.08 + remixWave(seed) * 0.08;
+  const rangeBoost = remixWave(seed + 11) * Math.min(0.28, loop * 0.06);
+  return {
+    ...entity,
+    value: remixEntityValue(entity, entity.value, loop),
+    altValue: remixEntityValue(entity, entity.altValue, loop, entity.altOp),
+    count: entity.count === undefined ? undefined : Math.max(1, Math.round(entity.count * (1 + loop * 0.12))),
+    strength: entity.strength === undefined ? undefined : Math.min(3, entity.strength + Math.floor(loop / 3)),
+    speed: entity.speed === undefined ? undefined : Math.max(0.45, entity.speed + speedBoost),
+    range: entity.range === undefined ? undefined : Math.max(0.2, entity.range + rangeBoost)
+  };
+}
+
+function remixEntityValue(entity: LevelEntity, value: number | undefined, loop: number, op = entity.op): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (entity.kind === "coin") {
+    return value + loop;
+  }
+  if (entity.kind === "gem" || entity.kind === "crewCapsule") {
+    return value + Math.floor(loop / 2);
+  }
+  if (entity.kind === "crew") {
+    return value + (loop >= 3 ? 1 : 0);
+  }
+  if (entity.kind === "weakPointGate") {
+    return Math.min(3, value + Math.floor(loop / 2));
+  }
+  if (entity.kind !== "gate") {
+    return value;
+  }
+  if (op === "add") {
+    return value + loop * 5;
+  }
+  if (op === "subtract") {
+    return value + loop * 3;
+  }
+  if (op === "percent") {
+    return value >= 0 ? Math.min(180, value + loop * 6) : Math.max(-80, value - loop * 4);
+  }
+  return value;
+}
+
+function remixWave(seed: number): number {
+  return Math.sin(seed * 12.9898) * 0.5 + Math.sin(seed * 3.171) * 0.5;
 }
 
 function validateLevelCatalog(): void {
