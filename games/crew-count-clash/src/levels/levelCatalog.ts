@@ -443,6 +443,7 @@ export const levelCatalog: LevelData[] = [
       ...coinArc("l13-coins", 132, 1, 12),
       { id: "l13-coral-pad", kind: "colorPad", x: 0, z: 154, color: "coral" },
       ...colorPair("l13-cg2", 174, "cyan", "coral"),
+      { id: "l13-enemy-gate", kind: "enemyGate", x: 0, z: 186, count: 30, strength: 1, width: 3.2 },
       { id: "l13-enemy-a", kind: "enemy", x: -1.8, z: 194, count: 46, strength: 1, width: 3.2, range: 0.9, speed: 1.8 },
       { id: "l13-enemy-b", kind: "enemy", x: 1.8, z: 202, count: 24, strength: 2, width: 3.2, range: 0.9, speed: 2, phase: 1.2 },
       ...crewLine("l13-b", 208, 1, 8, 1.4)
@@ -566,6 +567,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l17-violet-pad", kind: "colorPad", x: 0, z: 118, color: "violet" },
       ...colorPair("l17-cg1", 138, "violet", "lime"),
       { id: "l17-cannon-a", kind: "cannon", x: 3.2, z: 160, width: 1.3, depth: 3.4, range: 3.3, speed: 4 },
+      { id: "l17-enemy-gate", kind: "enemyGate", x: -1.7, z: 174, count: 38, strength: 1, width: 2.8, range: 0.85, speed: 1.7 },
       { id: "l17-enemy-a", kind: "enemy", x: 0, z: 184, count: 72, strength: 2, width: 4.8, range: 1.35, speed: 2.25 },
       { id: "l17-bomb-a", kind: "bossBomb", x: -2.2, z: 202 },
       { id: "l17-bomb-b", kind: "bossBomb", x: 2.2, z: 214 },

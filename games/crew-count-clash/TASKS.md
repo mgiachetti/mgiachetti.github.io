@@ -126,7 +126,7 @@ Status markers:
 - [x] Implement patrolling enemy squads.
 - [x] Implement armored squads.
 - [x] Implement mini-boss guards.
-- [ ] Implement enemy gate/spawner.
+- [x] Implement enemy gate/spawner.
 - [x] Implement battle subtraction formula.
 - [x] Add battle animation swirl.
 - [x] Add battle result feedback.

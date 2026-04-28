@@ -826,6 +826,9 @@ export class Game {
     if (entity.kind === "gate" || entity.kind === "colorGate") {
       return this.createGateMesh(entity);
     }
+    if (entity.kind === "enemyGate") {
+      return this.createEnemyGateMesh(entity);
+    }
     if (entity.kind === "enemy") {
       return this.createEnemyMesh(entity);
     }
@@ -994,6 +997,68 @@ export class Game {
     group.userData.enemyModels = models;
     group.userData.enemyRing = battleRing;
     group.userData.enemyLabel = label;
+    return group;
+  }
+
+  private createEnemyGateMesh(entity: LevelEntity): THREE.Object3D {
+    const group = new THREE.Group();
+    group.position.set(entity.x, 0, entity.z);
+    const width = entity.width ?? 3.1;
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(width, 2.2, 0.2), this.materials.gateBad);
+    frame.position.y = 1.18;
+    frame.castShadow = true;
+    group.add(frame);
+    const top = new THREE.Mesh(new THREE.BoxGeometry(width + 0.45, 0.32, 0.34), this.materials.hazardDark);
+    top.position.y = 2.42;
+    top.castShadow = true;
+    group.add(top);
+    [-width / 2, width / 2].forEach((x) => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.28, 2.58, 0.34), this.materials.hazardDark);
+      post.position.set(x, 1.16, 0);
+      post.castShadow = true;
+      group.add(post);
+      const light = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 8), this.materials.hazard);
+      light.position.set(x, 2.66, -0.02);
+      light.userData.blinkSpeed = 7;
+      light.userData.blinkPhase = entity.z + x;
+      group.add(light);
+    });
+    const label = this.makeTextSprite(`ENEMY ${entity.count ?? 18}`, "#7f1d1d", "#ffffff");
+    label.position.set(0, 2.86, -0.08);
+    label.scale.set(1.8, 0.45, 1);
+    group.userData.enemyLabel = label;
+    group.add(label);
+    const spawnLabel = this.makeTextSprite("SPAWN", "#ffffff", "#7f1d1d");
+    spawnLabel.position.set(0, 0.64, -0.18);
+    spawnLabel.scale.set(1.18, 0.34, 1);
+    group.add(spawnLabel);
+
+    const models: THREE.Object3D[] = [];
+    const count = Math.min(entity.count ?? 18, 22);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xf05252, roughness: 0.58, metalness: 0.04 });
+    const visorMaterial = new THREE.MeshStandardMaterial({ color: 0x231942, roughness: 0.24, metalness: 0.12 });
+    const packMaterial = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, roughness: 0.56, metalness: 0.08 });
+    const perRow = Math.ceil(Math.sqrt(count) * 1.25);
+    for (let index = 0; index < count; index += 1) {
+      const row = Math.floor(index / perRow);
+      const col = index % perRow;
+      const rowCount = Math.min(perRow, count - row * perRow);
+      const model = this.createCrewModel(bodyMaterial, visorMaterial, packMaterial, 0.58);
+      model.position.set((col - (rowCount - 1) / 2) * 0.4, 0.36, 0.65 + row * 0.34);
+      model.userData.baseX = model.position.x;
+      model.userData.baseZ = model.position.z;
+      model.userData.phase = index * 0.61;
+      models.push(model);
+      group.add(model);
+    }
+    const battleRing = new THREE.Mesh(new THREE.TorusGeometry(width * 0.42, 0.028, 8, 44), this.materials.hazard);
+    battleRing.rotation.x = Math.PI / 2;
+    battleRing.position.set(0, 0.1, 0.42);
+    battleRing.userData.spin = 0.9;
+    group.userData.enemyRing = battleRing;
+    group.userData.enemyVariant = "spawner";
+    group.userData.enemyModels = models;
+    group.add(battleRing);
     return group;
   }
 
@@ -1857,7 +1922,7 @@ export class Game {
           this.consumeGateRow(entity.data.z);
           break;
         }
-      } else if (entity.data.kind === "enemy") {
+      } else if (entity.data.kind === "enemy" || entity.data.kind === "enemyGate") {
         const enemyX = this.getEnemyX(entity.data, time);
         if (dz < 1.4 && Math.abs(this.centerX - enemyX) < (entity.data.width ?? 3.4) / 2) {
           this.startEnemyBattle(entity, enemyX);
@@ -2213,7 +2278,7 @@ export class Game {
   }
 
   private getEnemyX(data: LevelEntity, time: number): number {
-    if (data.kind === "enemy" && data.range && data.speed) {
+    if ((data.kind === "enemy" || data.kind === "enemyGate") && data.range && data.speed) {
       return data.x + Math.sin(time * data.speed + (data.phase ?? 0)) * data.range;
     }
     return data.x;
@@ -2864,8 +2929,11 @@ export class Game {
       } else if (this.isCollectable(entity.data.kind)) {
         entity.mesh.rotation.y += dt * 2.2;
         entity.mesh.position.y = 0.7 + Math.sin(time * 3 + entity.data.z) * 0.08;
-      } else if (entity.data.kind === "enemy") {
+      } else if (entity.data.kind === "enemy" || entity.data.kind === "enemyGate") {
         entity.mesh.position.x = this.currentBattle === entity ? this.battleX : this.getEnemyX(entity.data, time);
+        if (entity.data.kind === "enemyGate") {
+          entity.mesh.rotation.y = Math.sin(time * 2.4 + entity.data.z) * 0.035;
+        }
         const models = entity.mesh.userData.enemyModels as THREE.Object3D[] | undefined;
         const ring = entity.mesh.userData.enemyRing as THREE.Object3D | undefined;
         const variant = entity.mesh.userData.enemyVariant as string | undefined;
