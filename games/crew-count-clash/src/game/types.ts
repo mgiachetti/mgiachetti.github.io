@@ -34,7 +34,7 @@ export type EntityKind =
   | "hole"
   | "fan";
 
-export type TrackKind = "solid" | "moving" | "turntable" | "collapsing" | "conveyor";
+export type TrackKind = "solid" | "moving" | "bridge" | "tilting" | "lift" | "splitIsland" | "turntable" | "collapsing" | "conveyor";
 
 export type TrackSegment = {
   id: string;

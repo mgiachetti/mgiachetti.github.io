@@ -802,14 +802,16 @@ export class Game {
   private createTrackMesh(segment: TrackSegment): THREE.Mesh {
     const length = segment.zEnd - segment.zStart;
     const material =
-      segment.kind === "moving"
+      segment.kind === "moving" || segment.kind === "bridge" || segment.kind === "splitIsland"
         ? this.materials.movingTrack
         : segment.kind === "conveyor"
           ? this.materials.frenzy
           : segment.kind === "collapsing"
             ? this.materials.warning
-            : segment.kind === "turntable"
+            : segment.kind === "turntable" || segment.kind === "lift"
               ? this.materials.gem
+              : segment.kind === "tilting"
+                ? this.materials.coin
               : this.materials.track;
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(segment.width, 0.32, length), material);
     mesh.position.set(segment.x ?? 0, -0.12, (segment.zStart + segment.zEnd) / 2);
@@ -819,6 +821,36 @@ export class Game {
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.12, segment.width - 0.9), 0.04, 0.18), this.materials.trackDark);
     stripe.position.set(0, 0.19, 0);
     mesh.add(stripe);
+
+    if (segment.kind === "bridge") {
+      [-0.26, 0, 0.26].forEach((offset) => {
+        const arrow = new THREE.Mesh(new THREE.BoxGeometry(segment.width * 0.3, 0.045, 0.2), this.materials.warning);
+        arrow.position.set(0, 0.22, length * offset);
+        arrow.rotation.y = Math.PI / 4;
+        mesh.add(arrow);
+      });
+    } else if (segment.kind === "tilting") {
+      [-1, 1].forEach((side) => {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.16, Math.max(0.4, length - 0.8)), this.materials.hazardDark);
+        rail.position.set(side * (segment.width / 2 - 0.18), 0.26, 0);
+        rail.castShadow = true;
+        mesh.add(rail);
+      });
+    } else if (segment.kind === "lift") {
+      [-1, 1].forEach((sideX) => {
+        [-1, 1].forEach((sideZ) => {
+          const beacon = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.34, 10), this.materials.hazard);
+          beacon.position.set(sideX * (segment.width / 2 - 0.38), 0.34, sideZ * (length / 2 - 0.52));
+          beacon.userData.blinkSpeed = 5.8;
+          beacon.userData.blinkPhase = segment.zStart + sideX + sideZ;
+          mesh.add(beacon);
+        });
+      });
+    } else if (segment.kind === "splitIsland") {
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.2, segment.width - 0.45), 0.05, 0.22), this.materials.warning);
+      edge.position.set(0, 0.23, -length * 0.38);
+      mesh.add(edge);
+    }
     return mesh;
   }
 
@@ -1868,6 +1900,14 @@ export class Game {
     if (track.data.kind === "turntable") {
       this.targetX += Math.sin(this.lastTime * (track.data.speed ?? 1.5) + (track.data.phase ?? 0)) * 0.9 * dt;
     }
+    if (track.data.kind === "tilting") {
+      const tilt = Math.sin(this.lastTime * (track.data.speed ?? 1.4) + (track.data.phase ?? 0));
+      this.targetX += tilt * 0.92 * dt;
+    }
+    if (track.data.kind === "lift") {
+      const drop = Math.max(0, -this.getTrackVerticalOffset(track.data, this.lastTime));
+      this.speed = Math.max(6.5, this.speed - drop * 0.55 * dt);
+    }
     if (track.data.kind === "collapsing" && !track.mesh.userData.triggered) {
       const progress = (this.distance - track.data.zStart) / Math.max(1, track.data.zEnd - track.data.zStart);
       if (progress > 0.48) {
@@ -1878,7 +1918,11 @@ export class Game {
   }
 
   private getTrackAt(z: number): RuntimeTrack | null {
-    const candidates = this.tracks.filter((track) => z >= track.data.zStart && z <= track.data.zEnd);
+    const candidates = this.tracks.filter((track) => {
+      const [zStart, zEnd] = this.getTrackZRange(track.data, this.lastTime);
+      const zPadding = track.data.kind === "bridge" ? 0.85 : 0;
+      return z >= zStart - zPadding && z <= zEnd + zPadding;
+    });
     if (candidates.length === 0) {
       return null;
     }
@@ -1893,10 +1937,31 @@ export class Game {
 
   private getTrackCenter(segment: TrackSegment, time: number): number {
     const base = segment.x ?? 0;
-    if (segment.kind === "moving") {
+    if (segment.kind === "moving" || segment.kind === "splitIsland") {
       return base + Math.sin(time * (segment.speed ?? 1.2) + (segment.phase ?? 0)) * (segment.amplitude ?? 1.4);
     }
     return base;
+  }
+
+  private getTrackZCenter(segment: TrackSegment, time: number): number {
+    const base = (segment.zStart + segment.zEnd) / 2;
+    if (segment.kind === "bridge") {
+      return base + Math.sin(time * (segment.speed ?? 1.1) + (segment.phase ?? 0)) * (segment.amplitude ?? 2.4);
+    }
+    return base;
+  }
+
+  private getTrackZRange(segment: TrackSegment, time: number): [number, number] {
+    const halfLength = (segment.zEnd - segment.zStart) / 2;
+    const center = this.getTrackZCenter(segment, time);
+    return [center - halfLength, center + halfLength];
+  }
+
+  private getTrackVerticalOffset(segment: TrackSegment, time: number): number {
+    if (segment.kind === "lift") {
+      return Math.sin(time * (segment.speed ?? 1.25) + (segment.phase ?? 0)) * (segment.amplitude ?? 0.34);
+    }
+    return 0;
   }
 
   private checkEntities(time: number, dt: number): void {
@@ -2885,8 +2950,13 @@ export class Game {
   private updatePlatforms(time: number): void {
     this.tracks.forEach((track) => {
       track.mesh.position.x = this.getTrackCenter(track.data, time);
+      track.mesh.position.z = this.getTrackZCenter(track.data, time);
+      track.mesh.position.y = -0.12 + this.getTrackVerticalOffset(track.data, time);
       if (track.data.kind === "turntable") {
         track.mesh.rotation.y = Math.sin(time * (track.data.speed ?? 1.2) + (track.data.phase ?? 0)) * 0.12;
+      }
+      if (track.data.kind === "tilting") {
+        track.mesh.rotation.z = Math.sin(time * (track.data.speed ?? 1.4) + (track.data.phase ?? 0)) * 0.16;
       }
       if (track.data.kind === "collapsing") {
         track.mesh.position.y = track.mesh.userData.triggered ? -0.46 : -0.12;

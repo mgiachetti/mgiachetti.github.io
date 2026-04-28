@@ -69,7 +69,7 @@ Status markers:
 - [x] Implement percent gates.
 - [x] Implement timed value gates.
 - [x] Implement rotating/moving gates.
-- [ ] Implement split-path gates.
+- [x] Implement split-path gates.
 - [x] Implement color/team gates and switch pads.
 - [x] Add gate text/signage and preview feedback.
 - [x] Add gate pass particles/audio.
@@ -110,13 +110,13 @@ Status markers:
 ## Phase 8 - Moving Platforms
 
 - [x] Implement lateral shuttle platform.
-- [ ] Implement forward/back bridge platform.
+- [x] Implement forward/back bridge platform.
 - [x] Implement rotating turntable.
-- [ ] Implement tilting plank.
-- [ ] Implement rising/falling bridge.
+- [x] Implement tilting plank.
+- [x] Implement rising/falling bridge.
 - [x] Implement conveyor platform.
 - [x] Implement collapsing tiles.
-- [ ] Implement split-path moving islands.
+- [x] Implement split-path moving islands.
 - [~] Verify large crowds remain playable on platform segments.
 
 ## Phase 9 - Enemy Squads And Battles

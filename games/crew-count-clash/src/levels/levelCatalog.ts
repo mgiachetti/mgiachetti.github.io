@@ -10,6 +10,25 @@ function movingTrack(id: string, zStart: number, zEnd: number, amplitude = 1.7, 
   return { id, zStart, zEnd, width: 6.8, kind: "moving", amplitude, speed };
 }
 
+function bridgeTrack(id: string, zStart: number, zEnd: number, amplitude = 2.4, speed = 1.1, width = 6.4): TrackSegment {
+  return { id, zStart, zEnd, width, kind: "bridge", amplitude, speed };
+}
+
+function tiltingTrack(id: string, zStart: number, zEnd: number, speed = 1.35, width = 6.1): TrackSegment {
+  return { id, zStart, zEnd, width, kind: "tilting", speed };
+}
+
+function liftTrack(id: string, zStart: number, zEnd: number, amplitude = 0.34, speed = 1.25, width = 6.2): TrackSegment {
+  return { id, zStart, zEnd, width, kind: "lift", amplitude, speed };
+}
+
+function splitIslandTracks(prefix: string, zStart: number, zEnd: number, laneOffset = 2.15, amplitude = 0.45, speed = 1.35): TrackSegment[] {
+  return [
+    { id: `${prefix}-left`, zStart, zEnd, x: -laneOffset, width: 3.85, kind: "splitIsland", amplitude, speed },
+    { id: `${prefix}-right`, zStart, zEnd, x: laneOffset, width: 3.85, kind: "splitIsland", amplitude, speed, phase: Math.PI }
+  ];
+}
+
 function conveyorTrack(id: string, zStart: number, zEnd: number, direction: -1 | 1, width = 6.8): TrackSegment {
   return { id, zStart, zEnd, width, kind: "conveyor", direction };
 }
@@ -76,6 +95,33 @@ function movingGatePair(prefix: string, z: number, left: [string, number], right
     speed,
     phase: index === 0 ? 0 : Math.PI
   }));
+}
+
+function splitPathGatePair(prefix: string, z: number, left: [string, number], right: [string, number], laneOffset = 2.15): LevelEntity[] {
+  return [
+    {
+      id: `${prefix}-left`,
+      kind: "gate",
+      x: -laneOffset,
+      z,
+      width: 2.35,
+      depth: 1.2,
+      op: left[0] as LevelEntity["op"],
+      value: left[1],
+      label: labelFor(left[0], left[1])
+    },
+    {
+      id: `${prefix}-right`,
+      kind: "gate",
+      x: laneOffset,
+      z,
+      width: 2.35,
+      depth: 1.2,
+      op: right[0] as LevelEntity["op"],
+      value: right[1],
+      label: labelFor(right[0], right[1])
+    }
+  ];
 }
 
 function timedGatePair(prefix: string, z: number, left: [string, number, string, number], right: [string, number, string, number]): LevelEntity[] {
@@ -326,9 +372,9 @@ export const levelCatalog: LevelData[] = [
       track("l9-a", -10, 48, 7.2),
       collapsingTrack("l9-collapse-a", 48, 76, 5.2),
       turntableTrack("l9-turn", 76, 112, 6, 1.8),
-      collapsingTrack("l9-collapse-b", 112, 144, 5),
-      movingTrack("l9-moving", 144, 174, 1.8, 1.8),
-      track("l9-b", 174, 230, 7.2)
+      collapsingTrack("l9-collapse-b", 112, 150, 5),
+      bridgeTrack("l9-bridge", 142, 180, 2.6, 1.05),
+      track("l9-b", 172, 230, 7.2)
     ],
     entities: [
       ...crewLine("l9-a", 8, 0, 7, 2),
@@ -460,7 +506,7 @@ export const levelCatalog: LevelData[] = [
     track: [
       track("l14-a", -10, 62, 7.2),
       collapsingTrack("l14-collapse-a", 62, 92, 5.3),
-      turntableTrack("l14-turn-a", 92, 128, 6, 2.05),
+      tiltingTrack("l14-tilt-a", 92, 128, 1.55, 6),
       collapsingTrack("l14-collapse-b", 128, 158, 5.2),
       movingTrack("l14-moving", 158, 194, 1.9, 2),
       track("l14-b", 194, 250, 7.2)
@@ -522,9 +568,8 @@ export const levelCatalog: LevelData[] = [
     startCount: 15,
     track: [
       track("l16-a", -10, 56, 7.4),
-      movingTrack("l16-left-island", 56, 92, 2.3, 1.55),
-      movingTrack("l16-right-island", 92, 130, 2.2, 1.85),
-      track("l16-mid", 130, 166, 5.8),
+      ...splitIslandTracks("l16-islands", 56, 126, 2.15, 0.5, 1.55),
+      track("l16-mid", 122, 166, 5.8),
       conveyorTrack("l16-conveyor", 166, 204, -1, 6.8),
       track("l16-b", 204, 262, 7.4)
     ],
@@ -532,6 +577,7 @@ export const levelCatalog: LevelData[] = [
       ...crewLine("l16-a", 8, 1, 10, 1.7),
       ...gatePair("l16-g1", 30, ["multiply", 3], ["add", 46]),
       { id: "l16-fan-a", kind: "fan", x: -3, z: 62, width: 2, depth: 7, value: 1 },
+      ...splitPathGatePair("l16-split-g1", 82, ["add", 36], ["multiply", 2]),
       { id: "l16-fan-b", kind: "fan", x: 3, z: 96, width: 2, depth: 7, value: -1 },
       { id: "l16-cannon-a", kind: "cannon", x: -3.2, z: 118, width: 1.3, depth: 3.4, range: 3.2, speed: 4 },
       ...timedGatePair("l16-tg1", 146, ["percent", 120, "divide", 4], ["multiply", 2, "subtract", 46]),
@@ -554,7 +600,7 @@ export const levelCatalog: LevelData[] = [
       track("l17-a", -10, 70, 7.4),
       turntableTrack("l17-turn-a", 70, 112, 6.1, 2.1),
       conveyorTrack("l17-conveyor", 112, 152, -1, 6.8),
-      movingTrack("l17-moving", 152, 190, 2, 2),
+      liftTrack("l17-lift", 152, 190, 0.36, 1.35),
       track("l17-b", 190, 266, 7.4)
     ],
     boss: { name: "Storm Warden", hp: 330, attackInterval: 1.32, gemReward: 11, medalReward: 1, bodyColor: 0x146ef5, arenaColor: 0x7bdff2, attackKind: "sweep" },
@@ -603,10 +649,10 @@ export const levelCatalog: LevelData[] = [
     track: [
       track("l19-a", -10, 58, 7.4),
       collapsingTrack("l19-collapse-a", 58, 90, 5.4),
-      movingTrack("l19-moving-a", 90, 126, 2.2, 2.15),
+      tiltingTrack("l19-tilt-a", 90, 126, 1.75, 6.1),
       turntableTrack("l19-turn", 126, 164, 6, 2.35),
       conveyorTrack("l19-conveyor", 164, 204, 1, 6.8),
-      collapsingTrack("l19-collapse-b", 204, 232, 5.2),
+      liftTrack("l19-lift", 204, 232, 0.38, 1.55, 5.4),
       track("l19-b", 232, 280, 7.4)
     ],
     entities: [
@@ -728,7 +774,11 @@ function validateLevelCatalog(): void {
       if (entity.z < -12 || entity.z > level.length + 4) {
         throw new Error(`Level ${level.id} entity ${entity.id} is outside playable z bounds`);
       }
-      const segment = level.track.find((candidate) => entity.z >= candidate.zStart && entity.z <= candidate.zEnd);
+      const segment = level.track.find((candidate) => {
+        const center = candidate.x ?? 0;
+        const margin = entity.kind === "sideScraper" || entity.kind === "fan" || entity.kind === "cannon" ? 1.1 : 0.65;
+        return entity.z >= candidate.zStart && entity.z <= candidate.zEnd && Math.abs(entity.x - center) <= candidate.width / 2 + margin;
+      });
       if (!segment) {
         throw new Error(`Level ${level.id} entity ${entity.id} is not on a track segment`);
       }
