@@ -174,7 +174,7 @@ Status markers:
 - [x] Add physical spin/pointer animation.
 - [x] Define reward table.
 - [x] Implement earned tickets.
-- [~] Implement coin/gem/skin/upgrades rewards.
+- [x] Implement coin/gem/skin/upgrades rewards.
 - [x] Implement jackpot skin reward.
 - [x] Add no-ad extra spin rules using tickets/gems.
 - [x] Add roulette SFX and reward fanfare.

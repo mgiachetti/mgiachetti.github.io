@@ -27,7 +27,7 @@ type FloatingItem = {
 };
 
 type RouletteReward = {
-  kind: "coins" | "gems" | "ticket" | "skin";
+  kind: "coins" | "gems" | "ticket" | "skin" | "upgrade";
   label: string;
   shortLabel: string;
   amount: number;
@@ -157,6 +157,7 @@ export class Game {
     { kind: "coins", label: "Coins +300", shortLabel: "+300", amount: 300, color: 0xff9f1c, tone: "coin", weight: 1.05 },
     { kind: "ticket", label: "Ticket +1", shortLabel: "TK", amount: 1, color: 0x9b5de5, tone: "boss", weight: 0.78 },
     { kind: "coins", label: "Coins +500", shortLabel: "+500", amount: 500, color: 0xffca3a, tone: "coin", weight: 0.55 },
+    { kind: "upgrade", label: "Free Upgrade", shortLabel: "UP", amount: 1, color: 0x58f29a, tone: "good", weight: 0.34 },
     { kind: "gems", label: "Gems +8", shortLabel: "+8G", amount: 8, color: 0x00f5d4, tone: "good", weight: 0.45 },
     { kind: "skin", label: "Jackpot Skin", shortLabel: "SKIN", amount: 1, color: 0xef476f, tone: "boss", weight: 0.18 },
     { kind: "gems", label: "Gems +12", shortLabel: "+12G", amount: 12, color: 0x5eead4, tone: "good", weight: 0.22 }
@@ -2918,6 +2919,7 @@ export class Game {
       weight:
         reward.weight +
         (reward.kind === "skin" ? luck * 0.09 : 0) +
+        (reward.kind === "upgrade" ? luck * 0.06 : 0) +
         (reward.kind === "gems" && reward.amount >= 8 ? luck * 0.055 : 0) +
         (reward.kind === "coins" && reward.amount >= 500 ? luck * 0.045 : 0)
     }));
@@ -2957,6 +2959,28 @@ export class Game {
     this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
   }
 
+  private grantRouletteUpgrade(): string | null {
+    const labels: Record<keyof SaveData["upgrades"], string> = {
+      startCrew: "Start Crew",
+      gateBonus: "Gate Bonus",
+      formation: "Formation",
+      shield: "Shield",
+      coinValue: "Coin Value",
+      bossDamage: "Boss Damage",
+      magnet: "Magnet",
+      rouletteLuck: "Roulette Luck"
+    };
+    const keys = (Object.keys(this.save.upgrades) as Array<keyof SaveData["upgrades"]>).filter((key) => this.save.upgrades[key] < upgradeCosts.length);
+    if (keys.length === 0) {
+      return null;
+    }
+    const index = Math.floor(seededRandom(this.stats.score + this.level.id * 37 + this.save.gems * 11) * keys.length);
+    const key = keys[index] ?? keys[0];
+    this.save.upgrades[key] = Math.min(upgradeCosts.length, this.save.upgrades[key] + 1);
+    saveGame(this.save);
+    return `${labels[key]} +1`;
+  }
+
   private applyRouletteReward(reward: RouletteReward): string {
     if (reward.kind === "coins") {
       this.stats.coins += reward.amount;
@@ -2973,6 +2997,16 @@ export class Game {
       saveGame(this.save);
       this.stats.rouletteLabel = `Wheel: ticket +${reward.amount}`;
       return `Ticket +${reward.amount}`;
+    }
+    if (reward.kind === "upgrade") {
+      const label = this.grantRouletteUpgrade();
+      if (label) {
+        this.stats.rouletteLabel = `Wheel upgrade: ${label}`;
+        return label;
+      }
+      this.stats.gems += 10;
+      this.stats.rouletteLabel = "Upgrade converted: gems +10";
+      return "Gems +10";
     }
 
     const skin = cosmeticCatalog.find((item) => item.cost > 0 && !this.save.ownedCosmetics.includes(item.key));
@@ -3004,6 +3038,15 @@ export class Game {
     } else if (reward.kind === "ticket") {
       this.save.tickets += reward.amount;
       prizeLabel = `Ticket +${reward.amount}`;
+    } else if (reward.kind === "upgrade") {
+      const label = this.grantRouletteUpgrade();
+      if (label) {
+        prizeLabel = label;
+      } else {
+        gems = 10;
+        this.save.gems += gems;
+        prizeLabel = "Gems +10";
+      }
     } else {
       const skin = cosmeticCatalog.find((item) => item.cost > 0 && !this.save.ownedCosmetics.includes(item.key));
       if (skin) {
