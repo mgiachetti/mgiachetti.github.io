@@ -288,7 +288,7 @@ Status markers:
 - [x] Test boss and roulette flows.
 - [x] Test save reset/dev tools.
 - [x] Test production build locally.
-- [ ] Fix performance hotspots.
+- [x] Fix performance hotspots.
 - [~] Deploy to GitHub Pages path.
 - [x] Document run/build commands.
 

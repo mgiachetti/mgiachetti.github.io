@@ -63,7 +63,10 @@ export class Game {
   private readonly tmpMatrix = new THREE.Matrix4();
   private readonly tmpQuaternion = new THREE.Quaternion();
   private readonly tmpScale = new THREE.Vector3(1, 1, 1);
+  private readonly tmpPosition = new THREE.Vector3();
+  private readonly tmpEuler = new THREE.Euler();
   private readonly hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
+  private readonly textTextureCache = new Map<string, THREE.CanvasTexture>();
 
   private save: SaveData = loadSave();
   private mode: GameMode = "title";
@@ -274,7 +277,8 @@ export class Game {
       alpha: false,
       preserveDrawingBuffer: params.has("pixel") || params.has("autostart")
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const pixelRatioCap = window.matchMedia("(pointer: coarse)").matches ? 1.5 : 2;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioCap));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -293,6 +297,7 @@ export class Game {
     this.rightLegInstances.castShadow = true;
     [this.bodyInstances, this.visorInstances, this.packInstances, this.hatInstances, this.trailInstances, this.leftLegInstances, this.rightLegInstances].forEach((mesh) => {
       mesh.frustumCulled = false;
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
     this.crowd.add(this.trailInstances, this.leftLegInstances, this.rightLegInstances, this.bodyInstances, this.visorInstances, this.packInstances, this.hatInstances);
 
@@ -3333,22 +3338,27 @@ export class Game {
         yaw = Math.sin(time * 8 + index * 0.5) * (0.16 + victoryPush * 0.08 + gateRush * 0.12);
       }
 
-      this.tmpQuaternion.setFromEuler(new THREE.Euler(0, yaw, 0));
+      this.tmpEuler.set(0, yaw, 0);
+      this.tmpQuaternion.setFromEuler(this.tmpEuler);
       const impact = this.crowdImpactPulse * clamp(1 - row * 0.07, 0.28, 1);
       this.tmpScale.set(1 + impact * 0.18, 1 - impact * 0.16, 1 + impact * 0.12);
-      this.tmpMatrix.compose(new THREE.Vector3(x, y, z), this.tmpQuaternion, this.tmpScale);
+      this.tmpPosition.set(x, y, z);
+      this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.bodyInstances.setMatrixAt(index, this.tmpMatrix);
 
-      this.tmpMatrix.compose(new THREE.Vector3(x, y + 0.17, z + 0.29), this.tmpQuaternion, this.tmpScale);
+      this.tmpPosition.set(x, y + 0.17, z + 0.29);
+      this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.visorInstances.setMatrixAt(index, this.tmpMatrix);
 
-      this.tmpMatrix.compose(new THREE.Vector3(x, y + 0.01, z - 0.33), this.tmpQuaternion, this.tmpScale);
+      this.tmpPosition.set(x, y + 0.01, z - 0.33);
+      this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.packInstances.setMatrixAt(index, this.tmpMatrix);
 
       if (this.hatEquipped) {
         const hatBob = Math.sin(time * 8 + index * 0.73) * 0.018;
         this.tmpScale.set(0.78 + impact * 0.08, 0.72 + impact * 0.06, 0.78 + impact * 0.08);
-        this.tmpMatrix.compose(new THREE.Vector3(x, y + 0.7 + hatBob, z + 0.03), this.tmpQuaternion, this.tmpScale);
+        this.tmpPosition.set(x, y + 0.7 + hatBob, z + 0.03);
+        this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
         this.hatInstances.setMatrixAt(index, this.tmpMatrix);
       } else {
         this.hatInstances.setMatrixAt(index, this.hiddenMatrix);
@@ -3357,7 +3367,8 @@ export class Game {
       if (this.trailEquipped) {
         const trailScale = clamp(0.75 + Math.abs(bob) * 4 + (this.frenzyTimer > 0 ? 0.35 : 0), 0.72, 1.24);
         this.tmpScale.set(0.65 + impact * 0.08, 1, trailScale);
-        this.tmpMatrix.compose(new THREE.Vector3(x, 0.105, z - 0.74), this.tmpQuaternion, this.tmpScale);
+        this.tmpPosition.set(x, 0.105, z - 0.74);
+        this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
         this.trailInstances.setMatrixAt(index, this.tmpMatrix);
       } else {
         this.trailInstances.setMatrixAt(index, this.hiddenMatrix);
@@ -3365,9 +3376,11 @@ export class Game {
 
       this.tmpScale.set(1 + impact * 0.18, 1 - impact * 0.16, 1 + impact * 0.12);
       const stride = Math.sin(time * 12 + index * 0.7) * 0.05;
-      this.tmpMatrix.compose(new THREE.Vector3(x - 0.13, y - 0.39 + bob * 0.3, z + stride), this.tmpQuaternion, this.tmpScale);
+      this.tmpPosition.set(x - 0.13, y - 0.39 + bob * 0.3, z + stride);
+      this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.leftLegInstances.setMatrixAt(index, this.tmpMatrix);
-      this.tmpMatrix.compose(new THREE.Vector3(x + 0.13, y - 0.39 + bob * 0.3, z - stride), this.tmpQuaternion, this.tmpScale);
+      this.tmpPosition.set(x + 0.13, y - 0.39 + bob * 0.3, z - stride);
+      this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.rightLegInstances.setMatrixAt(index, this.tmpMatrix);
     }
     this.bodyInstances.instanceMatrix.needsUpdate = true;
@@ -3546,23 +3559,28 @@ export class Game {
   }
 
   private makeTextSprite(text: string, background: string, foreground: string): THREE.Sprite {
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 160;
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Canvas 2D unavailable");
+    const cacheKey = `${background}|${foreground}|${text}`;
+    let texture = this.textTextureCache.get(cacheKey);
+    if (!texture) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 160;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Canvas 2D unavailable");
+      }
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = background;
+      this.roundRect(context, 24, 20, 464, 120, 30);
+      context.fillStyle = foreground;
+      context.font = "900 72px Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.fillText(text, 256, 82);
+      texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      this.textTextureCache.set(cacheKey, texture);
     }
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = background;
-    this.roundRect(context, 24, 20, 464, 120, 30);
-    context.fillStyle = foreground;
-    context.font = "900 72px Arial, sans-serif";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.fillText(text, 256, 82);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
     return new THREE.Sprite(material);
   }
