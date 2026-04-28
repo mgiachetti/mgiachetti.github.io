@@ -46,7 +46,7 @@ Status markers:
 - [x] Clamp crowd center to track width.
 - [x] Add edge/fall detection.
 - [ ] Add optional jump hook for specific levels.
-- [~] Tune speeds for desktop and mobile.
+- [x] Tune speeds for desktop and mobile.
 
 ## Phase 4 - Crew Model And Crowd Simulation
 
@@ -105,7 +105,7 @@ Status markers:
 - [x] Implement trap doors/holes.
 - [x] Implement fan blowers.
 - [x] Add warning decals/shadows/telegraphs.
-- [~] Tune fair hitboxes.
+- [x] Tune fair hitboxes.
 
 ## Phase 8 - Moving Platforms
 

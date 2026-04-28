@@ -147,6 +147,7 @@ export class Game {
   private lastTime = 0;
   private pointerDown = false;
   private keyboardX = 0;
+  private isTouchDevice = false;
   private activeTeamColor: "cyan" | "lime" | "coral" | "violet" = "cyan";
   private hatEquipped = false;
   private trailEquipped = false;
@@ -297,7 +298,8 @@ export class Game {
       alpha: false,
       preserveDrawingBuffer: params.has("pixel") || params.has("autostart")
     });
-    const pixelRatioCap = window.matchMedia("(pointer: coarse)").matches ? 1.5 : 2;
+    this.isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+    const pixelRatioCap = this.isTouchDevice ? 1.5 : 2;
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatioCap));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1970,11 +1972,14 @@ export class Game {
   }
 
   private updateRun(time: number, dt: number): void {
-    const keyboardSpeed = this.gooTimer > 0 ? 2.6 : 3.9;
+    const keyboardSpeed = this.gooTimer > 0 ? (this.isTouchDevice ? 2.45 : 2.75) : this.isTouchDevice ? 3.65 : 4.15;
     this.targetX += this.keyboardX * keyboardSpeed * dt;
 
-    const targetSpeed = this.frenzyTimer > 0 ? 14.5 : this.gooTimer > 0 ? 7.2 : 10.6;
-    this.speed = damp(this.speed, targetSpeed, 3.5, dt);
+    const normalSpeed = this.isTouchDevice ? 10.05 : 10.85;
+    const gooSpeed = this.isTouchDevice ? 6.85 : 7.35;
+    const frenzySpeed = this.isTouchDevice ? 13.7 : 14.8;
+    const targetSpeed = this.frenzyTimer > 0 ? frenzySpeed : this.gooTimer > 0 ? gooSpeed : normalSpeed;
+    this.speed = damp(this.speed, targetSpeed, this.isTouchDevice ? 3.2 : 3.7, dt);
     this.distance += this.speed * dt;
     this.centerX = damp(this.centerX, this.targetX, this.gooTimer > 0 ? 5 : 8.4, dt);
 
@@ -2416,8 +2421,9 @@ export class Game {
     const data = entity.data;
     const dz = Math.abs(this.distance - data.z);
     const hazardX = this.getHazardX(data, time);
-    const inX = Math.abs(this.centerX - hazardX) < (data.width ?? 2.1) / 2 + this.formationRadius() * 0.22;
-    const inZ = dz < (data.depth ?? 2.2) / 2;
+    const hitbox = this.getHazardHitbox(data, time);
+    const inX = Math.abs(this.centerX - hazardX) < hitbox.halfWidth + this.formationRadius() * hitbox.formationPadding;
+    const inZ = dz < hitbox.halfDepth + hitbox.zPadding;
     if (!inX || !inZ) {
       return;
     }
@@ -2453,6 +2459,51 @@ export class Game {
             : 4 + Math.floor(this.count * 0.12);
     this.loseCrew(baseLoss, severe ? "Hole" : data.kind === "sideScraper" ? "Scraper" : data.kind === "bumper" ? "Bumper" : "Trap");
     entity.cooldown = severe ? 1.1 : 0.8;
+  }
+
+  private getHazardHitbox(data: LevelEntity, time: number): { halfWidth: number; halfDepth: number; formationPadding: number; zPadding: number } {
+    const width = data.width ?? 2.1;
+    const depth = data.depth ?? 2.2;
+    if (data.kind === "rotatingBar") {
+      const angle = time * (data.speed ?? 2.4) + (data.phase ?? 0);
+      return {
+        halfWidth: Math.max(0.48, Math.abs(Math.cos(angle)) * width * 0.46 + 0.16),
+        halfDepth: Math.max(0.36, Math.abs(Math.sin(angle)) * width * 0.27 + depth * 0.2),
+        formationPadding: 0.15,
+        zPadding: 0.05
+      };
+    }
+    if (data.kind === "hole") {
+      return { halfWidth: width * 0.36, halfDepth: depth * 0.38, formationPadding: 0.12, zPadding: 0.02 };
+    }
+    if (data.kind === "sideScraper") {
+      return { halfWidth: width * 0.43, halfDepth: depth * 0.42, formationPadding: 0.12, zPadding: 0.04 };
+    }
+    if (data.kind === "bumper") {
+      return { halfWidth: width * 0.42, halfDepth: depth * 0.42, formationPadding: 0.14, zPadding: 0.04 };
+    }
+    if (data.kind === "sawLane") {
+      return { halfWidth: width * 0.38, halfDepth: depth * 0.4, formationPadding: 0.13, zPadding: 0.04 };
+    }
+    if (data.kind === "crusher") {
+      return { halfWidth: width * 0.42, halfDepth: depth * 0.42, formationPadding: 0.14, zPadding: 0.04 };
+    }
+    if (data.kind === "swingingAxe") {
+      return { halfWidth: width * 0.36, halfDepth: depth * 0.34, formationPadding: 0.12, zPadding: 0.03 };
+    }
+    if (data.kind === "spikeRoller" || data.kind === "cannon") {
+      return { halfWidth: width * 0.38, halfDepth: depth * 0.38, formationPadding: 0.13, zPadding: 0.04 };
+    }
+    if (data.kind === "laser") {
+      return { halfWidth: width * 0.48, halfDepth: Math.max(0.2, depth * 0.22), formationPadding: 0.12, zPadding: 0.03 };
+    }
+    if (data.kind === "goo") {
+      return { halfWidth: width * 0.46, halfDepth: depth * 0.46, formationPadding: 0.2, zPadding: 0.08 };
+    }
+    if (data.kind === "fan") {
+      return { halfWidth: width * 0.5, halfDepth: depth * 0.5, formationPadding: 0.18, zPadding: 0.08 };
+    }
+    return { halfWidth: width * 0.45, halfDepth: depth * 0.42, formationPadding: 0.16, zPadding: 0.04 };
   }
 
   private getHazardX(data: LevelEntity, time: number): number {
