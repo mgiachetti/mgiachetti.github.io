@@ -3,6 +3,7 @@ import { AudioManager } from "../audio/AudioManager";
 import { getLevel } from "../levels/levelCatalog";
 import { Hud } from "../ui/Hud";
 import { clamp, damp, seededRandom } from "../utils/math";
+import { calculateGateCount } from "./gateMath";
 import { buyOrEquipCosmetic, buyUpgrade, cosmeticCatalog, getEquippedCosmetic, grantRunRewards, loadSave, resetSave, saveGame, upgradeCosts } from "./saveData";
 import type { GameMode, LevelData, LevelEntity, RewardData, RunStats, SaveData, TrackSegment } from "./types";
 
@@ -2173,17 +2174,7 @@ export class Game {
     const gate = this.getGateState(data, this.lastTime);
     const value = gate.value;
     const bonus = this.save.upgrades.gateBonus;
-    if (gate.op === "add") {
-      this.count += value + Math.floor(bonus * 2);
-    } else if (gate.op === "subtract") {
-      this.count = Math.max(0, this.count - value);
-    } else if (gate.op === "multiply") {
-      this.count = Math.max(0, Math.floor(this.count * value + bonus));
-    } else if (gate.op === "divide") {
-      this.count = Math.max(0, Math.ceil(this.count / Math.max(1, value)));
-    } else if (gate.op === "percent") {
-      this.count = Math.max(0, Math.round(this.count * (1 + value / 100 + bonus * 0.03)));
-    }
+    this.count = calculateGateCount(this.count, gate.op, value, bonus);
 
     const delta = this.count - before;
     this.crowdImpactPulse = delta >= 0 ? 0.36 : 0.78;

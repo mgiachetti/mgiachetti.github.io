@@ -7,6 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
+    "gate:test": "node scripts/gate-math-check.mjs",
     "smoke": "node scripts/smoke-check.mjs"
   },
   "dependencies": {
