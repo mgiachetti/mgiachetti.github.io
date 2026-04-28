@@ -265,7 +265,7 @@ try {
   await boss.send("Page.enable");
   await boss.send("Runtime.enable");
   await boss.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 720, deviceScaleFactor: 1, mobile: false });
-  await boss.send("Page.navigate", { url: `${origin}?autostart=1&level=10&boss=1&count=70&pixel=1` });
+  await boss.send("Page.navigate", { url: `${origin}?autostart=1&level=10&boss=1&weak=2&count=70&pixel=1` });
   await sleep(4500);
   const bossGame = await boss.eval(`(() => {
     const canvas = document.querySelector("canvas");

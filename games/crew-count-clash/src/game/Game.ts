@@ -90,6 +90,7 @@ export class Game {
   private bossBody: THREE.Object3D | null = null;
   private bossCrown: THREE.Object3D | null = null;
   private bossGate: THREE.Object3D | null = null;
+  private bossWeakCore: THREE.Object3D | null = null;
   private stairScoreMarker: THREE.Object3D | null = null;
   private stairVault: THREE.Group | null = null;
   private stairFinaleStarted = false;
@@ -107,6 +108,7 @@ export class Game {
   private bossHitPulse = 0;
   private bossVictoryTimer = 0;
   private bossBombs = 0;
+  private bossWeakPoints = 0;
   private rouletteTimer = 0;
   private rouletteTick = 0;
   private rouletteSpinStart = 0;
@@ -312,6 +314,8 @@ export class Game {
       const count = Number(params.get("count") ?? "80");
       this.count = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 80;
       this.stats.maxCount = Math.max(this.stats.maxCount, this.count);
+      const weak = Number(params.get("weak") ?? "0");
+      this.bossWeakPoints = Number.isFinite(weak) ? clamp(Math.floor(weak), 0, 6) : 0;
       this.startBoss();
     } else if (params.has("stairs")) {
       const count = Number(params.get("count") ?? "60");
@@ -550,6 +554,7 @@ export class Game {
     this.cameraShake = 0;
     this.crowdImpactPulse = 0;
     this.bossBombs = 0;
+    this.bossWeakPoints = 0;
     this.bossHp = 0;
     this.bossMaxHp = 1;
     this.bossAttackTimer = 0;
@@ -599,6 +604,8 @@ export class Game {
     this.bossBody = null;
     this.bossCrown = null;
     this.bossGate = null;
+    this.bossWeakCore = null;
+    this.bossWeakCore = null;
     this.stairScoreMarker = null;
     this.stairVault = null;
     this.stairFinaleStarted = false;
@@ -855,6 +862,9 @@ export class Game {
   }
 
   private createEntityMesh(entity: LevelEntity): THREE.Object3D {
+    if (entity.kind === "weakPointGate") {
+      return this.createWeakPointGateMesh(entity);
+    }
     if (entity.kind === "gate" || entity.kind === "colorGate") {
       return this.createGateMesh(entity);
     }
@@ -956,6 +966,48 @@ export class Game {
     label.scale.set(2.4, 0.86, 1);
     group.userData.label = label;
     group.userData.labelText = entity.kind === "colorGate" ? `${(entity.color ?? "cyan").toUpperCase()}` : gate.label;
+    group.add(label);
+    return group;
+  }
+
+  private createWeakPointGateMesh(entity: LevelEntity): THREE.Object3D {
+    const group = new THREE.Group();
+    group.position.set(entity.x, 0, entity.z);
+    const width = entity.width ?? 2.55;
+    const glowMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffc857,
+      roughness: 0.22,
+      transparent: true,
+      opacity: 0.34,
+      emissive: 0xffc857,
+      emissiveIntensity: 0.32,
+      side: THREE.DoubleSide
+    });
+    const glow = new THREE.Mesh(new THREE.BoxGeometry(width + 0.44, 2.34, 0.08), glowMaterial);
+    glow.position.set(0, 1.24, 0.05);
+    this.setPulse(glow, 0.045, 4.6, entity.z * 0.12);
+    group.add(glow);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(width, 2.05, 0.16), this.materials.hazard);
+    frame.position.y = 1.18;
+    frame.castShadow = true;
+    group.add(frame);
+    const core = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.055, 10, 36), this.materials.bossGold);
+    core.position.set(0, 1.32, -0.12);
+    core.userData.spinZ = 1.4;
+    group.add(core);
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(0.17, 16, 10), this.materials.bossGold);
+    dot.position.set(0, 1.32, -0.12);
+    this.setPulse(dot, 0.16, 5.2, entity.z);
+    group.add(dot);
+    [-width / 2, width / 2].forEach((x) => {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.46, 0.28), this.materials.hazardDark);
+      post.position.set(x, 1.1, 0);
+      post.castShadow = true;
+      group.add(post);
+    });
+    const label = this.makeTextSprite(`WEAK +${entity.value ?? 1}`, "#3c1642", "#ffffff");
+    label.position.set(0, 2.62, -0.1);
+    label.scale.set(1.62, 0.45, 1);
     group.add(label);
     return group;
   }
@@ -1466,6 +1518,17 @@ export class Game {
     this.bossBody.position.set(0, 1.65, 4.5);
     this.bossBody.castShadow = true;
     this.bossGroup.add(this.bossBody);
+    this.bossWeakCore = new THREE.Group();
+    this.bossWeakCore.visible = false;
+    this.bossWeakCore.position.set(0, 0.04, -1.02);
+    const weakRing = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.035, 10, 32), this.materials.bossGold);
+    weakRing.userData.spinZ = 1.6;
+    this.bossWeakCore.add(weakRing);
+    const weakDot = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 10), this.materials.hazard);
+    weakDot.position.z = -0.02;
+    this.setPulse(weakDot, 0.16, 5.2, this.level.id);
+    this.bossWeakCore.add(weakDot);
+    this.bossBody.add(this.bossWeakCore);
     const visor = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.42, 0.12), this.materials.visor);
     visor.position.set(0, 1.95, 3.42);
     this.bossGroup.add(visor);
@@ -1980,10 +2043,14 @@ export class Game {
         if (Math.hypot(dx, this.distance - entity.data.z) < pickupRadius) {
           this.collectEntity(entity);
         }
-      } else if (entity.data.kind === "gate" || entity.data.kind === "colorGate") {
+      } else if (entity.data.kind === "gate" || entity.data.kind === "colorGate" || entity.data.kind === "weakPointGate") {
         const gateX = this.getGateX(entity.data, time);
         if (dz < 1.1 && Math.abs(this.centerX - gateX) < (entity.data.width ?? 2.4) / 2) {
-          this.applyGate(entity.data);
+          if (entity.data.kind === "weakPointGate") {
+            this.applyWeakPointGate(entity.data, gateX);
+          } else {
+            this.applyGate(entity.data);
+          }
           this.consumeGateRow(entity.data.z);
           break;
         }
@@ -2103,6 +2170,18 @@ export class Game {
     }
   }
 
+  private applyWeakPointGate(data: LevelEntity, gateX: number): void {
+    const value = Math.max(1, Math.floor(data.value ?? 1));
+    this.bossWeakPoints += value;
+    this.stats.gates += 1;
+    this.stats.score += 140 * value;
+    this.stats.combo += 0.2;
+    this.crowdImpactPulse = 0.34;
+    this.hud.popText(`Weak Point +${value}`, "boss");
+    this.audio.collect();
+    this.spawnBurst(gateX, data.z, 0xffc857);
+  }
+
   private getGateState(data: LevelEntity, time = 0): { op: NonNullable<LevelEntity["op"]>; value: number; label: string; helpful: boolean } {
     let op: NonNullable<LevelEntity["op"]> = data.op ?? "add";
     let value = data.value ?? 0;
@@ -2145,7 +2224,7 @@ export class Game {
 
   private consumeGateRow(z: number): void {
     this.entities.forEach((entity) => {
-      if ((entity.data.kind === "gate" || entity.data.kind === "colorGate") && Math.abs(entity.data.z - z) < 0.2) {
+      if ((entity.data.kind === "gate" || entity.data.kind === "colorGate" || entity.data.kind === "weakPointGate") && Math.abs(entity.data.z - z) < 0.2) {
         entity.consumed = true;
         entity.mesh.visible = false;
       }
@@ -2336,7 +2415,7 @@ export class Game {
   }
 
   private getGateX(data: LevelEntity, time: number): number {
-    if ((data.kind === "gate" || data.kind === "colorGate") && data.range && data.speed) {
+    if ((data.kind === "gate" || data.kind === "colorGate" || data.kind === "weakPointGate") && data.range && data.speed) {
       return data.x + Math.sin(time * data.speed + (data.phase ?? 0)) * data.range;
     }
     return data.x;
@@ -2482,6 +2561,10 @@ export class Game {
     }
   }
 
+  private getBossWeakMultiplier(): number {
+    return clamp(1 + this.bossWeakPoints * 0.14, 1, 1.7);
+  }
+
   private startBoss(): void {
     this.mode = "boss";
     this.speed = 0;
@@ -2493,8 +2576,11 @@ export class Game {
     this.bossAttackImpact = 0;
     this.bossHitPulse = 0;
     this.bossVictoryTimer = 0;
+    if (this.bossWeakCore) {
+      this.bossWeakCore.visible = this.bossWeakPoints > 0;
+    }
     this.audio.switchMusic("boss");
-    this.hud.popText(this.level.boss?.name ?? "Boss", "boss");
+    this.hud.popText(this.bossWeakPoints > 0 ? `Weak x${this.getBossWeakMultiplier().toFixed(1)}` : (this.level.boss?.name ?? "Boss"), "boss");
   }
 
   private updateBoss(dt: number): void {
@@ -2504,7 +2590,7 @@ export class Game {
     this.targetX = clamp(this.targetX, -3.2, 3.2);
     this.centerX = clamp(this.centerX, -3.5, 3.5);
 
-    const damage = (this.count * 0.24 + this.save.upgrades.bossDamage * 1.6 + this.bossBombs * 2.2) * dt;
+    const damage = (this.count * 0.24 + this.save.upgrades.bossDamage * 1.6 + this.bossBombs * 2.2) * this.getBossWeakMultiplier() * dt;
     this.bossHp = Math.max(0, this.bossHp - damage);
     this.bossHitPulse = Math.min(1, this.bossHitPulse + damage * 0.008);
     this.bossHitPulse = Math.max(0, this.bossHitPulse - dt * 1.8);
@@ -2587,6 +2673,14 @@ export class Game {
     }
     if (this.bossLeftArm) {
       this.bossLeftArm.rotation.z = 0.62 + Math.sin(this.lastTime * 3.2) * 0.08 + this.bossHitPulse * 0.08;
+    }
+    if (this.bossWeakCore) {
+      this.bossWeakCore.visible = this.bossWeakPoints > 0;
+      if (this.bossWeakCore.visible) {
+        const pulse = 1 + Math.sin(this.lastTime * 7.2) * 0.08 + this.bossHitPulse * 0.12;
+        this.bossWeakCore.scale.setScalar(pulse * (1 + Math.min(0.18, this.bossWeakPoints * 0.035)));
+        this.bossWeakCore.rotation.z += dt * (1.7 + this.bossWeakPoints * 0.25);
+      }
     }
 
     this.bossGroup.rotation.y = Math.sin(this.lastTime * 2.4) * 0.04 + Math.sin(this.lastTime * 48) * this.bossHitPulse * 0.025;
@@ -2988,7 +3082,7 @@ export class Game {
         this.updateTimedGateLabel(entity);
       }
       this.animateTaggedObject(entity.mesh, time, dt);
-      if (entity.data.kind === "gate" || entity.data.kind === "colorGate") {
+      if (entity.data.kind === "gate" || entity.data.kind === "colorGate" || entity.data.kind === "weakPointGate") {
         entity.mesh.position.x = this.getGateX(entity.data, time);
         if (entity.data.range && entity.data.speed) {
           entity.mesh.rotation.y = Math.sin(time * entity.data.speed + (entity.data.phase ?? 0)) * 0.14;

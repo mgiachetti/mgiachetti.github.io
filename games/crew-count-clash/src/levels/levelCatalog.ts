@@ -291,6 +291,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l5-enemy-b", kind: "enemy", x: 1.7, z: 126, count: 18, strength: 2, width: 3 },
       { id: "l5-shield", kind: "shield", x: 0, z: 137 },
       { id: "l5-bomb", kind: "bossBomb", x: -2.2, z: 148 },
+      { id: "l5-weak-a", kind: "weakPointGate", x: 2.2, z: 148, width: 2.25, value: 1 },
       ...crewLine("l5-b", 150, 2, 6, 1.8)
     ]
   },
@@ -411,6 +412,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l10-scraper-b", kind: "sideScraper", x: 3.2, z: 124, width: 1.1, depth: 5 },
       { id: "l10-enemy-a", kind: "enemy", x: 0, z: 142, count: 54, strength: 1, width: 4.8 },
       { id: "l10-bomb-a", kind: "bossBomb", x: -2.2, z: 156 },
+      { id: "l10-weak-a", kind: "weakPointGate", x: 2.2, z: 156, width: 2.25, value: 1 },
       { id: "l10-bomb-b", kind: "bossBomb", x: 2.2, z: 164 },
       ...crewLine("l10-b", 166, 1, 8, 1.6)
     ]
@@ -457,6 +459,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l12-enemy-a", kind: "enemy", x: -1.8, z: 154, count: 42, strength: 2, width: 3.2 },
       { id: "l12-enemy-b", kind: "enemy", x: 1.8, z: 166, count: 62, strength: 1, width: 3.2 },
       { id: "l12-shield", kind: "shield", x: 0, z: 180 },
+      { id: "l12-weak-a", kind: "weakPointGate", x: 0, z: 188, width: 2.55, value: 1 },
       { id: "l12-bomb-a", kind: "bossBomb", x: -2.2, z: 190 },
       { id: "l12-bomb-b", kind: "bossBomb", x: 2.2, z: 198 },
       ...crewLine("l12-b", 198, 1, 8, 1.5)
@@ -554,6 +557,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l15-enemy-b", kind: "enemy", x: 1.8, z: 168, count: 64, strength: 1, width: 3.2, range: 0.85, speed: 2.25, phase: 1.4 },
       { id: "l15-shield", kind: "shield", x: 0, z: 184 },
       { id: "l15-bomb-a", kind: "bossBomb", x: -2.2, z: 198 },
+      { id: "l15-weak-a", kind: "weakPointGate", x: 0, z: 198, width: 2.55, value: 2 },
       { id: "l15-bomb-b", kind: "bossBomb", x: 2.2, z: 208 },
       ...crewLine("l15-b", 210, 1, 9, 1.4)
     ]
@@ -616,6 +620,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l17-enemy-gate", kind: "enemyGate", x: -1.7, z: 174, count: 38, strength: 1, width: 2.8, range: 0.85, speed: 1.7 },
       { id: "l17-enemy-a", kind: "enemy", x: 0, z: 184, count: 72, strength: 2, width: 4.8, range: 1.35, speed: 2.25 },
       { id: "l17-bomb-a", kind: "bossBomb", x: -2.2, z: 202 },
+      { id: "l17-weak-a", kind: "weakPointGate", x: 0, z: 202, width: 2.55, value: 2 },
       { id: "l17-bomb-b", kind: "bossBomb", x: 2.2, z: 214 },
       ...coinArc("l17-coins", 216, 1, 12)
     ]
@@ -705,6 +710,7 @@ export const levelCatalog: LevelData[] = [
       { id: "l20-enemy-a", kind: "enemy", x: -1.8, z: 218, count: 70, strength: 2, width: 3.2, range: 1.1, speed: 2.5 },
       { id: "l20-enemy-b", kind: "enemy", x: 1.8, z: 228, count: 86, strength: 1, width: 3.2, range: 1.1, speed: 2.7, phase: 1.7 },
       { id: "l20-frenzy", kind: "frenzy", x: 0, z: 238 },
+      { id: "l20-weak-a", kind: "weakPointGate", x: 2.2, z: 238, width: 2.35, value: 2 },
       { id: "l20-bomb-a", kind: "bossBomb", x: -2.2, z: 248 },
       { id: "l20-bomb-b", kind: "bossBomb", x: 0, z: 256 },
       { id: "l20-bomb-c", kind: "bossBomb", x: 2.2, z: 264 },

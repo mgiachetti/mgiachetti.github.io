@@ -163,7 +163,7 @@ Status markers:
 - [x] Implement stomp telegraph/attack.
 - [x] Implement sweep attack.
 - [x] Implement minion waves.
-- [ ] Implement weak-point gates.
+- [x] Implement weak-point gates.
 - [x] Implement defeat/castle capture sequence.
 - [x] Add boss medals and gems.
 - [x] Add at least 5 boss archetypes/configs.
