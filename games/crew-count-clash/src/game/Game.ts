@@ -67,6 +67,7 @@ export class Game {
   private readonly tmpEuler = new THREE.Euler();
   private readonly cameraLookTarget = new THREE.Vector3(0, 0.75, 8);
   private readonly tmpCameraLookTarget = new THREE.Vector3(0, 0.75, 8);
+  private readonly flatQuaternion = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
   private readonly hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
   private readonly textTextureCache = new Map<string, THREE.CanvasTexture>();
 
@@ -77,10 +78,12 @@ export class Game {
   private crowd = new THREE.Group();
   private decorGroup = new THREE.Group();
   private bodyInstances: THREE.InstancedMesh;
+  private bodyHighlightInstances: THREE.InstancedMesh;
   private visorInstances: THREE.InstancedMesh;
   private packInstances: THREE.InstancedMesh;
   private hatInstances: THREE.InstancedMesh;
   private trailInstances: THREE.InstancedMesh;
+  private shadowInstances: THREE.InstancedMesh;
   private leftLegInstances: THREE.InstancedMesh;
   private rightLegInstances: THREE.InstancedMesh;
   private tracks: RuntimeTrack[] = [];
@@ -240,6 +243,7 @@ export class Game {
 
   private readonly materials = {
     body: new THREE.MeshStandardMaterial({ color: 0x36c9f6, roughness: 0.58, metalness: 0.05 }),
+    bodyHighlight: new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.24, depthWrite: false }),
     visor: new THREE.MeshStandardMaterial({ color: 0xbdefff, roughness: 0.18, metalness: 0.2 }),
     pack: new THREE.MeshStandardMaterial({ color: 0x2087ad, roughness: 0.58, metalness: 0.05 }),
     hat: new THREE.MeshStandardMaterial({ color: 0xffca3a, roughness: 0.42, metalness: 0.12 }),
@@ -264,7 +268,8 @@ export class Game {
     bossGold: new THREE.MeshStandardMaterial({ color: 0xffc857, roughness: 0.36, metalness: 0.18 }),
     castle: new THREE.MeshStandardMaterial({ color: 0xc7d1da, roughness: 0.75, metalness: 0.03 }),
     wheel: new THREE.MeshStandardMaterial({ color: 0xffca3a, roughness: 0.42, metalness: 0.08 }),
-    trail: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.44, transparent: true, opacity: 0.5, emissive: 0xffffff, emissiveIntensity: 0.1 })
+    trail: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.44, transparent: true, opacity: 0.5, emissive: 0xffffff, emissiveIntensity: 0.1 }),
+    contactShadow: new THREE.MeshBasicMaterial({ color: 0x102033, transparent: true, opacity: 0.16, depthWrite: false })
   };
 
   private readonly teamColors = {
@@ -276,6 +281,7 @@ export class Game {
 
   private readonly geometries = {
     body: new THREE.CapsuleGeometry(0.3, 0.54, 8, 18),
+    bodyHighlight: new THREE.BoxGeometry(0.075, 0.34, 0.035),
     visor: new THREE.BoxGeometry(0.46, 0.22, 0.08),
     pack: new THREE.BoxGeometry(0.24, 0.48, 0.16),
     packJet: new THREE.CylinderGeometry(0.16, 0.2, 0.56, 14),
@@ -291,7 +297,8 @@ export class Game {
     sphere: new THREE.SphereGeometry(0.5, 24, 16),
     cylinder: new THREE.CylinderGeometry(0.5, 0.5, 1, 28),
     cone: new THREE.ConeGeometry(0.34, 0.62, 5),
-    torus: new THREE.TorusGeometry(0.42, 0.08, 12, 28)
+    torus: new THREE.TorusGeometry(0.42, 0.08, 12, 28),
+    shadow: new THREE.CircleGeometry(0.46, 24)
   };
 
   constructor(canvas: HTMLCanvasElement) {
@@ -311,7 +318,9 @@ export class Game {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+    this.shadowInstances = new THREE.InstancedMesh(this.geometries.shadow, this.materials.contactShadow, this.maxVisibleCrew);
     this.bodyInstances = new THREE.InstancedMesh(this.geometries.body, this.materials.body, this.maxVisibleCrew);
+    this.bodyHighlightInstances = new THREE.InstancedMesh(this.geometries.bodyHighlight, this.materials.bodyHighlight, this.maxVisibleCrew);
     this.visorInstances = new THREE.InstancedMesh(this.geometries.visor, this.materials.visor, this.maxVisibleCrew);
     this.packInstances = new THREE.InstancedMesh(this.geometries.pack, this.materials.pack, this.maxVisibleCrew);
     this.hatInstances = new THREE.InstancedMesh(this.geometries.hat, this.materials.hat, this.maxVisibleCrew);
@@ -319,16 +328,17 @@ export class Game {
     this.leftLegInstances = new THREE.InstancedMesh(this.geometries.leg, this.materials.body, this.maxVisibleCrew);
     this.rightLegInstances = new THREE.InstancedMesh(this.geometries.leg, this.materials.body, this.maxVisibleCrew);
     this.bodyInstances.castShadow = true;
+    this.bodyHighlightInstances.renderOrder = 2;
     this.visorInstances.castShadow = true;
     this.packInstances.castShadow = true;
     this.hatInstances.castShadow = true;
     this.leftLegInstances.castShadow = true;
     this.rightLegInstances.castShadow = true;
-    [this.bodyInstances, this.visorInstances, this.packInstances, this.hatInstances, this.trailInstances, this.leftLegInstances, this.rightLegInstances].forEach((mesh) => {
+    [this.shadowInstances, this.bodyInstances, this.bodyHighlightInstances, this.visorInstances, this.packInstances, this.hatInstances, this.trailInstances, this.leftLegInstances, this.rightLegInstances].forEach((mesh) => {
       mesh.frustumCulled = false;
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
-    this.crowd.add(this.trailInstances, this.leftLegInstances, this.rightLegInstances, this.bodyInstances, this.visorInstances, this.packInstances, this.hatInstances);
+    this.crowd.add(this.shadowInstances, this.trailInstances, this.leftLegInstances, this.rightLegInstances, this.bodyInstances, this.bodyHighlightInstances, this.visorInstances, this.packInstances, this.hatInstances);
 
     this.bindUi();
     this.bindInput();
@@ -1471,6 +1481,11 @@ export class Game {
     body.castShadow = true;
     group.add(body);
 
+    const highlight = new THREE.Mesh(this.geometries.bodyHighlight, this.materials.bodyHighlight);
+    highlight.position.set(-0.12 * scale, 0.56 * scale, 0.28 * scale);
+    highlight.scale.setScalar(scale);
+    group.add(highlight);
+
     const visor = new THREE.Mesh(this.geometries.visor, visorMaterial);
     visor.position.set(0, 0.62 * scale, 0.27 * scale);
     visor.scale.setScalar(scale);
@@ -1606,6 +1621,22 @@ export class Game {
     this.bossBody.position.set(0, 1.65, 4.5);
     this.bossBody.castShadow = true;
     this.bossGroup.add(this.bossBody);
+    const bossShadow = new THREE.Mesh(this.geometries.shadow, this.materials.contactShadow);
+    bossShadow.position.set(0, 0.15, 4.42);
+    bossShadow.rotation.x = -Math.PI / 2;
+    bossShadow.scale.set(2.9, 1.85, 1);
+    this.bossGroup.add(bossShadow);
+    const bossHighlight = new THREE.Mesh(this.geometries.bodyHighlight, this.materials.bodyHighlight);
+    bossHighlight.position.set(-0.42, 1.92, 3.43);
+    bossHighlight.scale.set(2.35, 2.3, 1.3);
+    this.bossGroup.add(bossHighlight);
+    [-1, 1].forEach((side) => {
+      const shoulder = new THREE.Mesh(this.geometries.sphere, this.materials.bossGold);
+      shoulder.position.set(side * 0.86, 2.18, 4.1);
+      shoulder.scale.set(0.42, 0.2, 0.34);
+      shoulder.castShadow = true;
+      this.bossGroup.add(shoulder);
+    });
     this.bossWeakCore = new THREE.Group();
     this.bossWeakCore.visible = false;
     this.bossWeakCore.position.set(0, 0.04, -1.02);
@@ -3381,10 +3412,12 @@ export class Game {
       visible = Math.max(visible, Math.min(this.maxVisibleCrew, Math.max(10, Math.floor(this.stats.finalStair * 1.5))));
     }
     this.bodyInstances.count = visible;
+    this.bodyHighlightInstances.count = visible;
     this.visorInstances.count = visible;
     this.packInstances.count = visible;
     this.hatInstances.count = visible;
     this.trailInstances.count = visible;
+    this.shadowInstances.count = visible;
     this.leftLegInstances.count = visible;
     this.rightLegInstances.count = visible;
     const spacing = clamp(0.52 - this.save.upgrades.formation * 0.025 - (this.commanderTimer > 0 ? 0.08 : 0), 0.34, 0.52);
@@ -3397,7 +3430,9 @@ export class Game {
 
     for (let index = 0; index < this.maxVisibleCrew; index += 1) {
       if (index >= visible) {
+        this.shadowInstances.setMatrixAt(index, this.hiddenMatrix);
         this.bodyInstances.setMatrixAt(index, this.hiddenMatrix);
+        this.bodyHighlightInstances.setMatrixAt(index, this.hiddenMatrix);
         this.visorInstances.setMatrixAt(index, this.hiddenMatrix);
         this.packInstances.setMatrixAt(index, this.hiddenMatrix);
         this.hatInstances.setMatrixAt(index, this.hiddenMatrix);
@@ -3464,11 +3499,25 @@ export class Game {
       this.tmpEuler.set(0, yaw, 0);
       this.tmpQuaternion.setFromEuler(this.tmpEuler);
       const impact = this.crowdImpactPulse * clamp(1 - row * 0.07, 0.28, 1);
+      const shadowWidth = clamp(0.82 + row * 0.012 - jumpHeight * 0.26, 0.58, 1.12);
+      const shadowLength = clamp(0.62 + row * 0.008 - jumpHeight * 0.18, 0.44, 0.88);
+      const shadowY = this.mode === "stairs" ? Math.max(0.035, y - 0.52 - Math.max(0, bob) * 0.45) : 0.026;
+      this.tmpScale.set(shadowWidth, shadowLength, 1);
+      this.tmpPosition.set(x, shadowY, z - 0.04);
+      this.tmpMatrix.compose(this.tmpPosition, this.flatQuaternion, this.tmpScale);
+      this.shadowInstances.setMatrixAt(index, this.tmpMatrix);
+
       this.tmpScale.set(1 + impact * 0.18, 1 - impact * 0.16, 1 + impact * 0.12);
       this.tmpPosition.set(x, y, z);
       this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.bodyInstances.setMatrixAt(index, this.tmpMatrix);
 
+      this.tmpScale.set(1 + impact * 0.05, 1 + impact * 0.04, 1);
+      this.tmpPosition.set(x - 0.12, y + 0.08, z + 0.285);
+      this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
+      this.bodyHighlightInstances.setMatrixAt(index, this.tmpMatrix);
+
+      this.tmpScale.set(1 + impact * 0.18, 1 - impact * 0.16, 1 + impact * 0.12);
       this.tmpPosition.set(x, y + 0.17, z + 0.29);
       this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.visorInstances.setMatrixAt(index, this.tmpMatrix);
@@ -3507,7 +3556,9 @@ export class Game {
       this.tmpMatrix.compose(this.tmpPosition, this.tmpQuaternion, this.tmpScale);
       this.rightLegInstances.setMatrixAt(index, this.tmpMatrix);
     }
+    this.shadowInstances.instanceMatrix.needsUpdate = true;
     this.bodyInstances.instanceMatrix.needsUpdate = true;
+    this.bodyHighlightInstances.instanceMatrix.needsUpdate = true;
     this.visorInstances.instanceMatrix.needsUpdate = true;
     this.packInstances.instanceMatrix.needsUpdate = true;
     this.hatInstances.instanceMatrix.needsUpdate = true;

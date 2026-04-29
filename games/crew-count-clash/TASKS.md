@@ -262,6 +262,7 @@ Status markers:
 - [x] Add particles for count gain/loss.
 - [x] Add coin/gem bursts.
 - [x] Add impact squash/stretch.
+- [x] Add crew contact shadows and body highlights for stronger mobile readability.
 - [x] Add camera shake for major hits.
 - [x] Add boss defeat confetti.
 - [x] Smooth camera transitions between run, battles, roulette, boss, and stairs.
