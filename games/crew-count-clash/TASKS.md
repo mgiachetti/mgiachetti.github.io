@@ -234,6 +234,7 @@ Status markers:
 - [x] Add boss SFX.
 - [x] Add final stairs ticks.
 - [x] Add roulette SFX.
+- [x] Add enemy knockout arcs so battle defeats read as animated hits.
 - [x] Mix levels for mobile speakers.
 
 ## Phase 18 - UI And Menus

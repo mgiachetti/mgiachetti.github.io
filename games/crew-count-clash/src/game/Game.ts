@@ -3760,7 +3760,24 @@ export class Game {
         life: 0.95 + Math.random() * 0.45
       });
     }
-    this.spawnCrewKnockouts(Math.min(loss, 10), x, z);
+    this.spawnEnemyKnockouts(Math.min(loss, 12), x, z + 0.25);
+  }
+
+  private spawnEnemyKnockouts(loss: number, x: number, z: number): void {
+    const count = Math.min(8, Math.max(1, Math.floor(loss / 2)));
+    for (let index = 0; index < count; index += 1) {
+      const model = this.createCrewModel(this.materials.enemy, this.materials.enemyVisor, this.materials.hazardDark, 0.48);
+      const side = index % 2 === 0 ? -1 : 1;
+      model.position.set(x + (Math.random() - 0.5) * 1.15, 0.48 + Math.random() * 0.34, z + (Math.random() - 0.5) * 0.9);
+      model.rotation.set((Math.random() - 0.5) * 0.9, Math.random() * Math.PI, (Math.random() - 0.5) * 0.9);
+      this.scene.add(model);
+      this.floating.push({
+        mesh: model,
+        velocity: new THREE.Vector3(side * (1.05 + Math.random() * 1.8), 1.25 + Math.random() * 1.45, 0.75 + Math.random() * 1.45),
+        angularVelocity: new THREE.Vector3((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 10, side * (4.5 + Math.random() * 5.5)),
+        life: 1.1 + Math.random() * 0.5
+      });
+    }
   }
 
   private spawnCrewKnockouts(loss: number, x = this.centerX, z = this.distance): void {
