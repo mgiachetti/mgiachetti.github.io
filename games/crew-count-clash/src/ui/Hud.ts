@@ -314,12 +314,18 @@ export class Hud {
   }
 
   private hidePanels(): void {
-    [this.title, this.reward, this.fail, this.pause, this.shop, this.map, this.base].forEach((panel) => panel.classList.add("is-hidden"));
+    [this.title, this.reward, this.fail, this.pause, this.shop, this.map, this.base].forEach((panel) => {
+      panel.classList.add("is-hidden");
+      panel.classList.remove("is-entering");
+    });
   }
 
   private showOnly(panel: HTMLElement): void {
     this.hidePanels();
     panel.classList.remove("is-hidden");
+    panel.classList.remove("is-entering");
+    void panel.offsetWidth;
+    panel.classList.add("is-entering");
   }
 
   private set(selector: string, value: string): void {

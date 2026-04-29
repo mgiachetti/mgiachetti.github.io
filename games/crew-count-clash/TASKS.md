@@ -266,6 +266,7 @@ Status markers:
 - [x] Add camera shake for major hits.
 - [x] Add boss defeat confetti.
 - [x] Smooth camera transitions between run, battles, roulette, boss, and stairs.
+- [x] Add subtle mobile haptics and panel entrance motion for touch play.
 - [x] Add themed track biomes.
 - [x] Add loading screen.
 - [x] Add app icon/preview image.

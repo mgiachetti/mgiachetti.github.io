@@ -153,6 +153,7 @@ export class Game {
   private cameraBlendTimer = 0;
   private cameraRigKey = "title";
   private crowdImpactPulse = 0;
+  private lastHapticTime = 0;
   private lastTime = 0;
   private pointerDown = false;
   private keyboardX = 0;
@@ -2201,6 +2202,7 @@ export class Game {
       this.stats.score += 25 * value * this.stats.combo;
       this.stats.combo += 0.1;
       this.hud.popText(`+${value}`, "good");
+      this.pulseHaptic(8, 90);
       this.audio.collect();
     } else if (entity.data.kind === "coin") {
       this.stats.coins += value;
@@ -2215,37 +2217,45 @@ export class Game {
     } else if (entity.data.kind === "shield") {
       this.shield += 1;
       this.hud.popText("Shield", "good");
+      this.pulseHaptic(10, 90);
       this.audio.collect();
     } else if (entity.data.kind === "magnet") {
       this.magnetTimer = 6 + this.save.upgrades.magnet;
       this.hud.popText("Magnet", "good");
+      this.pulseHaptic(10, 90);
       this.audio.collect();
     } else if (entity.data.kind === "frenzy") {
       this.frenzyTimer = 4.5;
       this.hud.popText("Frenzy", "good");
+      this.pulseHaptic(10, 90);
       this.audio.collect();
     } else if (entity.data.kind === "commander") {
       this.commanderTimer = 7;
       this.hud.popText("Tight Crew", "good");
+      this.pulseHaptic(10, 90);
       this.audio.collect();
     } else if (entity.data.kind === "ticket") {
       this.save.tickets += 1;
       saveGame(this.save);
       this.hud.popText("Ticket", "coin");
+      this.pulseHaptic([12, 28, 12], 120);
       this.audio.reward();
     } else if (entity.data.kind === "bossBomb") {
       this.bossBombs += 1;
       this.hud.popText("Boss Bomb", "boss");
+      this.pulseHaptic(14, 90);
       this.audio.collect();
     } else if (entity.data.kind === "jumpPad") {
       this.jumpTimer = this.jumpDuration;
       this.stats.score += 90;
       this.hud.popText("Jump", "good");
+      this.pulseHaptic(12, 90);
       this.audio.collect();
     } else if (entity.data.kind === "colorPad") {
       this.activeTeamColor = entity.data.color ?? "cyan";
       this.materials.body.color.setHex(this.teamColors[this.activeTeamColor]);
       this.hud.popText(this.activeTeamColor.toUpperCase(), "good");
+      this.pulseHaptic(10, 90);
       this.audio.collect();
     }
     this.spawnBurst(entity.data.x, entity.data.z, entity.data.kind === "coin" ? 0xffd166 : 0x58f29a);
@@ -2263,6 +2273,7 @@ export class Game {
         this.addCrew(data.value ?? 10);
         this.stats.score += 120;
         this.hud.popText("Color match", "good");
+        this.pulseHaptic(12, 100);
         this.audio.gate(true);
       } else {
         this.loseCrew(data.value ?? 10, "Wrong color");
@@ -2282,6 +2293,7 @@ export class Game {
     this.stats.score += Math.max(0, delta) * 18 + 70;
     this.stats.combo = delta >= 0 ? this.stats.combo + 0.3 : 1;
     this.hud.popText(`${delta >= 0 ? "+" : ""}${delta}`, delta >= 0 ? "good" : "bad");
+    this.pulseHaptic(delta >= 0 ? 12 : [20, 36, 20], 110);
     this.audio.gate(delta >= 0);
     if (this.count <= 0) {
       this.failRun("Gate zeroed crew");
@@ -2296,6 +2308,7 @@ export class Game {
     this.stats.combo += 0.2;
     this.crowdImpactPulse = 0.34;
     this.hud.popText(`Weak Point +${value}`, "boss");
+    this.pulseHaptic(12, 100);
     this.audio.collect();
     this.spawnBurst(gateX, data.z, 0xffc857);
   }
@@ -2375,6 +2388,7 @@ export class Game {
     this.cameraShake = 0.35;
     this.crowdImpactPulse = 0.45;
     this.hud.popText("Battle", "boss");
+    this.pulseHaptic(18);
     this.audio.battle();
   }
 
@@ -2406,6 +2420,7 @@ export class Game {
       this.stats.combo = 1;
       this.crowdImpactPulse = 0.9;
       this.cameraShake = Math.max(this.cameraShake, 0.42);
+      this.pulseHaptic(16, 120);
       this.spawnCrewKnockouts(applied, this.centerX, this.distance + 0.35);
       if (this.count <= 0) {
         this.finishEnemyBattle(false);
@@ -2446,6 +2461,7 @@ export class Game {
     this.cameraShake = Math.max(this.cameraShake, won ? 0.35 : 0.75);
     this.spawnBurst(this.battleX, this.battleZ, won ? 0xffd166 : 0xef476f);
     this.hud.popText(won ? `Battle -${this.battleAppliedLoss}` : "Crew Lost", won ? "boss" : "bad");
+    this.pulseHaptic(won ? [12, 28, 18] : [36, 56, 34], 160);
     if (!won || this.count <= 0) {
       this.failRun("Lost battle");
       return;
@@ -2599,6 +2615,7 @@ export class Game {
       this.hud.popText("Shield saved", "good");
       this.audio.hit();
       this.cameraShake = 0.4;
+      this.pulseHaptic(12, 120);
       return;
     }
     const loss = Math.min(this.count, Math.max(1, Math.floor(amount)));
@@ -2610,6 +2627,7 @@ export class Game {
     this.crowdImpactPulse = 0.86;
     this.hud.popText(`${reason} -${loss}`, "bad");
     this.audio.hit();
+    this.pulseHaptic(reason === "Hole" ? [36, 54, 36] : [22, 42, 22], 150);
     this.spawnBurst(this.centerX, this.distance, 0xef476f);
     this.spawnCrewKnockouts(loss);
     if (this.count <= 0) {
@@ -2623,6 +2641,7 @@ export class Game {
       this.hud.popText("Shield saved", "good");
       this.audio.hit();
       this.cameraShake = 0.4;
+      this.pulseHaptic(12, 120);
       return;
     }
     const reserve = this.bossHp > 0 ? 1 : 0;
@@ -2639,6 +2658,7 @@ export class Game {
     this.crowdImpactPulse = 0.86;
     this.hud.popText(`${reason} -${loss}`, "bad");
     this.audio.hit();
+    this.pulseHaptic([24, 46, 24], 150);
     this.spawnBurst(this.centerX, this.distance, 0xef476f);
     this.spawnCrewKnockouts(loss);
   }
@@ -2709,6 +2729,7 @@ export class Game {
     this.cameraShake = 0.55;
     this.hud.popText(`Vault x${multiplier}`, "coin");
     this.spawnStairConfetti();
+    this.pulseHaptic([22, 38, 22], 160);
     this.audio.reward();
   }
 
@@ -2799,6 +2820,7 @@ export class Game {
         } else {
           this.stats.score += 120;
           this.hud.popText("Dodged", "good");
+          this.pulseHaptic(10, 120);
         }
         this.audio.stomp();
         this.cameraShake = 0.9;
@@ -2878,6 +2900,7 @@ export class Game {
     }
     this.cameraShake = 1.25;
     this.hud.popText("Castle Taken", "boss");
+    this.pulseHaptic([34, 58, 42], 180);
     this.audio.stomp();
     this.audio.reward();
     this.spawnBossConfetti();
@@ -3016,6 +3039,7 @@ export class Game {
     }
     this.audio.switchMusic("roulette");
     this.hud.popText("Spin", "coin");
+    this.pulseHaptic(12, 120);
   }
 
   private updateRoulette(dt: number): void {
@@ -3096,6 +3120,7 @@ export class Game {
     this.hud.popText(prizeLabel, reward.tone);
     this.showRoulettePrizeSprite(prizeLabel, reward.color);
     this.spawnBurst(0, this.level.length + 18, reward.color);
+    this.pulseHaptic([18, 44, 26], 180);
     this.audio.reward();
     if (!this.rouletteDirectPayout) {
       this.stats.score += 650;
@@ -3248,6 +3273,7 @@ export class Game {
     if (playRewardSound) {
       this.audio.reward();
     }
+    this.pulseHaptic([16, 34, 24], 180);
     const reward = grantRunRewards(this.save, this.level.id, this.stats, this.level.targetScore, this.level.targetStair);
     this.hud.showReward(reward, this.save);
   }
@@ -3258,6 +3284,7 @@ export class Game {
     }
     this.mode = "fail";
     this.speed = 0;
+    this.pulseHaptic([42, 72, 42], 220);
     this.audio.fail();
     this.hud.showFail(this.stats);
   }
@@ -3632,6 +3659,18 @@ export class Game {
     this.tmpCameraLookTarget.set(lookX, lookY, targetZ);
     this.cameraLookTarget.lerp(this.tmpCameraLookTarget, 1 - Math.exp(-lookDamp * dt));
     this.camera.lookAt(this.cameraLookTarget);
+  }
+
+  private pulseHaptic(pattern: number | number[], minGap = 80): void {
+    if (!("vibrate" in navigator) || document.visibilityState !== "visible") {
+      return;
+    }
+    const now = performance.now();
+    if (now - this.lastHapticTime < minGap) {
+      return;
+    }
+    this.lastHapticTime = now;
+    navigator.vibrate(pattern);
   }
 
   private updatePointerTarget(event: PointerEvent): void {

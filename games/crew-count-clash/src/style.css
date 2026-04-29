@@ -348,6 +348,28 @@ button.is-active {
   }
 }
 
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes home-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(16px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
 .panel {
   position: fixed;
   left: 50%;
@@ -364,6 +386,14 @@ button.is-active {
   transform: translate(-50%, -50%);
   backdrop-filter: blur(16px);
   -webkit-overflow-scrolling: touch;
+}
+
+.panel.is-entering {
+  animation: panel-enter 240ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+}
+
+.panel.home.is-entering {
+  animation-name: home-panel-enter;
 }
 
 .panel.boss-reward {
