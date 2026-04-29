@@ -160,6 +160,7 @@ Status markers:
 - [x] Define boss config.
 - [x] Create Castle King boss model.
 - [x] Implement boss HP and damage formula.
+- [x] Add in-scene boss HP bar for clearer fight state.
 - [x] Implement stomp telegraph/attack.
 - [x] Implement sweep attack.
 - [x] Implement minion waves.

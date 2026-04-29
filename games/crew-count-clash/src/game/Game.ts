@@ -105,6 +105,8 @@ export class Game {
   private bossCrown: THREE.Object3D | null = null;
   private bossGate: THREE.Object3D | null = null;
   private bossWeakCore: THREE.Object3D | null = null;
+  private bossHealthBar: THREE.Group | null = null;
+  private bossHealthFill: THREE.Mesh | null = null;
   private stairScoreMarker: THREE.Object3D | null = null;
   private stairVault: THREE.Group | null = null;
   private stairFinaleStarted = false;
@@ -286,7 +288,9 @@ export class Game {
     statusMagnet: new THREE.MeshBasicMaterial({ color: 0x9d4edd, transparent: true, opacity: 0.48, depthWrite: false }),
     statusFrenzy: new THREE.MeshBasicMaterial({ color: 0xff9f1c, transparent: true, opacity: 0.42, depthWrite: false }),
     statusCommander: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.5, depthWrite: false }),
-    rouletteGlow: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false })
+    rouletteGlow: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false }),
+    bossHealthBack: new THREE.MeshBasicMaterial({ color: 0x111827, transparent: true, opacity: 0.72, depthWrite: false }),
+    bossHealthFill: new THREE.MeshBasicMaterial({ color: 0x58f29a, transparent: true, opacity: 0.92, depthWrite: false })
   };
 
   private readonly teamColors = {
@@ -730,7 +734,8 @@ export class Game {
     this.bossCrown = null;
     this.bossGate = null;
     this.bossWeakCore = null;
-    this.bossWeakCore = null;
+    this.bossHealthBar = null;
+    this.bossHealthFill = null;
     this.stairScoreMarker = null;
     this.stairVault = null;
     this.stairFinaleStarted = false;
@@ -1678,6 +1683,8 @@ export class Game {
     this.bossBody = null;
     this.bossCrown = null;
     this.bossGate = null;
+    this.bossHealthBar = null;
+    this.bossHealthFill = null;
     const z = this.level.length + 12;
     this.bossGroup.position.set(0, 0, z);
     this.bossGroup.rotation.set(0, 0, 0);
@@ -1898,6 +1905,26 @@ export class Game {
     label.position.set(0, 3.75, 3.7);
     label.scale.set(2.3, 0.52, 1);
     this.bossGroup.add(label);
+
+    this.bossHealthBar = new THREE.Group();
+    this.bossHealthBar.visible = false;
+    this.bossHealthBar.position.set(0, 3.34, 3.68);
+    const healthBack = new THREE.Mesh(new THREE.BoxGeometry(2.72, 0.28, 0.08), this.materials.bossHealthBack);
+    healthBack.renderOrder = 3;
+    this.bossHealthBar.add(healthBack);
+    this.bossHealthFill = new THREE.Mesh(new THREE.BoxGeometry(2.46, 0.15, 0.1), this.materials.bossHealthFill);
+    this.bossHealthFill.position.z = -0.06;
+    this.bossHealthFill.renderOrder = 4;
+    this.bossHealthBar.add(this.bossHealthFill);
+    const healthFrame = new THREE.Mesh(new THREE.BoxGeometry(2.86, 0.05, 0.09), this.materials.bossGold);
+    healthFrame.position.y = 0.18;
+    healthFrame.renderOrder = 5;
+    this.bossHealthBar.add(healthFrame);
+    const healthLabel = this.makeTextSprite("BOSS HP", "#111827", "#ffffff");
+    healthLabel.position.set(0, 0.38, -0.03);
+    healthLabel.scale.set(0.88, 0.24, 1);
+    this.bossHealthBar.add(healthLabel);
+    this.bossGroup.add(this.bossHealthBar);
     this.world.add(this.bossGroup);
   }
 
@@ -2848,6 +2875,24 @@ export class Game {
     return clamp(1 + this.bossWeakPoints * 0.14, 1, 1.7);
   }
 
+  private updateBossHealthBar(): void {
+    if (!this.bossHealthBar || !this.bossHealthFill) {
+      return;
+    }
+    const visible = this.mode === "boss" || this.mode === "bossVictory";
+    this.bossHealthBar.visible = visible;
+    if (!visible) {
+      return;
+    }
+    const hpPercent = clamp(this.bossHp / Math.max(1, this.bossMaxHp), 0, 1);
+    this.bossHealthFill.visible = hpPercent > 0.01;
+    this.bossHealthFill.scale.x = Math.max(0.001, hpPercent);
+    this.bossHealthFill.position.x = -(1 - hpPercent) * 1.23;
+    this.materials.bossHealthFill.color.setHex(hpPercent > 0.58 ? 0x58f29a : hpPercent > 0.28 ? 0xffd166 : 0xef476f);
+    const pulse = 1 + this.bossHitPulse * 0.06 + Math.sin(this.lastTime * 8) * this.bossHitPulse * 0.018;
+    this.bossHealthBar.scale.set(pulse, pulse, 1);
+  }
+
   private startBoss(): void {
     this.mode = "boss";
     this.speed = 0;
@@ -2862,6 +2907,7 @@ export class Game {
     if (this.bossWeakCore) {
       this.bossWeakCore.visible = this.bossWeakPoints > 0;
     }
+    this.updateBossHealthBar();
     this.audio.switchMusic("boss");
     this.hud.popText(this.bossWeakPoints > 0 ? `Weak x${this.getBossWeakMultiplier().toFixed(1)}` : (this.level.boss?.name ?? "Boss"), "boss");
   }
@@ -2970,6 +3016,7 @@ export class Game {
     this.bossGroup.rotation.y = Math.sin(this.lastTime * 2.4) * 0.04 + Math.sin(this.lastTime * 48) * this.bossHitPulse * 0.025;
     this.bossGroup.position.x = Math.sin(this.lastTime * 34) * this.bossHitPulse * 0.05;
     this.bossGroup.scale.setScalar(1 + this.bossHitPulse * 0.018);
+    this.updateBossHealthBar();
     this.hud.updateRun(this.level.id, 1 - this.bossHp / this.bossMaxHp, this.save, this.stats, this.count, this.shield);
     if (this.bossHp <= 0) {
       this.startBossVictory();
@@ -2995,6 +3042,7 @@ export class Game {
     if (this.bossTelegraph) {
       this.bossTelegraph.visible = false;
     }
+    this.updateBossHealthBar();
     this.cameraShake = 1.25;
     this.hud.popText("Castle Taken", "boss");
     this.pulseHaptic([34, 58, 42], 180);
@@ -3093,6 +3141,7 @@ export class Game {
 
     this.bossGroup.rotation.y = Math.sin(this.lastTime * 24) * (1 - progress) * 0.025;
     this.bossGroup.position.x = Math.sin(this.lastTime * 31) * (1 - progress) * 0.04;
+    this.updateBossHealthBar();
     this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
 
     if (this.bossVictoryTimer >= 3.65) {
