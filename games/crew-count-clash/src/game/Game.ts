@@ -253,6 +253,8 @@ export class Game {
     enemyVisor: new THREE.MeshStandardMaterial({ color: 0x231942, roughness: 0.3, metalness: 0.1 }),
     track: new THREE.MeshStandardMaterial({ color: 0x67d7e5, roughness: 0.7, metalness: 0.03 }),
     trackDark: new THREE.MeshStandardMaterial({ color: 0x2b9bb6, roughness: 0.76, metalness: 0.03 }),
+    trackEdge: new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.58, metalness: 0.02 }),
+    trackLane: new THREE.MeshStandardMaterial({ color: 0xeafcff, roughness: 0.5, metalness: 0.03 }),
     movingTrack: new THREE.MeshStandardMaterial({ color: 0xa7f25b, roughness: 0.6, metalness: 0.05 }),
     gateGood: new THREE.MeshStandardMaterial({ color: 0x58f29a, roughness: 0.22, transparent: true, opacity: 0.74 }),
     gateBad: new THREE.MeshStandardMaterial({ color: 0xff5a5f, roughness: 0.28, transparent: true, opacity: 0.72 }),
@@ -903,6 +905,37 @@ export class Game {
     mesh.position.set(segment.x ?? 0, -0.12, (segment.zStart + segment.zEnd) / 2);
     mesh.receiveShadow = true;
     mesh.castShadow = true;
+
+    [-1, 1].forEach((side) => {
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.08, Math.max(0.4, length - 0.28)), this.materials.trackEdge);
+      edge.position.set(side * (segment.width / 2 - 0.08), 0.23, 0);
+      edge.castShadow = true;
+      edge.receiveShadow = true;
+      mesh.add(edge);
+    });
+
+    [-1, 1].forEach((side) => {
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.4, segment.width - 0.36), 0.06, 0.16), this.materials.trackEdge);
+      cap.position.set(0, 0.24, side * (length / 2 - 0.08));
+      cap.receiveShadow = true;
+      mesh.add(cap);
+    });
+
+    const laneXs = segment.width >= 6.2 ? [-segment.width * 0.18, segment.width * 0.18] : [0];
+    const dashSpacing = 5.2;
+    const dashCount = Math.min(28, Math.max(2, Math.floor(length / dashSpacing)));
+    for (let index = 0; index < dashCount; index += 1) {
+      const z = -length / 2 + 2.2 + index * dashSpacing;
+      if (z > length / 2 - 1.4) {
+        continue;
+      }
+      laneXs.forEach((x) => {
+        const dash = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.052, 0.82), this.materials.trackLane);
+        dash.position.set(x, 0.255, z);
+        dash.receiveShadow = true;
+        mesh.add(dash);
+      });
+    }
 
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.12, segment.width - 0.9), 0.04, 0.18), this.materials.trackDark);
     stripe.position.set(0, 0.19, 0);
