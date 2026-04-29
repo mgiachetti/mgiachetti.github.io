@@ -264,6 +264,7 @@ Status markers:
 - [x] Add coin/gem bursts.
 - [x] Add impact squash/stretch.
 - [x] Add crew contact shadows and body highlights for stronger mobile readability.
+- [x] Add persistent 3D powerup auras for shield, magnet, frenzy, and commander states.
 - [x] Add camera shake for major hits.
 - [x] Add boss defeat confetti.
 - [x] Smooth camera transitions between run, battles, roulette, boss, and stairs.

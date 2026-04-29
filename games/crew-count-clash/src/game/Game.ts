@@ -77,6 +77,11 @@ export class Game {
   private world = new THREE.Group();
   private crowd = new THREE.Group();
   private decorGroup = new THREE.Group();
+  private statusGroup = new THREE.Group();
+  private shieldAura: THREE.Mesh | null = null;
+  private magnetAura: THREE.Mesh | null = null;
+  private frenzyAura: THREE.Mesh | null = null;
+  private commanderAura: THREE.Mesh | null = null;
   private bodyInstances: THREE.InstancedMesh;
   private bodyHighlightInstances: THREE.InstancedMesh;
   private visorInstances: THREE.InstancedMesh;
@@ -272,7 +277,11 @@ export class Game {
     castle: new THREE.MeshStandardMaterial({ color: 0xc7d1da, roughness: 0.75, metalness: 0.03 }),
     wheel: new THREE.MeshStandardMaterial({ color: 0xffca3a, roughness: 0.42, metalness: 0.08 }),
     trail: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.44, transparent: true, opacity: 0.5, emissive: 0xffffff, emissiveIntensity: 0.1 }),
-    contactShadow: new THREE.MeshBasicMaterial({ color: 0x102033, transparent: true, opacity: 0.16, depthWrite: false })
+    contactShadow: new THREE.MeshBasicMaterial({ color: 0x102033, transparent: true, opacity: 0.16, depthWrite: false }),
+    statusShield: new THREE.MeshBasicMaterial({ color: 0xbdefff, transparent: true, opacity: 0.18, depthWrite: false }),
+    statusMagnet: new THREE.MeshBasicMaterial({ color: 0x9d4edd, transparent: true, opacity: 0.48, depthWrite: false }),
+    statusFrenzy: new THREE.MeshBasicMaterial({ color: 0xff9f1c, transparent: true, opacity: 0.42, depthWrite: false }),
+    statusCommander: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.5, depthWrite: false })
   };
 
   private readonly teamColors = {
@@ -342,6 +351,7 @@ export class Game {
       mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     });
     this.crowd.add(this.shadowInstances, this.trailInstances, this.leftLegInstances, this.rightLegInstances, this.bodyInstances, this.bodyHighlightInstances, this.visorInstances, this.packInstances, this.hatInstances);
+    this.createStatusAuras();
 
     this.bindUi();
     this.bindInput();
@@ -587,8 +597,37 @@ export class Game {
     floor.receiveShadow = true;
     this.scene.add(floor);
 
-    this.scene.add(this.world, this.crowd);
+    this.scene.add(this.world, this.crowd, this.statusGroup);
     this.camera.position.set(0, 8.5, -12);
+  }
+
+  private createStatusAuras(): void {
+    this.statusGroup.visible = false;
+    this.statusGroup.frustumCulled = false;
+
+    this.shieldAura = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), this.materials.statusShield);
+    this.shieldAura.position.y = 0.72;
+    this.shieldAura.scale.set(1.4, 0.62, 1.4);
+    this.shieldAura.renderOrder = 1;
+    this.statusGroup.add(this.shieldAura);
+
+    this.magnetAura = new THREE.Mesh(new THREE.TorusGeometry(1, 0.035, 8, 72), this.materials.statusMagnet);
+    this.magnetAura.position.y = 0.09;
+    this.magnetAura.rotation.x = Math.PI / 2;
+    this.magnetAura.renderOrder = 2;
+    this.statusGroup.add(this.magnetAura);
+
+    this.frenzyAura = new THREE.Mesh(new THREE.TorusGeometry(1, 0.045, 8, 72), this.materials.statusFrenzy);
+    this.frenzyAura.position.y = 0.12;
+    this.frenzyAura.rotation.x = Math.PI / 2;
+    this.frenzyAura.renderOrder = 2;
+    this.statusGroup.add(this.frenzyAura);
+
+    this.commanderAura = new THREE.Mesh(new THREE.TorusGeometry(1, 0.028, 8, 72), this.materials.statusCommander);
+    this.commanderAura.position.y = 0.16;
+    this.commanderAura.rotation.x = Math.PI / 2;
+    this.commanderAura.renderOrder = 2;
+    this.statusGroup.add(this.commanderAura);
   }
 
   private resize(): void {
@@ -2060,6 +2099,7 @@ export class Game {
     }
 
     this.updateCrowdInstances(time);
+    this.updateStatusAuras(time);
     this.updateCamera(dt);
     this.renderer.render(this.scene, this.camera);
   }
@@ -3625,6 +3665,56 @@ export class Game {
     this.trailInstances.instanceMatrix.needsUpdate = true;
     this.leftLegInstances.instanceMatrix.needsUpdate = true;
     this.rightLegInstances.instanceMatrix.needsUpdate = true;
+  }
+
+  private updateStatusAuras(time: number): void {
+    const canShow =
+      this.count > 0 &&
+      (this.mode === "run" || this.mode === "battle" || this.mode === "boss" || this.mode === "bossVictory" || this.mode === "stairs");
+    const hasStatus = this.shield > 0 || this.magnetTimer > 0 || this.frenzyTimer > 0 || this.commanderTimer > 0;
+    this.statusGroup.visible = canShow && hasStatus;
+    if (!this.statusGroup.visible) {
+      return;
+    }
+
+    const focusX = this.mode === "battle" ? this.battleX : this.centerX;
+    const focusZ =
+      this.mode === "battle"
+        ? this.battleZ - 0.82
+        : this.mode === "stairs"
+          ? this.level.length + 8 + clamp(this.stats.finalStair / 24, 0, 1) * 18.2
+          : this.distance - 0.28;
+    const radius = clamp(this.formationRadius() + 0.62, 1.15, 3.1);
+    this.statusGroup.position.set(focusX, 0, focusZ);
+
+    if (this.shieldAura) {
+      this.shieldAura.visible = this.shield > 0;
+      const pulse = 1 + Math.sin(time * 4.2) * 0.035;
+      this.shieldAura.scale.set(radius * pulse, 0.58 + Math.sin(time * 3.8) * 0.035, radius * pulse);
+      this.shieldAura.rotation.y += 0.018;
+      this.materials.statusShield.opacity = 0.13 + Math.sin(time * 5.4) * 0.035;
+    }
+    if (this.magnetAura) {
+      this.magnetAura.visible = this.magnetTimer > 0;
+      const pulse = 1 + Math.sin(time * 7.2) * 0.045;
+      this.magnetAura.scale.set(radius * 1.24 * pulse, radius * 1.24 * pulse, 1);
+      this.magnetAura.rotation.z -= 0.08;
+      this.materials.statusMagnet.opacity = 0.34 + Math.sin(time * 8.5) * 0.08;
+    }
+    if (this.frenzyAura) {
+      this.frenzyAura.visible = this.frenzyTimer > 0;
+      const pulse = 1 + Math.sin(time * 11.5) * 0.06;
+      this.frenzyAura.scale.set(radius * 1.08 * pulse, radius * 1.08 * pulse, 1);
+      this.frenzyAura.rotation.z += 0.12;
+      this.materials.statusFrenzy.opacity = 0.28 + Math.sin(time * 12) * 0.08;
+    }
+    if (this.commanderAura) {
+      this.commanderAura.visible = this.commanderTimer > 0;
+      const pulse = 1 + Math.sin(time * 5.8) * 0.035;
+      this.commanderAura.scale.set(radius * 0.82 * pulse, radius * 0.82 * pulse, 1);
+      this.commanderAura.rotation.z += 0.045;
+      this.materials.statusCommander.opacity = 0.36 + Math.sin(time * 6.6) * 0.07;
+    }
   }
 
   private updateCamera(dt: number): void {
