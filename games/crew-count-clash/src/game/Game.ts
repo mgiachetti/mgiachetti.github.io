@@ -65,6 +65,8 @@ export class Game {
   private readonly tmpScale = new THREE.Vector3(1, 1, 1);
   private readonly tmpPosition = new THREE.Vector3();
   private readonly tmpEuler = new THREE.Euler();
+  private readonly cameraLookTarget = new THREE.Vector3(0, 0.75, 8);
+  private readonly tmpCameraLookTarget = new THREE.Vector3(0, 0.75, 8);
   private readonly hiddenMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
   private readonly textTextureCache = new Map<string, THREE.CanvasTexture>();
 
@@ -145,6 +147,8 @@ export class Game {
   private readonly jumpDuration = 0.86;
   private gooTimer = 0;
   private cameraShake = 0;
+  private cameraBlendTimer = 0;
+  private cameraRigKey = "title";
   private crowdImpactPulse = 0;
   private lastTime = 0;
   private pointerDown = false;
@@ -2334,8 +2338,6 @@ export class Game {
     this.targetX = enemyX;
     this.centerX = damp(this.centerX, enemyX, 12, 0.08);
     this.distance = entity.data.z - 0.45;
-    this.camera.position.y = 5.8;
-    this.camera.position.z = entity.data.z - 6.2;
     entity.cooldown = this.battleDuration + 0.5;
     entity.mesh.position.x = enemyX;
     entity.mesh.userData.battleProgress = 0;
@@ -3519,6 +3521,25 @@ export class Game {
     const isBossVictory = this.mode === "bossVictory";
     const isStairFinale = this.mode === "stairs" && this.stairFinaleStarted;
     const isBattleScene = this.mode === "battle";
+    const rigKey =
+      this.mode === "roulette"
+        ? "roulette"
+        : isBossVictory
+          ? "bossVictory"
+          : isBossScene
+            ? "boss"
+            : isBattleScene
+              ? "battle"
+              : isStairFinale
+                ? "stairFinale"
+                : this.mode === "stairs"
+                  ? "stairs"
+                  : "run";
+    if (rigKey !== this.cameraRigKey) {
+      this.cameraRigKey = rigKey;
+      this.cameraBlendTimer = 0.82;
+    }
+    this.cameraBlendTimer = Math.max(0, this.cameraBlendTimer - dt);
     const targetZ =
       this.mode === "roulette"
         ? this.level.length + 18
@@ -3551,10 +3572,15 @@ export class Game {
     const shake = this.cameraShake > 0 ? (Math.random() - 0.5) * this.cameraShake * 0.6 : 0;
     const lookY = isBossVictory ? 1.9 : isStairFinale ? 3.1 : this.mode === "stairs" ? 1.35 : 0.75;
     const lookX = isBattleScene ? this.battleX * 0.35 : this.centerX * 0.35;
-    this.camera.position.x = damp(this.camera.position.x, (isBattleScene ? this.battleX : this.centerX) * 0.42 + shake, 5, dt);
-    this.camera.position.y = damp(this.camera.position.y, targetY + Math.abs(shake), 4.5, dt);
-    this.camera.position.z = damp(this.camera.position.z, cameraZ, 5.2, dt);
-    this.camera.lookAt(lookX, lookY, targetZ);
+    const transition = this.cameraBlendTimer > 0;
+    const positionDamp = transition ? 2.6 : 5.2;
+    const lookDamp = transition ? 3.1 : 8.5;
+    this.camera.position.x = damp(this.camera.position.x, (isBattleScene ? this.battleX : this.centerX) * 0.42 + shake, positionDamp, dt);
+    this.camera.position.y = damp(this.camera.position.y, targetY + Math.abs(shake), transition ? 2.4 : 4.5, dt);
+    this.camera.position.z = damp(this.camera.position.z, cameraZ, transition ? 2.7 : 5.2, dt);
+    this.tmpCameraLookTarget.set(lookX, lookY, targetZ);
+    this.cameraLookTarget.lerp(this.tmpCameraLookTarget, 1 - Math.exp(-lookDamp * dt));
+    this.camera.lookAt(this.cameraLookTarget);
   }
 
   private updatePointerTarget(event: PointerEvent): void {
