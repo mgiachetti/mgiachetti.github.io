@@ -111,6 +111,10 @@ export class Game {
   private stairFinaleTimer = 0;
   private rouletteGroup = new THREE.Group();
   private rouletteWheel: THREE.Group | null = null;
+  private roulettePointer: THREE.Group | null = null;
+  private rouletteHubGem: THREE.Object3D | null = null;
+  private rouletteGlow: THREE.Mesh | null = null;
+  private rouletteBulbs: THREE.Object3D[] = [];
   private roulettePrizeSprite: THREE.Sprite | null = null;
   private rouletteSelectedReward: RouletteReward | null = null;
   private bossHp = 0;
@@ -281,7 +285,8 @@ export class Game {
     statusShield: new THREE.MeshBasicMaterial({ color: 0xbdefff, transparent: true, opacity: 0.18, depthWrite: false }),
     statusMagnet: new THREE.MeshBasicMaterial({ color: 0x9d4edd, transparent: true, opacity: 0.48, depthWrite: false }),
     statusFrenzy: new THREE.MeshBasicMaterial({ color: 0xff9f1c, transparent: true, opacity: 0.42, depthWrite: false }),
-    statusCommander: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.5, depthWrite: false })
+    statusCommander: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0.5, depthWrite: false }),
+    rouletteGlow: new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false })
   };
 
   private readonly teamColors = {
@@ -731,6 +736,10 @@ export class Game {
     this.stairFinaleStarted = false;
     this.stairFinaleTimer = 0;
     this.rouletteWheel = null;
+    this.roulettePointer = null;
+    this.rouletteHubGem = null;
+    this.rouletteGlow = null;
+    this.rouletteBulbs = [];
     this.roulettePrizeSprite = null;
     this.rouletteDirectPayout = false;
     this.extraSpinReward = null;
@@ -2000,6 +2009,10 @@ export class Game {
   private createRouletteWheel(z: number): void {
     this.rouletteGroup.clear();
     this.rouletteWheel = new THREE.Group();
+    this.roulettePointer = null;
+    this.rouletteHubGem = null;
+    this.rouletteGlow = null;
+    this.rouletteBulbs = [];
     this.roulettePrizeSprite = null;
     this.rouletteGroup.position.set(0, 1.48, z);
 
@@ -2044,6 +2057,7 @@ export class Game {
       const angle = (index / 24) * Math.PI * 2;
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), index % 2 ? this.materials.gem : this.materials.bossGold);
       bulb.position.set(Math.cos(angle) * 2.32, Math.sin(angle) * 2.32, -0.38);
+      this.rouletteBulbs.push(bulb);
       this.rouletteWheel.add(bulb);
     }
     const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.28, 40), this.materials.bossGold);
@@ -2053,18 +2067,28 @@ export class Game {
     this.rouletteWheel.add(hub);
     const hubGem = new THREE.Mesh(new THREE.IcosahedronGeometry(0.28, 1), this.materials.gem);
     hubGem.position.z = -0.6;
+    this.rouletteHubGem = hubGem;
     this.rouletteWheel.add(hubGem);
     this.rouletteGroup.add(this.rouletteWheel);
 
+    this.rouletteGlow = new THREE.Mesh(new THREE.TorusGeometry(2.34, 0.055, 10, 112), this.materials.rouletteGlow);
+    this.rouletteGlow.position.z = -0.68;
+    this.rouletteGlow.visible = false;
+    this.rouletteGlow.renderOrder = 3;
+    this.rouletteGroup.add(this.rouletteGlow);
+
+    this.roulettePointer = new THREE.Group();
+    this.roulettePointer.position.set(0, 2.38, -0.72);
     const pointerBase = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.28, 0.18), this.materials.hazardDark);
-    pointerBase.position.set(0, 2.52, -0.72);
+    pointerBase.position.set(0, 0.14, 0);
     pointerBase.castShadow = true;
-    this.rouletteGroup.add(pointerBase);
+    this.roulettePointer.add(pointerBase);
     const pointer = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.74, 3), this.materials.hazard);
-    pointer.position.set(0, 2.23, -0.82);
+    pointer.position.set(0, -0.15, -0.1);
     pointer.rotation.z = Math.PI;
     pointer.castShadow = true;
-    this.rouletteGroup.add(pointer);
+    this.roulettePointer.add(pointer);
+    this.rouletteGroup.add(this.roulettePointer);
 
     const label = this.makeTextSprite("BONUS WHEEL", "#111827", "#ffffff");
     label.position.set(0, -2.66, -0.34);
@@ -3122,6 +3146,7 @@ export class Game {
         const pulse = 1 + Math.sin(this.lastTime * 10) * 0.012;
         this.rouletteWheel.scale.set(pulse, pulse, 1);
       }
+      this.animateRouletteDetails(1, true);
       this.hud.updateRun(this.level.id, 1, this.save, this.stats, this.count, this.shield);
       if (this.rouletteRevealTimer <= 0) {
         if (this.rouletteDirectPayout && this.extraSpinReward) {
@@ -3142,6 +3167,7 @@ export class Game {
     if (this.rouletteWheel) {
       this.rouletteWheel.rotation.z = this.rouletteSpinStart + (this.rouletteSpinEnd - this.rouletteSpinStart) * eased;
     }
+    this.animateRouletteDetails(progress, false);
     if (this.rouletteTick <= 0 && progress < 0.98) {
       this.audio.rouletteTick();
       this.rouletteTick = 0.045 + progress * 0.16;
@@ -3149,6 +3175,37 @@ export class Game {
     this.hud.updateRun(this.level.id, progress, this.save, this.stats, this.count, this.shield);
     if (progress >= 1) {
       this.resolveRoulette();
+    }
+  }
+
+  private animateRouletteDetails(progress: number, reveal: boolean): void {
+    const speed = reveal ? 18 : 10 + progress * 18;
+    if (this.roulettePointer) {
+      const tap = Math.abs(Math.sin(this.lastTime * speed)) * (reveal ? 0.025 : 0.08 * (1 - progress * 0.35));
+      this.roulettePointer.position.y = 2.38 - tap;
+      const scale = reveal ? 1.04 + Math.sin(this.lastTime * 9) * 0.025 : 1 + tap * 0.8;
+      this.roulettePointer.scale.set(scale, scale, 1);
+    }
+    if (this.rouletteHubGem) {
+      this.rouletteHubGem.rotation.z += reveal ? 0.08 : 0.045 + progress * 0.035;
+      const hubPulse = reveal ? 1.12 + Math.sin(this.lastTime * 12) * 0.07 : 1 + Math.sin(this.lastTime * 5) * 0.025;
+      this.rouletteHubGem.scale.setScalar(hubPulse);
+    }
+    this.rouletteBulbs.forEach((bulb, index) => {
+      const chase = reveal ? Math.sin(this.lastTime * 16 + index * 0.55) : Math.sin(this.lastTime * speed - index * 0.52);
+      const scale = reveal ? 1.1 + Math.max(0, chase) * 0.58 : 0.88 + Math.max(0, chase) * 0.52;
+      bulb.scale.setScalar(scale);
+    });
+    if (this.rouletteGlow) {
+      this.rouletteGlow.visible = reveal;
+      if (reveal) {
+        const pulse = 1 + Math.sin(this.lastTime * 8) * 0.035;
+        this.rouletteGlow.scale.set(pulse, pulse, 1);
+        this.rouletteGlow.rotation.z += 0.035;
+        this.materials.rouletteGlow.opacity = 0.34 + Math.sin(this.lastTime * 10) * 0.08;
+      } else {
+        this.materials.rouletteGlow.opacity = 0;
+      }
     }
   }
 
@@ -3189,6 +3246,11 @@ export class Game {
     const prizeLabel = this.rouletteDirectPayout ? this.applyDirectRouletteReward(reward) : this.applyRouletteReward(reward);
     this.rouletteResolved = true;
     this.rouletteRevealTimer = 3.2;
+    this.materials.rouletteGlow.color.setHex(reward.color);
+    this.materials.rouletteGlow.opacity = 0.34;
+    if (this.rouletteGlow) {
+      this.rouletteGlow.visible = true;
+    }
     this.hud.showRoulettePrize(prizeLabel);
     this.hud.popText(prizeLabel, reward.tone);
     this.showRoulettePrizeSprite(prizeLabel, reward.color);

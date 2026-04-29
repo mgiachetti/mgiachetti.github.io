@@ -178,6 +178,7 @@ Status markers:
 - [x] Implement jackpot skin reward.
 - [x] Add no-ad extra spin rules using tickets/gems.
 - [x] Add roulette SFX and reward fanfare.
+- [x] Add animated roulette pointer, chasing bulbs, and prize glow reveal.
 
 ## Phase 14 - Scoring And Economy
 
