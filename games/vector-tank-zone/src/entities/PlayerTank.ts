@@ -36,9 +36,10 @@ export class PlayerTank {
   update(input: InputState, arenaSize: number, dt: number): void {
     const turnRate = 2.15;
     this.yaw += input.turn * turnRate * dt;
+    this.turretYaw += input.turretDelta;
     if (Math.abs(input.turretTurn) > 0.04) {
       this.turretYaw += input.turretTurn * 1.35 * dt;
-    } else {
+    } else if (!input.aimActive) {
       this.turretYaw += clamp(wrapAngle(this.yaw - this.turretYaw), -0.675 * dt, 0.675 * dt);
     }
     const targetSpeed = input.throttle * (input.throttle > 0 ? 12 : 7);

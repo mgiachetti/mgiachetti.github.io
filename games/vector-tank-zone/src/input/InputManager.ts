@@ -4,6 +4,8 @@ export type InputState = {
   throttle: number;
   turn: number;
   turretTurn: number;
+  turretDelta: number;
+  aimActive: boolean;
   fire: boolean;
   fireHeld: boolean;
 };
@@ -20,6 +22,7 @@ type StickState = {
 export class InputManager {
   private readonly canvas: HTMLCanvasElement;
   private readonly keys = new Set<string>();
+  private readonly desktopMouse = window.matchMedia("(pointer: fine)").matches;
   private readonly moveStick: StickState = {
     id: null,
     startX: 0,
@@ -37,6 +40,9 @@ export class InputManager {
     knob: document.querySelector<HTMLElement>('[data-stick-knob="aim"]')
   };
   private fireQueued = false;
+  private mouseFireHeld = false;
+  private pointerLocked = false;
+  private mouseDeltaX = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -50,15 +56,28 @@ export class InputManager {
     const moveDx = this.stickX(this.moveStick);
     const moveDy = this.stickY(this.moveStick);
     const aimDx = this.stickX(this.aimStick);
+    const turretDelta = this.pointerLocked ? -this.mouseDeltaX * 0.0028 : 0;
+    this.mouseDeltaX = 0;
     const fire = this.fireQueued || this.keys.has("Space") || this.keys.has("Enter");
     this.fireQueued = false;
     return {
       throttle: clamp(keyboardThrottle + moveDy, -1, 1),
       turn: clamp(keyboardTurn + moveDx, -1, 1),
       turretTurn: clamp(keyboardTurret - aimDx, -1, 1),
+      turretDelta,
+      aimActive: this.pointerLocked || this.aimStick.id !== null,
       fire,
-      fireHeld: this.aimStick.id !== null || this.keys.has("Space") || this.keys.has("Enter")
+      fireHeld: this.mouseFireHeld || this.aimStick.id !== null || this.keys.has("Space") || this.keys.has("Enter")
     };
+  }
+
+  releasePointerLock(): void {
+    if (document.pointerLockElement === this.canvas) {
+      document.exitPointerLock();
+    }
+    this.pointerLocked = false;
+    this.mouseDeltaX = 0;
+    this.mouseFireHeld = false;
   }
 
   private bind(): void {
@@ -71,8 +90,42 @@ export class InputManager {
     window.addEventListener("keyup", (event) => {
       this.keys.delete(event.code);
     });
+    document.addEventListener("pointerlockchange", () => {
+      this.pointerLocked = document.pointerLockElement === this.canvas;
+      if (!this.pointerLocked) {
+        this.mouseFireHeld = false;
+      }
+    });
+    document.addEventListener("mousemove", (event) => {
+      if (this.pointerLocked) {
+        this.mouseDeltaX += event.movementX;
+      }
+    });
+    window.addEventListener("mousedown", (event) => {
+      if (this.pointerLocked && event.button === 0) {
+        this.fireQueued = true;
+        this.mouseFireHeld = true;
+      }
+    });
+    window.addEventListener("mouseup", (event) => {
+      if (event.button === 0) {
+        this.mouseFireHeld = false;
+      }
+    });
+    this.canvas.addEventListener("contextmenu", (event) => event.preventDefault());
 
     this.canvas.addEventListener("pointerdown", (event) => {
+      if (this.desktopMouse) {
+        event.preventDefault();
+        if (document.pointerLockElement !== this.canvas) {
+          void this.canvas.requestPointerLock();
+        }
+        if (event.button === 0) {
+          this.fireQueued = true;
+          this.mouseFireHeld = true;
+        }
+        return;
+      }
       const stick = event.clientX < window.innerWidth * 0.5 ? this.moveStick : this.aimStick;
       this.captureStick(stick, event);
       if (stick === this.aimStick) {

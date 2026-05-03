@@ -72,6 +72,7 @@ export class Game {
     this.hud.onRetry = () => void this.beginLevel(this.level.id);
     this.hud.onHome = () => {
       this.mode = "title";
+      this.input.releasePointerLock();
       this.audio.setEngine(0, false);
       this.audio.switchMusic("menu");
       this.hud.showTitle(this.save);
@@ -79,6 +80,7 @@ export class Game {
     this.hud.onPause = () => {
       if (this.mode === "playing") {
         this.mode = "paused";
+        this.input.releasePointerLock();
         this.audio.setEngine(0, false);
         this.hud.showPause();
       }
@@ -101,6 +103,7 @@ export class Game {
       if (event.code === "Escape" || event.code === "KeyP") {
         if (this.mode === "playing") {
           this.mode = "paused";
+          this.input.releasePointerLock();
           this.audio.setEngine(0, false);
           this.hud.showPause();
         } else if (this.mode === "paused") {
@@ -161,6 +164,7 @@ export class Game {
   private showBriefing(levelNumber: number): void {
     this.pendingLevel = levelNumber;
     this.mode = "briefing";
+    this.input.releasePointerLock();
     this.audio.setEngine(0, false);
     this.audio.switchMusic("menu");
     this.hud.showBriefing(getLevel(levelNumber), this.save);
@@ -330,6 +334,7 @@ export class Game {
       return;
     }
     this.mode = "levelClearing";
+    this.input.releasePointerLock();
     this.audio.setEngine(0, false);
     this.clearTimer = 0;
     this.clearBoss = bossDefeated;
@@ -343,7 +348,7 @@ export class Game {
   private updateLevelClearing(dt: number): void {
     this.clearTimer += dt;
     this.audio.setEngine(0, false);
-    this.player.update({ throttle: 0, turn: 0, turretTurn: 0, fire: false, fireHeld: false }, this.level.arenaSize, dt);
+    this.player.update({ throttle: 0, turn: 0, turretTurn: 0, turretDelta: 0, aimActive: false, fire: false, fireHeld: false }, this.level.arenaSize, dt);
     if (this.clearBoss && this.clearTimer < 2.2 && Math.floor(this.clearTimer * 8) !== Math.floor((this.clearTimer - dt) * 8)) {
       const angle = this.clearTimer * 5.4;
       const burst = new THREE.Vector3(Math.sin(angle) * 4, 1.2 + Math.sin(angle * 1.7) * 0.6, this.level.arenaSize * 0.32 + Math.cos(angle) * 4);
@@ -361,6 +366,7 @@ export class Game {
       return;
     }
     this.mode = "levelClear";
+    this.input.releasePointerLock();
     this.audio.setEngine(0, false);
     this.applyCompletionBonuses();
     const reward = grantLevelRewards(this.save, this.level.id, this.stats, this.level.targetScore);
@@ -375,6 +381,7 @@ export class Game {
       return;
     }
     this.mode = "gameOver";
+    this.input.releasePointerLock();
     this.audio.setEngine(0, false);
     this.particles.spawnExplosion(this.player.position.clone().setY(0.9), true);
     this.audio.fail();
