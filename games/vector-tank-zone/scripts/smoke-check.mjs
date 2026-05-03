@@ -158,6 +158,43 @@ try {
   await boss.screenshot(join(screenshotDir, "vector-tank-zone-smoke-boss-mobile.png"));
   await boss.close();
 
+  const landscape = await openPage();
+  await landscape.send("Page.enable");
+  await landscape.send("Runtime.enable");
+  await landscape.send("Emulation.setDeviceMetricsOverride", {
+    width: 844,
+    height: 390,
+    deviceScaleFactor: 2,
+    mobile: true,
+    screenOrientation: { type: "landscapePrimary", angle: 90 }
+  });
+  await landscape.send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  await landscape.send("Page.navigate", { url: `${origin}?autostart=1&level=1&pixel=1` });
+  await sleep(1400);
+  const landscapeState = await landscape.eval(`(() => {
+    const strip = document.querySelector(".status-strip").getBoundingClientRect();
+    const controls = document.querySelector(".touch-controls").getBoundingClientRect();
+    const boxes = Array.from(document.querySelectorAll(".status-strip div")).map((item) => item.getBoundingClientRect());
+    return {
+      statusBoxCount: boxes.length,
+      stripTop: strip.top,
+      stripBottom: strip.bottom,
+      maxBoxHeight: Math.max(...boxes.map((box) => box.height)),
+      controlsTop: controls.top,
+      controlsBottom: controls.bottom,
+      controlsVisible: getComputedStyle(document.querySelector(".touch-controls")).display !== "none"
+    };
+  })()`);
+  assert(landscapeState.controlsVisible, "Landscape mobile should show joystick controls.");
+  assert(landscapeState.statusBoxCount === 4, `Expected 4 compact status boxes, got ${landscapeState.statusBoxCount}.`);
+  assert(landscapeState.stripTop <= 18, `Landscape status strip should sit at the top, got top ${landscapeState.stripTop}.`);
+  assert(landscapeState.stripBottom <= 56, `Landscape status strip should be compact, got bottom ${landscapeState.stripBottom}.`);
+  assert(landscapeState.maxBoxHeight <= 40, `Landscape status boxes should be short, got ${landscapeState.maxBoxHeight}.`);
+  assert(landscapeState.stripBottom < landscapeState.controlsTop, "Landscape status strip should not overlap joystick controls.");
+  assert(landscapeState.controlsBottom <= 390, "Landscape joystick controls should fit viewport.");
+  await landscape.screenshot(join(screenshotDir, "vector-tank-zone-smoke-mobile-landscape.png"));
+  await landscape.close();
+
   const finalBoss = await openPage();
   await finalBoss.send("Page.enable");
   await finalBoss.send("Runtime.enable");

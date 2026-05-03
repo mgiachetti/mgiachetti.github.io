@@ -208,6 +208,9 @@ button:active {
   margin-top: 2px;
   font-size: 22px;
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .icon-button {
@@ -775,5 +778,90 @@ h2 {
 
   .hud-bottom {
     bottom: calc(max(10px, env(safe-area-inset-bottom)) + 104px);
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+  .hud {
+    padding:
+      max(8px, env(safe-area-inset-top))
+      max(10px, env(safe-area-inset-right))
+      max(8px, env(safe-area-inset-bottom))
+      max(10px, env(safe-area-inset-left));
+  }
+
+  .hud-top {
+    justify-content: flex-start;
+    gap: 6px;
+    padding-right: 54px;
+  }
+
+  .readout {
+    min-width: 62px;
+    height: 36px;
+    padding: 5px 7px;
+  }
+
+  .readout.wide {
+    min-width: 86px;
+  }
+
+  .readout span,
+  .status-strip span {
+    font-size: 8px;
+  }
+
+  .readout b {
+    font-size: 16px;
+  }
+
+  .icon-button {
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    right: max(10px, env(safe-area-inset-right));
+    width: 38px;
+    min-width: 38px;
+    min-height: 36px;
+  }
+
+  .status-strip {
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top));
+    left: 50%;
+    width: min(380px, 46vw);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    transform: translateX(-50%);
+  }
+
+  .status-strip div {
+    height: 36px;
+    min-width: 0;
+    padding: 5px 6px;
+    background: rgba(4, 15, 10, 0.58);
+    box-shadow: 0 0 10px rgba(112, 255, 158, 0.05);
+  }
+
+  .status-strip b {
+    font-size: 13px;
+  }
+
+  .hud-bottom {
+    bottom: calc(max(8px, env(safe-area-inset-bottom)) + 96px);
+  }
+
+  .radar {
+    width: 86px;
+    height: 86px;
+  }
+
+  .touch-stick {
+    width: 88px;
+    height: 88px;
+  }
+
+  .touch-stick i {
+    width: 32px;
+    height: 32px;
   }
 }
