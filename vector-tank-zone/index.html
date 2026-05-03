@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#07110d" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Vector Tank Zone" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta
+      name="description"
+      content="Vector Tank Zone is a 3D tank arena inspired by classic vector combat, with projectiles, radar, particles, levels, scores, and boss weak points."
+    />
+    <meta property="og:title" content="Vector Tank Zone" />
+    <meta property="og:description" content="3D tank arena with radar, projectiles, particles, levels, and bosses." />
+    <meta property="og:image" content="/vector-tank-zone/preview.svg" />
+    <link rel="icon" href="/vector-tank-zone/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/vector-tank-zone/icon-192.png" />
+    <link rel="manifest" href="/vector-tank-zone/manifest.webmanifest" />
+    <title>Vector Tank Zone</title>
+    <script type="module" crossorigin src="/vector-tank-zone/assets/index-DvRHjRzB.js"></script>
+    <link rel="stylesheet" crossorigin href="/vector-tank-zone/assets/index-RuUkTGTT.css">
+  </head>
+  <body>
+    <div id="loading-screen" class="loading-screen" aria-hidden="true">
+      <div class="scan-loader"><span></span><span></span><span></span></div>
+    </div>
+    <canvas id="game-canvas" aria-label="Vector Tank Zone 3D canvas"></canvas>
+
+    <div id="hud" class="hud is-hidden">
+      <div class="hud-top">
+        <div class="readout"><span>Level</span><b data-level>1</b></div>
+        <div class="readout wide"><span>Armor</span><b data-armor>100</b></div>
+        <div class="readout"><span>Score</span><b data-score>0</b></div>
+        <button class="icon-button" type="button" data-pause aria-label="Pause">II</button>
+      </div>
+      <div class="hud-bottom">
+        <div class="radar" aria-label="Radar" data-radar></div>
+        <div class="status-strip">
+          <div><span>Targets</span><b data-targets>0</b></div>
+          <div><span>Reload</span><b data-reload>Ready</b></div>
+          <div><span>Streak</span><b data-streak>0</b></div>
+          <div><span>Objective</span><b data-objective>Active</b></div>
+        </div>
+      </div>
+      <div class="boss-bar is-hidden" data-boss-wrap>
+        <span data-boss-name>Boss</span>
+        <i><b data-boss-fill></b></i>
+      </div>
+      <div class="reticle" aria-hidden="true"><span></span></div>
+      <div id="float-layer" aria-hidden="true"></div>
+    </div>
+
+    <section id="title-screen" class="panel home">
+      <div>
+        <p class="kicker">3D Vector Tank Combat</p>
+        <h1>Vector Tank Zone</h1>
+        <p class="subtitle">Destroy enemy armor, read the radar, survive the arena, and break boss weak points.</p>
+      </div>
+      <div class="home-stats">
+        <div><span>Level</span><b data-home-level>1</b></div>
+        <div><span>High Score</span><b data-home-score>0</b></div>
+        <div><span>Medals</span><b data-home-medals>0</b></div>
+      </div>
+      <div class="garage-panel">
+        <span>Tank Systems</span>
+        <b data-garage-tier>Recon Chassis</b>
+      </div>
+      <div class="level-map" data-level-map aria-label="Level map"></div>
+      <div class="actions">
+        <button class="primary" type="button" data-start>Start</button>
+        <button type="button" data-install class="is-hidden">Install</button>
+        <button type="button" data-mute>Sound</button>
+      </div>
+    </section>
+
+    <section id="briefing-screen" class="panel compact briefing is-hidden">
+      <p class="kicker">Mission Briefing</p>
+      <h2 data-brief-title>Rangefinder</h2>
+      <div class="brief-grid">
+        <div><span>Threats</span><b data-brief-threats>3</b></div>
+        <div><span>Target Score</span><b data-brief-score>900</b></div>
+      </div>
+      <div class="objective-box">
+        <span data-brief-objective>Clean Gunnery</span>
+        <b data-brief-detail>Finish with at least 62% accuracy.</b>
+        <i data-brief-bonus>Bonus +450</i>
+      </div>
+      <p class="brief-boss" data-brief-boss></p>
+      <div class="actions">
+        <button class="primary" type="button" data-deploy>Deploy</button>
+        <button type="button" data-home>Home</button>
+      </div>
+    </section>
+
+    <section id="level-clear-screen" class="panel compact is-hidden">
+      <p class="kicker">Zone Clear</p>
+      <h2 data-clear-title>Level Complete</h2>
+      <div class="result-grid">
+        <div><span>Score</span><b data-clear-score>0</b></div>
+        <div><span>Kills</span><b data-clear-kills>0</b></div>
+        <div><span>Accuracy</span><b data-clear-accuracy>0%</b></div>
+        <div><span>Medals</span><b data-clear-medals>0</b></div>
+      </div>
+      <p class="reward-line" data-clear-extra></p>
+      <div class="actions">
+        <button class="primary" type="button" data-next>Next</button>
+        <button type="button" data-retry>Replay</button>
+        <button type="button" data-home>Home</button>
+      </div>
+    </section>
+
+    <section id="fail-screen" class="panel compact is-hidden">
+      <p class="kicker">Armor Lost</p>
+      <h2>Tank Destroyed</h2>
+      <div class="result-grid">
+        <div><span>Score</span><b data-fail-score>0</b></div>
+        <div><span>Kills</span><b data-fail-kills>0</b></div>
+      </div>
+      <div class="actions">
+        <button class="primary" type="button" data-retry>Retry</button>
+        <button type="button" data-home>Home</button>
+      </div>
+    </section>
+
+    <section id="pause-screen" class="panel compact is-hidden">
+      <p class="kicker">Paused</p>
+      <h2>Systems Held</h2>
+      <div class="actions">
+        <button class="primary" type="button" data-resume>Resume</button>
+        <button type="button" data-retry>Restart</button>
+        <button type="button" data-home>Home</button>
+      </div>
+    </section>
+
+  </body>
+</html>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Vector Tank Zone preview">
+  <rect width="1200" height="630" fill="#07110d"/>
+  <g stroke="#1f5f48" stroke-width="2">
+    <path d="M0 520h1200M0 470h1200M0 420h1200M0 370h1200M0 320h1200"/>
+    <path d="M100 630 520 260M260 630 560 260M420 630 600 260M580 630 640 260M740 630 680 260M900 630 720 260M1060 630 760 260"/>
+  </g>
+  <path d="M0 246 96 212 170 235 268 184 364 224 448 198 550 230 650 176 744 222 834 204 934 235 1048 192 1200 238" fill="none" stroke="#ffd166" stroke-width="5"/>
+  <g fill="none" stroke="#70ff9e" stroke-width="10" stroke-linejoin="round">
+    <path d="M364 430 452 340h172l90 90-92 84H452Z"/>
+    <path d="M487 338v-62h102v62M538 338v-110M532 382h132l144-76"/>
+  </g>
+  <g fill="none" stroke="#ff6a4d" stroke-width="8" stroke-linejoin="round">
+    <path d="M794 426h126l48 44-48 44H794l-50-44Z"/>
+    <path d="M842 426v-42h48v42M866 426v-82"/>
+  </g>
+  <circle cx="602" cy="306" r="24" fill="none" stroke="#66d9ff" stroke-width="7"/>
+  <text x="72" y="112" fill="#f3fff6" font-family="Arial, sans-serif" font-size="64" font-weight="900">Vector Tank Zone</text>
+  <text x="76" y="164" fill="#8fdab0" font-family="Arial, sans-serif" font-size="30" font-weight="700">3D vector tank combat with radar, particles, levels, and boss weak points</text>
+</svg>

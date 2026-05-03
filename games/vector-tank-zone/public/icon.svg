@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Vector Tank Zone icon">
+  <rect width="128" height="128" fill="#07110d"/>
+  <path d="M18 96h92M20 72 40 48h48l20 24-20 24H40Z" fill="none" stroke="#70ff9e" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M49 47V31h30v16M64 47V17M62 59h25l23-13" fill="none" stroke="#ffd166" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="43" cy="92" r="7" fill="none" stroke="#66d9ff" stroke-width="5"/>
+  <circle cx="85" cy="92" r="7" fill="none" stroke="#66d9ff" stroke-width="5"/>
+</svg>
