@@ -143,12 +143,18 @@ try {
     hudVisible: !document.querySelector("#hud").classList.contains("is-hidden"),
     bossVisible: !document.querySelector("[data-boss-wrap]").classList.contains("is-hidden"),
     radarPips: document.querySelectorAll(".radar-pip.boss").length,
-    bottomFits: document.querySelector(".hud-bottom").getBoundingClientRect().bottom <= innerHeight
+    bottomFits: document.querySelector(".hud-bottom").getBoundingClientRect().bottom <= innerHeight,
+    touchControlsVisible: getComputedStyle(document.querySelector(".touch-controls")).display !== "none",
+    touchStickCount: document.querySelectorAll(".touch-stick").length,
+    touchControlsFit: document.querySelector(".touch-controls").getBoundingClientRect().bottom <= innerHeight
   }))()`);
   assert(bossState.hudVisible, "Boss autostart should show HUD.");
   assert(bossState.bossVisible, "Boss level should show boss HP.");
   assert(bossState.radarPips > 0, "Boss should be visible on radar.");
   assert(bossState.bottomFits, "Mobile HUD bottom should fit viewport.");
+  assert(bossState.touchControlsVisible, "Mobile joystick controls should be visible.");
+  assert(bossState.touchStickCount === 2, `Expected 2 touch sticks, got ${bossState.touchStickCount}.`);
+  assert(bossState.touchControlsFit, "Mobile joystick controls should fit viewport.");
   await boss.screenshot(join(screenshotDir, "vector-tank-zone-smoke-boss-mobile.png"));
   await boss.close();
 

@@ -376,6 +376,112 @@ button:active {
   overflow: hidden;
 }
 
+.touch-controls {
+  display: none;
+}
+
+.touch-stick {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  border: 2px solid rgba(112, 255, 158, 0.42);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(112, 255, 158, 0.12), transparent 38%),
+    rgba(4, 15, 10, 0.5);
+  box-shadow:
+    inset 0 0 22px rgba(112, 255, 158, 0.08),
+    0 0 18px rgba(0, 0, 0, 0.28);
+}
+
+.touch-stick span,
+.touch-stick i {
+  position: absolute;
+  pointer-events: none;
+}
+
+.touch-stick i {
+  left: 50%;
+  top: 50%;
+  width: 42px;
+  height: 42px;
+  border: 2px solid rgba(243, 255, 246, 0.82);
+  border-radius: 50%;
+  background: rgba(112, 255, 158, 0.18);
+  box-shadow: 0 0 14px rgba(112, 255, 158, 0.34);
+  transform: translate(-50%, -50%);
+  transition: transform 80ms linear;
+}
+
+.move-stick span {
+  inset: 20px;
+}
+
+.move-stick span::before,
+.move-stick span::after {
+  content: "";
+  position: absolute;
+  background: rgba(112, 255, 158, 0.28);
+}
+
+.move-stick span::before {
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+}
+
+.move-stick span::after {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+}
+
+.aim-stick {
+  border-color: rgba(255, 209, 102, 0.48);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 209, 102, 0.14), transparent 40%),
+    rgba(4, 15, 10, 0.5);
+}
+
+.aim-stick span {
+  left: 50%;
+  top: 50%;
+  width: 62px;
+  height: 62px;
+  border: 1px solid rgba(255, 209, 102, 0.38);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.aim-stick span::before,
+.aim-stick span::after {
+  content: "";
+  position: absolute;
+  background: rgba(255, 209, 102, 0.32);
+}
+
+.aim-stick span::before {
+  left: 50%;
+  top: -12px;
+  width: 2px;
+  height: 86px;
+}
+
+.aim-stick span::after {
+  left: -12px;
+  top: 50%;
+  width: 86px;
+  height: 2px;
+}
+
+.aim-stick i {
+  border-color: rgba(255, 241, 183, 0.86);
+  background: rgba(255, 209, 102, 0.2);
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.36);
+}
+
 .float-pop {
   position: absolute;
   left: 50%;
@@ -611,5 +717,63 @@ h2 {
     height: 42px;
     min-width: 0;
     padding: 7px 9px;
+  }
+}
+
+@media (pointer: coarse) {
+  .touch-controls {
+    position: absolute;
+    left: max(18px, env(safe-area-inset-left));
+    right: max(18px, env(safe-area-inset-right));
+    bottom: max(18px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .hud-bottom {
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 138px);
+  }
+
+  .reticle {
+    top: 43%;
+  }
+}
+
+@media (pointer: coarse) and (max-width: 680px) {
+  .touch-stick {
+    width: 104px;
+    height: 104px;
+  }
+
+  .touch-stick i {
+    width: 38px;
+    height: 38px;
+  }
+
+  .aim-stick span {
+    width: 56px;
+    height: 56px;
+  }
+
+  .hud-bottom {
+    bottom: calc(max(14px, env(safe-area-inset-bottom)) + 120px);
+  }
+}
+
+@media (pointer: coarse) and (max-height: 720px) {
+  .touch-stick {
+    width: 92px;
+    height: 92px;
+  }
+
+  .touch-stick i {
+    width: 34px;
+    height: 34px;
+  }
+
+  .hud-bottom {
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 104px);
   }
 }

@@ -8,18 +8,35 @@ export type InputState = {
   fireHeld: boolean;
 };
 
+type StickState = {
+  id: number | null;
+  startX: number;
+  startY: number;
+  x: number;
+  y: number;
+  knob: HTMLElement | null;
+};
+
 export class InputManager {
   private readonly canvas: HTMLCanvasElement;
   private readonly keys = new Set<string>();
-  private pointerId: number | null = null;
-  private pointerStartX = 0;
-  private pointerStartY = 0;
-  private pointerX = 0;
-  private pointerY = 0;
-  private pointerActive = false;
-  private pointerCombat = false;
+  private readonly moveStick: StickState = {
+    id: null,
+    startX: 0,
+    startY: 0,
+    x: 0,
+    y: 0,
+    knob: document.querySelector<HTMLElement>('[data-stick-knob="move"]')
+  };
+  private readonly aimStick: StickState = {
+    id: null,
+    startX: 0,
+    startY: 0,
+    x: 0,
+    y: 0,
+    knob: document.querySelector<HTMLElement>('[data-stick-knob="aim"]')
+  };
   private fireQueued = false;
-  private fireHeld = false;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -29,17 +46,18 @@ export class InputManager {
   read(): InputState {
     const keyboardTurn = (this.keys.has("ArrowLeft") || this.keys.has("KeyA") ? 1 : 0) + (this.keys.has("ArrowRight") || this.keys.has("KeyD") ? -1 : 0);
     const keyboardThrottle = (this.keys.has("ArrowUp") || this.keys.has("KeyW") ? 1 : 0) + (this.keys.has("ArrowDown") || this.keys.has("KeyS") ? -1 : 0);
-    const keyboardTurret = (this.keys.has("KeyQ") ? 1 : 0) + (this.keys.has("KeyE") ? -1 : 0);
-    const pointerDx = this.pointerActive ? clamp((this.pointerX - this.pointerStartX) / 90, -1, 1) : 0;
-    const pointerDy = this.pointerActive ? clamp((this.pointerStartY - this.pointerY) / 110, -1, 1) : 0;
+    const keyboardTurret = (this.keys.has("KeyQ") ? -1 : 0) + (this.keys.has("KeyE") ? 1 : 0);
+    const moveDx = this.stickX(this.moveStick);
+    const moveDy = this.stickY(this.moveStick);
+    const aimDx = this.stickX(this.aimStick);
     const fire = this.fireQueued || this.keys.has("Space") || this.keys.has("Enter");
     this.fireQueued = false;
     return {
-      throttle: clamp(keyboardThrottle + (this.pointerCombat ? 0 : pointerDy), -1, 1),
-      turn: clamp(keyboardTurn + (this.pointerCombat ? 0 : pointerDx), -1, 1),
-      turretTurn: clamp(keyboardTurret + (this.pointerCombat ? pointerDx : 0), -1, 1),
+      throttle: clamp(keyboardThrottle + moveDy, -1, 1),
+      turn: clamp(keyboardTurn + moveDx, -1, 1),
+      turretTurn: clamp(keyboardTurret - aimDx, -1, 1),
       fire,
-      fireHeld: this.fireHeld || this.keys.has("Space") || this.keys.has("Enter")
+      fireHeld: this.aimStick.id !== null || this.keys.has("Space") || this.keys.has("Enter")
     };
   }
 
@@ -48,45 +66,82 @@ export class InputManager {
       this.keys.add(event.code);
       if (event.code === "Space" || event.code === "Enter") {
         this.fireQueued = true;
-        this.fireHeld = true;
       }
     });
     window.addEventListener("keyup", (event) => {
       this.keys.delete(event.code);
-      if (event.code === "Space" || event.code === "Enter") {
-        this.fireHeld = false;
-      }
     });
 
     this.canvas.addEventListener("pointerdown", (event) => {
-      this.pointerId = event.pointerId;
-      this.pointerStartX = event.clientX;
-      this.pointerStartY = event.clientY;
-      this.pointerX = event.clientX;
-      this.pointerY = event.clientY;
-      this.pointerActive = true;
-      this.pointerCombat = event.clientY < window.innerHeight * 0.58;
-      this.fireQueued = this.pointerCombat;
-      this.fireHeld = true;
+      const stick = event.clientX < window.innerWidth * 0.5 ? this.moveStick : this.aimStick;
+      this.captureStick(stick, event);
+      if (stick === this.aimStick) {
+        this.fireQueued = true;
+      }
       this.canvas.setPointerCapture(event.pointerId);
     });
     this.canvas.addEventListener("pointermove", (event) => {
-      if (this.pointerId !== event.pointerId) {
-        return;
+      const stick = this.stickForPointer(event.pointerId);
+      if (stick) {
+        stick.x = event.clientX;
+        stick.y = event.clientY;
+        this.updateStickVisual(stick);
       }
-      this.pointerX = event.clientX;
-      this.pointerY = event.clientY;
     });
     const release = (event: PointerEvent) => {
-      if (this.pointerId !== event.pointerId) {
-        return;
+      const stick = this.stickForPointer(event.pointerId);
+      if (stick) {
+        this.releaseStick(stick);
       }
-      this.pointerId = null;
-      this.pointerActive = false;
-      this.pointerCombat = false;
-      this.fireHeld = false;
     };
     this.canvas.addEventListener("pointerup", release);
     this.canvas.addEventListener("pointercancel", release);
+  }
+
+  private captureStick(stick: StickState, event: PointerEvent): void {
+    stick.id = event.pointerId;
+    stick.startX = event.clientX;
+    stick.startY = event.clientY;
+    stick.x = event.clientX;
+    stick.y = event.clientY;
+    this.updateStickVisual(stick);
+  }
+
+  private releaseStick(stick: StickState): void {
+    stick.id = null;
+    stick.startX = 0;
+    stick.startY = 0;
+    stick.x = 0;
+    stick.y = 0;
+    if (stick.knob) {
+      stick.knob.style.transform = "translate(-50%, -50%)";
+    }
+  }
+
+  private stickForPointer(pointerId: number): StickState | null {
+    if (this.moveStick.id === pointerId) {
+      return this.moveStick;
+    }
+    if (this.aimStick.id === pointerId) {
+      return this.aimStick;
+    }
+    return null;
+  }
+
+  private stickX(stick: StickState): number {
+    return stick.id === null ? 0 : clamp((stick.x - stick.startX) / 86, -1, 1);
+  }
+
+  private stickY(stick: StickState): number {
+    return stick.id === null ? 0 : clamp((stick.startY - stick.y) / 96, -1, 1);
+  }
+
+  private updateStickVisual(stick: StickState): void {
+    if (!stick.knob) {
+      return;
+    }
+    const x = this.stickX(stick) * 34;
+    const y = -this.stickY(stick) * 34;
+    stick.knob.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
   }
 }
