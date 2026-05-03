@@ -87,7 +87,7 @@ export class PlayerTank {
   updateCamera(camera: THREE.PerspectiveCamera, dt: number): void {
     this.getForward(this.forward);
     this.getAimForward(this.aimForward);
-    const desiredPosition = this.position.clone().addScaledVector(this.forward, -6.6).add(new THREE.Vector3(0, 3.35, 0));
+    const desiredPosition = this.position.clone().addScaledVector(this.aimForward, -6.6).add(new THREE.Vector3(0, 3.35, 0));
     camera.position.lerp(desiredPosition, 1 - Math.exp(-5.2 * dt));
     const lookTarget = this.position.clone().addScaledVector(this.aimForward, 28).setY(1.35);
     camera.lookAt(lookTarget);
