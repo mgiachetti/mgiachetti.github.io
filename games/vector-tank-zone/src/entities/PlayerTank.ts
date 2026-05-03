@@ -37,9 +37,9 @@ export class PlayerTank {
     const turnRate = 2.15;
     this.yaw += input.turn * turnRate * dt;
     if (Math.abs(input.turretTurn) > 0.04) {
-      this.turretYaw += input.turretTurn * 2.7 * dt;
+      this.turretYaw += input.turretTurn * 1.35 * dt;
     } else {
-      this.turretYaw += clamp(wrapAngle(this.yaw - this.turretYaw), -1.35 * dt, 1.35 * dt);
+      this.turretYaw += clamp(wrapAngle(this.yaw - this.turretYaw), -0.675 * dt, 0.675 * dt);
     }
     const targetSpeed = input.throttle * (input.throttle > 0 ? 12 : 7);
     this.speed = damp(this.speed, targetSpeed, 5.5, dt);
