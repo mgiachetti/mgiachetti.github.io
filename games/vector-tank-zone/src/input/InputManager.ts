@@ -62,7 +62,7 @@ export class InputManager {
     this.fireQueued = false;
     return {
       throttle: clamp(keyboardThrottle + moveDy, -1, 1),
-      turn: clamp(keyboardTurn + moveDx, -1, 1),
+      turn: clamp(keyboardTurn - moveDx, -1, 1),
       turretTurn: clamp(keyboardTurret - aimDx, -1, 1),
       turretDelta,
       aimActive: this.pointerLocked || this.aimStick.id !== null,

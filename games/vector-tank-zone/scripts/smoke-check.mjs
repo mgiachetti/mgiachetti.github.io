@@ -95,6 +95,52 @@ try {
   await title.screenshot(join(screenshotDir, "vector-tank-zone-smoke-briefing.png"));
   await title.close();
 
+  const landscapeMenu = await openPage();
+  await landscapeMenu.send("Page.enable");
+  await landscapeMenu.send("Runtime.enable");
+  await landscapeMenu.send("Emulation.setDeviceMetricsOverride", {
+    width: 844,
+    height: 390,
+    deviceScaleFactor: 2,
+    mobile: true,
+    screenOrientation: { type: "landscapePrimary", angle: 90 }
+  });
+  await landscapeMenu.send("Emulation.setTouchEmulationEnabled", { enabled: true });
+  await landscapeMenu.send("Page.navigate", { url: origin });
+  await waitForEval(
+    landscapeMenu,
+    `document.querySelector("#loading-screen")?.classList.contains("is-hidden") === true`,
+    10000,
+    "Game did not finish initial mobile landscape boot."
+  );
+  const landscapeMenuState = await landscapeMenu.eval(`(() => {
+    const titlePanel = document.querySelector("#title-screen");
+    const titleRect = titlePanel.getBoundingClientRect();
+    document.querySelector("[data-start]").dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    const briefingPanel = document.querySelector("#briefing-screen");
+    const briefingRect = briefingPanel.getBoundingClientRect();
+    return {
+      titleTop: titleRect.top,
+      titleBottom: titleRect.bottom,
+      titleNeedsScroll: titlePanel.scrollHeight > titlePanel.clientHeight + 1,
+      briefingVisible: !briefingPanel.classList.contains("is-hidden"),
+      briefingTop: briefingRect.top,
+      briefingBottom: briefingRect.bottom,
+      briefingNeedsScroll: briefingPanel.scrollHeight > briefingPanel.clientHeight + 1,
+      actionBottom: briefingPanel.querySelector(".actions").getBoundingClientRect().bottom
+    };
+  })()`);
+  assert(landscapeMenuState.titleTop >= 0, `Landscape title menu should start on-screen, got ${landscapeMenuState.titleTop}.`);
+  assert(landscapeMenuState.titleBottom <= 390, `Landscape title menu should fit height, got bottom ${landscapeMenuState.titleBottom}.`);
+  assert(!landscapeMenuState.titleNeedsScroll, "Landscape title menu should not require vertical scroll.");
+  assert(landscapeMenuState.briefingVisible, "Landscape Start should open briefing.");
+  assert(landscapeMenuState.briefingTop >= 0, `Landscape briefing should start on-screen, got ${landscapeMenuState.briefingTop}.`);
+  assert(landscapeMenuState.briefingBottom <= 390, `Landscape briefing should fit height, got bottom ${landscapeMenuState.briefingBottom}.`);
+  assert(!landscapeMenuState.briefingNeedsScroll, "Landscape briefing should not require vertical scroll.");
+  assert(landscapeMenuState.actionBottom <= 390, "Landscape briefing actions should fit viewport.");
+  await landscapeMenu.screenshot(join(screenshotDir, "vector-tank-zone-smoke-menu-landscape.png"));
+  await landscapeMenu.close();
+
   const desktop = await openPage();
   await desktop.send("Page.enable");
   await desktop.send("Runtime.enable");
@@ -192,6 +238,19 @@ try {
   assert(landscapeState.maxBoxHeight <= 40, `Landscape status boxes should be short, got ${landscapeState.maxBoxHeight}.`);
   assert(landscapeState.stripBottom < landscapeState.controlsTop, "Landscape status strip should not overlap joystick controls.");
   assert(landscapeState.controlsBottom <= 390, "Landscape joystick controls should fit viewport.");
+  const moveKnobStart = await landscape.eval(`document.querySelector('[data-stick-knob="move"]').getBoundingClientRect().left`);
+  await landscape.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: 78, y: 330, radiusX: 2, radiusY: 2, force: 1, id: 1 }]
+  });
+  await landscape.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: 132, y: 330, radiusX: 2, radiusY: 2, force: 1, id: 1 }]
+  });
+  await sleep(120);
+  const moveKnobDragged = await landscape.eval(`document.querySelector('[data-stick-knob="move"]').getBoundingClientRect().left`);
+  await landscape.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  assert(moveKnobDragged > moveKnobStart, "Landscape move stick should visibly follow a right drag.");
   await landscape.screenshot(join(screenshotDir, "vector-tank-zone-smoke-mobile-landscape.png"));
   await landscape.close();
 
